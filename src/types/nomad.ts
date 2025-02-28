@@ -7,20 +7,21 @@ export interface NomadJob {
     Status: string;
     Stop: boolean;
     StatusDescription?: string;
+    Namespace: string;
     JobSummary?: {
-      JobID: string;
-      Summary: Record<string, {
-        Running: number;
-        Starting: number;
-        Failed: number;
-        Complete: number;
-        Lost: number;
-        Unknown: number;
-      }>;
+        JobID: string;
+        Summary: Record<string, {
+            Running: number;
+            Starting: number;
+            Failed: number;
+            Complete: number;
+            Lost: number;
+            Unknown: number;
+        }>;
     };
     CreateTime: number;
     ModifyTime: number;
-  }
+}
 
 export interface NomadJobsResponse {
     Jobs?: NomadJob[];

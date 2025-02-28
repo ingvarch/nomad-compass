@@ -40,7 +40,11 @@ export const JobList: React.FC = () => {
   }, [token, nomadAddr]);
 
   // Function to get status color class based on job status
-  const getStatusColor = (status: string): string => {
+  const getStatusColor = (status: string, stop: boolean): string => {
+    if (stop) {
+      return 'text-gray-600 bg-gray-100';
+    }
+
     switch (status.toLowerCase()) {
       case 'running':
         return 'text-green-600 bg-green-100';
@@ -141,8 +145,8 @@ export const JobList: React.FC = () => {
                 <div className="text-sm text-gray-900">{job.Type}</div>
               </td>
               <td className="px-6 py-4 whitespace-nowrap">
-                <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(job.Status)}`}>
-                  {job.Status}
+                <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(job.Status, job.Stop)}`}>
+                  {job.Status} {job.Stop ? '(Stopped)' : ''}
                 </span>
               </td>
               <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">

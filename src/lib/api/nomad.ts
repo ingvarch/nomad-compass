@@ -102,13 +102,8 @@ export class NomadClient {
 
       console.log('Processed jobs:', response);
 
-      // Фильтрация только активных jobs
-      const activeJobs = response.filter((job: any) =>
-          job.Status === 'running' && !job.Stop
-      );
-
       return {
-        Jobs: activeJobs
+        Jobs: response
       };
     } catch (error) {
       console.error('Error in getJobs():', error);

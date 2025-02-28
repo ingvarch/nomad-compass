@@ -6,6 +6,8 @@ import Link from 'next/link';
 import ProtectedLayout from '@/components/layout/ProtectedLayout';
 import { useAuth } from '@/context/AuthContext';
 import { createNomadClient } from '@/lib/api/nomad';
+import JobLogs from '@/components/jobs/JobLogs';
+import JobActions from '@/components/jobs/JobActions';
 
 export default function JobDetailPage() {
     const params = useParams();
@@ -119,13 +121,14 @@ export default function JobDetailPage() {
                                 <div className="bg-gray-50 px-4 py-3 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6 rounded-md">
                                     <dt className="text-sm font-medium text-gray-500">Status</dt>
                                     <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
-                    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                        job.Status === 'running' ? 'bg-green-100 text-green-800' :
-                            job.Status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                                'bg-gray-100 text-gray-800'
-                    }`}>
-                      {job.Status}
-                    </span>
+                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                            job.Status === 'running' ? 'bg-green-100 text-green-800' :
+                                job.Status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                                    job.Stop ? 'bg-gray-100 text-gray-800' :
+                                        'bg-red-100 text-red-800'
+                        }`}>
+                            {job.Status} {job.Stop ? '(Stopped)' : ''}
+                        </span>
                                     </dd>
                                 </div>
                                 <div className="px-4 py-3 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
