@@ -96,9 +96,14 @@ export default function JobDetailPage() {
                 <div className="flex justify-between items-center">
                     <div>
                         <h1 className="text-2xl font-semibold text-gray-900">{job.Name || job.ID}</h1>
-                        <p className="mt-1 text-sm text-gray-600">
-                            Job ID: {job.ID}
-                        </p>
+                        <div className="flex items-center space-x-4 mt-1">
+                            <p className="text-sm text-gray-600">
+                                Job ID: {job.ID}
+                            </p>
+                            <span className="px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
+                            Namespace: {job.Namespace || 'default'}
+                        </span>
+                        </div>
                     </div>
                     <div>
                         <Link
@@ -164,7 +169,9 @@ export default function JobDetailPage() {
                                 <div className="bg-gray-50 px-4 py-3 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6 rounded-md">
                                     <dt className="text-sm font-medium text-gray-500">Namespace</dt>
                                     <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
-                                        {job.Namespace || 'default'}
+                                        <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
+                                            {job.Namespace || 'default'}
+                                        </span>
                                     </dd>
                                 </div>
                                 <div className="px-4 py-3 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">

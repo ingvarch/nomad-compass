@@ -1,6 +1,7 @@
+// src/lib/api/nomad.ts
 'use client';
 
-import { NomadJobsResponse, ApiError } from '@/types/nomad';
+import { NomadJobsResponse, ApiError, NomadNamespace } from '@/types/nomad';
 
 /**
  * NomadClient - A client for interacting with Nomad API
@@ -188,6 +189,19 @@ export class NomadClient {
    */
   async getPlugins(): Promise<any> {
     return this.request<any>('/v1/plugins');
+  }
+
+  /**
+   * Get available namespaces
+   */
+  async getNamespaces(): Promise<NomadNamespace[]> {
+    try {
+      return this.request<NomadNamespace[]>('/v1/namespaces');
+    } catch (error) {
+      console.error('Failed to fetch namespaces:', error);
+      // Return default namespace if API fails
+      return [{ Name: 'default' }];
+    }
   }
 
   /**

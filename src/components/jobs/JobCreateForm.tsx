@@ -1,6 +1,7 @@
+// src/components/jobs/JobCreateForm.tsx
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { createNomadClient } from '@/lib/api/nomad';
@@ -12,12 +13,15 @@ export const JobCreateForm: React.FC = () => {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [success, setSuccess] = useState<string | null>(null);
+    const [namespaces, setNamespaces] = useState<string[]>(['default']);
+    const [isLoadingNamespaces, setIsLoadingNamespaces] = useState(true);
 
     // Default form values
     const [formData, setFormData] = useState<NomadJobFormData>({
         name: '',
         image: '',
         plugin: 'podman',
+        namespace: 'default',
         resources: {
             CPU: 100,
             MemoryMB: 256,
@@ -25,6 +29,34 @@ export const JobCreateForm: React.FC = () => {
         },
         envVars: [{ key: '', value: '' }]
     });
+
+    // Fetch available namespaces
+    useEffect(() => {
+        const fetchNamespaces = async () => {
+            if (!token || !nomadAddr) {
+                setIsLoadingNamespaces(false);
+                return;
+            }
+
+            try {
+                const client = createNomadClient(nomadAddr, token);
+                const response = await client.getNamespaces();
+
+                if (response && Array.isArray(response)) {
+                    const nsNames = response.map(ns => ns.Name);
+                    setNamespaces(nsNames.length > 0 ? nsNames : ['default']);
+                }
+            } catch (err) {
+                console.error('Failed to fetch namespaces:', err);
+                // Fallback to default namespace if fetching fails
+                setNamespaces(['default']);
+            } finally {
+                setIsLoadingNamespaces(false);
+            }
+        };
+
+        fetchNamespaces();
+    }, [token, nomadAddr]);
 
     // Handle form input changes
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -97,6 +129,7 @@ export const JobCreateForm: React.FC = () => {
             Job: {
                 ID: formData.name,
                 Name: formData.name,
+                Namespace: formData.namespace,
                 Type: 'service',
                 Datacenters: ['dc1'],
                 TaskGroups: [
@@ -164,7 +197,7 @@ export const JobCreateForm: React.FC = () => {
             const client = createNomadClient(nomadAddr, token);
             const response = await client.createJob(jobSpec);
 
-            setSuccess(`Job "${formData.name}" created successfully!`);
+            setSuccess(`Job "${formData.name}" created successfully in namespace "${formData.namespace}"!`);
 
             // Reset form after successful submission
             setTimeout(() => {
@@ -214,6 +247,29 @@ export const JobCreateForm: React.FC = () => {
                             disabled={isLoading}
                             required
                         />
+                    </div>
+
+                    {/* Namespace Selector */}
+                    <div className="mb-4">
+                        <label htmlFor="namespace" className="block text-sm font-medium text-gray-700 mb-1">
+                            Namespace
+                        </label>
+                        <select
+                            id="namespace"
+                            name="namespace"
+                            value={formData.namespace}
+                            onChange={handleInputChange}
+                            className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            disabled={isLoading || isLoadingNamespaces}
+                        >
+                            {isLoadingNamespaces ? (
+                                <option value="default">Loading namespaces...</option>
+                            ) : (
+                                namespaces.map(ns => (
+                                    <option key={ns} value={ns}>{ns}</option>
+                                ))
+                            )}
+                        </select>
                     </div>
 
                     {/* Docker Image */}

@@ -1,3 +1,4 @@
+// src/types/nomad.ts
 // Nomad API types
 
 export interface NomadJob {
@@ -28,8 +29,8 @@ export interface NomadJobsResponse {
 }
 
 export interface ApiError {
-statusCode: number;
-message: string;
+    statusCode: number;
+    message: string;
 }
 
 export interface NomadResource {
@@ -54,5 +55,13 @@ export interface NomadJobFormData {
     resources: NomadResource;
     image: string;
     plugin: string;
+    namespace: string;
     envVars: NomadEnvVar[];
+}
+
+export interface NomadNamespace {
+    Name: string;
+    Description?: string;
+    CreateIndex?: number;
+    ModifyIndex?: number;
 }
