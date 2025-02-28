@@ -5,6 +5,7 @@ export interface NomadJob {
     Name: string;
     Type: string;
     Status: string;
+    Stop: boolean;
     StatusDescription?: string;
     JobSummary?: {
       JobID: string;
@@ -20,9 +21,9 @@ export interface NomadJob {
     CreateTime: number;
     ModifyTime: number;
   }
-  
+
 export interface NomadJobsResponse {
-Jobs: NomadJob[];
+    Jobs?: NomadJob[];
 }
 
 export interface ApiError {

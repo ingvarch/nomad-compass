@@ -10,13 +10,17 @@ export class NomadClient {
   private token: string;
 
   constructor(nomadAddr: string, token: string) {
+    console.log('Initializing NomadClient with:', { nomadAddr, token }); // Лог инициализации
+
     // Check if we're in a browser environment and should use proxy
     if (typeof window !== 'undefined') {
       // Use our local API proxy to avoid CORS issues
       this.baseUrl = '/api/nomad';
+      console.log('Using proxy baseUrl:', this.baseUrl);
     } else {
       // Direct access in SSR context
       this.baseUrl = nomadAddr.endsWith('/') ? nomadAddr.slice(0, -1) : nomadAddr;
+      console.log('Using direct baseUrl:', this.baseUrl);
     }
     this.token = token;
   }
@@ -91,7 +95,25 @@ export class NomadClient {
    * Get all jobs
    */
   async getJobs(): Promise<NomadJobsResponse> {
-    return this.request<NomadJobsResponse>('/v1/jobs');
+    try {
+      const response = await this.request<any>('/v1/jobs', {
+        method: 'GET'
+      });
+
+      console.log('Processed jobs:', response);
+
+      // Фильтрация только активных jobs
+      const activeJobs = response.filter((job: any) =>
+          job.Status === 'running' && !job.Stop
+      );
+
+      return {
+        Jobs: activeJobs
+      };
+    } catch (error) {
+      console.error('Error in getJobs():', error);
+      throw error;
+    }
   }
 
   /**

@@ -12,6 +12,24 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+const validateToken = async () => {
+  if (!token || !nomadAddr) return false;
+
+  try {
+    const response = await fetch(`${nomadAddr}/v1/agent/self`, {
+      headers: {
+        'X-Nomad-Token': token,
+        'Content-Type': 'application/json'
+      }
+    });
+
+    return response.ok;
+  } catch (error) {
+    console.error('Token validation error:', error);
+    return false;
+  }
+};
+
 export const useAuth = (): AuthContextType => {
   const context = useContext(AuthContext);
   if (!context) {
