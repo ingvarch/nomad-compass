@@ -21,12 +21,36 @@ export interface NomadJob {
     ModifyTime: number;
   }
   
-  export interface NomadJobsResponse {
-    Jobs: NomadJob[];
-  }
-  
-  export interface ApiError {
-    statusCode: number;
-    message: string;
-  }
-  
+export interface NomadJobsResponse {
+Jobs: NomadJob[];
+}
+
+export interface ApiError {
+statusCode: number;
+message: string;
+}
+
+export interface NomadResource {
+    CPU: number;
+    MemoryMB: number;
+    DiskMB?: number;
+}
+
+export interface NomadEnvVar {
+    key: string;
+    value: string;
+}
+
+export interface NomadTaskConfig {
+    image: string;
+    plugin?: string;
+    env?: Record<string, string>;
+}
+
+export interface NomadJobFormData {
+    name: string;
+    resources: NomadResource;
+    image: string;
+    plugin: string;
+    envVars: NomadEnvVar[];
+}

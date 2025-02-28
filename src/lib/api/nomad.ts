@@ -26,20 +26,32 @@ export class NomadClient {
    */
   private async request<T>(
       endpoint: string,
-      options: RequestInit = {}
+      options: RequestInit & { params?: Record<string, any> } = {}
   ): Promise<T> {
-    const url = `${this.baseUrl}${endpoint}`;
+    // Extract and remove params from options if they exist
+    const { params, ...fetchOptions } = options;
+
+    // Build URL with query parameters if provided
+    let url = `${this.baseUrl}${endpoint}`;
+
+    if (params) {
+      const searchParams = new URLSearchParams();
+      Object.entries(params).forEach(([key, value]) => {
+        searchParams.append(key, String(value));
+      });
+      url = `${url}?${searchParams.toString()}`;
+    }
 
     // Add Nomad token header
     const headers = {
       'X-Nomad-Token': this.token,
       'Content-Type': 'application/json',
-      ...options.headers,
+      ...fetchOptions.headers,
     };
 
     try {
       const response = await fetch(url, {
-        ...options,
+        ...fetchOptions,
         headers,
       });
 
@@ -53,7 +65,14 @@ export class NomadClient {
         throw error;
       }
 
-      return await response.json();
+      // Check if response is expected to be JSON
+      if (response.headers.get('content-type')?.includes('application/json')) {
+        return await response.json();
+      } else {
+        // For non-JSON responses (like logs), return text
+        const text = await response.text();
+        return { Data: text } as unknown as T;
+      }
     } catch (error) {
       if ((error as ApiError).statusCode) {
         throw error;
@@ -80,6 +99,47 @@ export class NomadClient {
    */
   async getJob(id: string): Promise<any> {
     return this.request<any>(`/v1/job/${id}`);
+  }
+
+  /**
+   * Create a new job
+   */
+  async createJob(jobSpec: any): Promise<any> {
+    return this.request<any>('/v1/jobs', {
+      method: 'POST',
+      body: JSON.stringify(jobSpec),
+    });
+  }
+
+  /**
+   * Stop a job
+   */
+  async stopJob(id: string): Promise<any> {
+    return this.request<any>(`/v1/job/${id}`, {
+      method: 'DELETE',
+    });
+  }
+
+  /**
+   * Restart a job
+   */
+  async restartJob(id: string): Promise<any> {
+    // First get the job
+    const job = await this.getJob(id);
+
+    // Then submit it again to restart it
+    return this.request<any>('/v1/jobs', {
+      method: 'POST',
+      body: JSON.stringify(job),
+    });
+  }
+
+
+  /**
+   * Get available plugins
+   */
+  async getPlugins(): Promise<any> {
+    return this.request<any>('/v1/plugins');
   }
 
   /**
