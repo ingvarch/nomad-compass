@@ -16,8 +16,13 @@ export const JobActions: React.FC<JobActionsProps> = ({ jobId, jobStatus }) => {
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
 
-    const restartJob = async () => {
-        if (!confirm('Are you sure you want to restart this job?')) {
+    // Determine if the job is stopped based on status
+    const isStopped = jobStatus?.toLowerCase() === 'dead' || false;
+    // Determine if the job is running
+    const isRunning = jobStatus?.toLowerCase() === 'running';
+
+    const startJob = async () => {
+        if (!confirm('Are you sure you want to start this job?')) {
             return;
         }
 
@@ -30,17 +35,32 @@ export const JobActions: React.FC<JobActionsProps> = ({ jobId, jobStatus }) => {
             }
 
             const client = createNomadClient(nomadAddr, token);
-            await client.restartJob(jobId);
 
-            alert('Job restart initiated successfully');
+            // Get the job specification
+            const jobSpec = await client.getJob(jobId);
+
+            // Check if the job has a valid specification
+            if (!jobSpec || !jobSpec.ID) {
+                throw new Error('Could not retrieve job specification');
+            }
+
+            // Make sure the job is not marked as stopped
+            if (jobSpec.Stop === true) {
+                jobSpec.Stop = false;
+            }
+
+            // Submit the job again with the updated spec
+            await client.createJob({ Job: jobSpec });
+
+            alert('Job started successfully');
 
             // Refresh the page to see updated status
-            router.refresh();
+            window.location.reload();
         } catch (err) {
-            console.error('Failed to restart job:', err);
+            console.error('Failed to start job:', err);
             setError(typeof err === 'object' && err !== null && 'message' in err
                 ? (err as Error).message
-                : 'Failed to restart job. Please try again.');
+                : 'Failed to start job. Please try again.');
         } finally {
             setIsLoading(false);
         }
@@ -64,8 +84,8 @@ export const JobActions: React.FC<JobActionsProps> = ({ jobId, jobStatus }) => {
 
             alert('Job stopped successfully');
 
-            // Redirect to jobs list
-            router.push('/jobs');
+            // Refresh the page to see updated status
+            window.location.reload();
         } catch (err) {
             console.error('Failed to stop job:', err);
             setError(typeof err === 'object' && err !== null && 'message' in err
@@ -76,31 +96,29 @@ export const JobActions: React.FC<JobActionsProps> = ({ jobId, jobStatus }) => {
         }
     };
 
-    const isRunning = jobStatus?.toLowerCase() === 'running';
-
     return (
         <div className="flex items-center space-x-2">
             {error && (
                 <div className="text-red-600 text-sm mr-2">{error}</div>
             )}
 
-            {isRunning && (
+            {isStopped ? (
                 <button
-                    onClick={restartJob}
+                    onClick={startJob}
                     disabled={isLoading}
-                    className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50"
+                    className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50"
                 >
-                    {isLoading ? 'Working...' : 'Restart'}
+                    {isLoading ? 'Working...' : 'Start'}
+                </button>
+            ) : (
+                <button
+                    onClick={stopJob}
+                    disabled={isLoading}
+                    className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50"
+                >
+                    {isLoading ? 'Working...' : 'Stop'}
                 </button>
             )}
-
-            <button
-                onClick={stopJob}
-                disabled={isLoading}
-                className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50"
-            >
-                {isLoading ? 'Working...' : 'Stop'}
-            </button>
         </div>
     );
 };
