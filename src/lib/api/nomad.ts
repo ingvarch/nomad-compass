@@ -138,19 +138,42 @@ export class NomadClient {
   }
 
   /**
-   * Restart a job
+   * Delete a job (purge)
    */
-  async restartJob(id: string): Promise<any> {
-    // First get the job
-    const job = await this.getJob(id);
-
-    // Then submit it again to restart it
-    return this.request<any>('/v1/jobs', {
-      method: 'POST',
-      body: JSON.stringify(job),
+  async deleteJob(id: string): Promise<any> {
+    return this.request<any>(`/v1/job/${id}`, {
+      method: 'DELETE',
+      params: { purge: 'true' }
     });
   }
 
+  /**
+   * Get job allocations
+   */
+  async getJobAllocations(jobId: string): Promise<any[]> {
+    return this.request<any[]>(`/v1/job/${jobId}/allocations`);
+  }
+
+  /**
+   * Get allocation info
+   */
+  async getAllocation(allocId: string): Promise<any> {
+    return this.request<any>(`/v1/allocation/${allocId}`);
+  }
+
+  /**
+   * Get logs for an allocation
+   */
+  async getAllocationLogs(allocId: string, taskName: string, logType: string, plain: boolean = true): Promise<any> {
+    return this.request<any>(`/v1/client/fs/logs/${allocId}`, {
+      method: 'GET',
+      params: {
+        task: taskName,
+        type: logType,
+        plain,
+      },
+    });
+  }
 
   /**
    * Get available plugins

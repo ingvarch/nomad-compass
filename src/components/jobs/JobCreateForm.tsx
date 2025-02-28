@@ -19,9 +19,9 @@ export const JobCreateForm: React.FC = () => {
         image: '',
         plugin: 'podman',
         resources: {
-            CPU: 500,
+            CPU: 100,
             MemoryMB: 256,
-            DiskMB: 300,
+            DiskMB: 500,
         },
         envVars: [{ key: '', value: '' }]
     });

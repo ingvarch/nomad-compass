@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import React, { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { createNomadClient } from '@/lib/api/nomad';
 
@@ -54,8 +54,8 @@ export const JobActions: React.FC<JobActionsProps> = ({ jobId, jobStatus }) => {
 
             alert('Job started successfully');
 
-            // Refresh the page to see updated status
-            window.location.reload();
+            // Redirect to jobs list
+            router.push('/jobs');
         } catch (err) {
             console.error('Failed to start job:', err);
             setError(typeof err === 'object' && err !== null && 'message' in err
@@ -84,13 +84,43 @@ export const JobActions: React.FC<JobActionsProps> = ({ jobId, jobStatus }) => {
 
             alert('Job stopped successfully');
 
-            // Refresh the page to see updated status
-            window.location.reload();
+            // Redirect to jobs list
+            router.push('/jobs');
         } catch (err) {
             console.error('Failed to stop job:', err);
             setError(typeof err === 'object' && err !== null && 'message' in err
                 ? (err as Error).message
                 : 'Failed to stop job. Please try again.');
+        } finally {
+            setIsLoading(false);
+        }
+    };
+
+    const deleteJob = async () => {
+        if (!confirm('Are you sure you want to permanently delete this job? This action cannot be undone.')) {
+            return;
+        }
+
+        setIsLoading(true);
+        setError(null);
+
+        try {
+            if (!token || !nomadAddr) {
+                throw new Error('Authentication required');
+            }
+
+            const client = createNomadClient(nomadAddr, token);
+            await client.deleteJob(jobId);
+
+            alert('Job deleted successfully');
+
+            // Redirect to jobs list
+            router.push('/jobs');
+        } catch (err) {
+            console.error('Failed to delete job:', err);
+            setError(typeof err === 'object' && err !== null && 'message' in err
+                ? (err as Error).message
+                : 'Failed to delete job. Please try again.');
         } finally {
             setIsLoading(false);
         }
@@ -103,13 +133,22 @@ export const JobActions: React.FC<JobActionsProps> = ({ jobId, jobStatus }) => {
             )}
 
             {isStopped ? (
-                <button
-                    onClick={startJob}
-                    disabled={isLoading}
-                    className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50"
-                >
-                    {isLoading ? 'Working...' : 'Start'}
-                </button>
+                <>
+                    <button
+                        onClick={startJob}
+                        disabled={isLoading}
+                        className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50"
+                    >
+                        {isLoading ? 'Working...' : 'Start'}
+                    </button>
+                    <button
+                        onClick={deleteJob}
+                        disabled={isLoading}
+                        className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded shadow-sm text-white bg-gray-600 hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 disabled:opacity-50"
+                    >
+                        {isLoading ? 'Working...' : 'Delete'}
+                    </button>
+                </>
             ) : (
                 <button
                     onClick={stopJob}

@@ -2,11 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    context: any
 ) {
     const nomadBaseUrl = process.env.NOMAD_ADDR || 'http://localhost:4646';
     const token = request.headers.get('X-Nomad-Token');
-    const allocId = params.id;
+    const allocId = context.params.id;
 
     // Get query parameters
     const searchParams = request.nextUrl.searchParams;

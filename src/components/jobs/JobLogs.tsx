@@ -23,6 +23,8 @@ export const JobLogs: React.FC<JobLogsProps> = ({ jobId, allocId, taskName }) =>
     // Fetch job allocations
     useEffect(() => {
         const fetchAllocations = async () => {
+
+
             if (!token || !nomadAddr) {
                 setError('Authentication required');
                 setIsLoading(false);
@@ -31,8 +33,9 @@ export const JobLogs: React.FC<JobLogsProps> = ({ jobId, allocId, taskName }) =>
 
             try {
                 // This is a simplified version - in a real app we would need to add the API for this
+
                 const client = createNomadClient(nomadAddr, token);
-                const allocs = await client.request<any>(`/v1/job/${jobId}/allocations`);
+                const allocs = await client.getJobAllocations(jobId);
 
                 // Filter running allocations
                 const runningAllocs = allocs.filter((alloc: any) => alloc.ClientStatus === 'running');
@@ -44,7 +47,7 @@ export const JobLogs: React.FC<JobLogsProps> = ({ jobId, allocId, taskName }) =>
                     setSelectedAlloc(firstAlloc);
 
                     // Get tasks for this allocation
-                    const allocInfo = await client.request<any>(`/v1/allocation/${firstAlloc}`);
+                    const allocInfo = await client.getAllocation(firstAlloc);
                     const taskNames = Object.keys(allocInfo.TaskStates || {});
 
                     if (taskNames.length > 0) {
@@ -73,14 +76,12 @@ export const JobLogs: React.FC<JobLogsProps> = ({ jobId, allocId, taskName }) =>
             setIsLoading(true);
             try {
                 const client = createNomadClient(nomadAddr, token);
-                const logs = await client.request<any>(`/v1/client/fs/logs/${selectedAlloc}`, {
-                    method: 'GET',
-                    params: {
-                        task: selectedTask,
-                        type: logType,
-                        plain: true,
-                    },
-                });
+                const logs = await client.getAllocationLogs(
+                    selectedAlloc,
+                    selectedTask,
+                    logType,
+                    true
+                );
 
                 setLogs(logs.Data || 'No logs available');
                 setError(null);

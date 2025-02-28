@@ -12,7 +12,7 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const validateToken = async () => {
+const validateToken = async (token: string | null, nomadAddr: string | null): Promise<boolean> => {
   if (!token || !nomadAddr) return false;
 
   try {

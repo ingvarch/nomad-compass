@@ -2,14 +2,14 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    context: any
 ) {
     const nomadBaseUrl = process.env.NOMAD_ADDR || 'http://localhost:4646';
     const token = request.headers.get('X-Nomad-Token');
-    const jobId = params.id;
+    const jobId = context.params.id; // Имя переменной должно быть jobId, а не allocId
 
     try {
-        const response = await fetch(`${nomadBaseUrl}/v1/job/${jobId}`, {
+        const response = await fetch(`${nomadBaseUrl}/v1/job/${jobId}/allocations`, {
             headers: {
                 'X-Nomad-Token': token || '',
                 'Content-Type': 'application/json',
@@ -24,7 +24,7 @@ export async function GET(
     } catch (error) {
         console.error('Nomad API proxy error:', error);
         return NextResponse.json(
-            { error: `Failed to fetch job ${jobId} from Nomad API` },
+            { error: `Failed to fetch allocations for job ${jobId}` },
             { status: 500 }
         );
     }
@@ -32,14 +32,21 @@ export async function GET(
 
 export async function DELETE(
     request: NextRequest,
-    { params }: { params: { id: string } }
+    context: any
 ) {
     const nomadBaseUrl = process.env.NOMAD_ADDR || 'http://localhost:4646';
     const token = request.headers.get('X-Nomad-Token');
-    const jobId = params.id;
+    const jobId = context.params.id;
+    const url = new URL(request.url);
+    const purge = url.searchParams.get('purge') === 'true';
+
+    let apiUrl = `${nomadBaseUrl}/v1/job/${jobId}`;
+    if (purge) {
+        apiUrl += '?purge=true';
+    }
 
     try {
-        const response = await fetch(`${nomadBaseUrl}/v1/job/${jobId}`, {
+        const response = await fetch(apiUrl, {
             method: 'DELETE',
             headers: {
                 'X-Nomad-Token': token || '',
@@ -55,7 +62,7 @@ export async function DELETE(
     } catch (error) {
         console.error('Nomad API proxy error:', error);
         return NextResponse.json(
-            { error: `Failed to stop job ${jobId}` },
+            { error: `Failed to ${purge ? 'delete' : 'stop'} job ${jobId}` },
             { status: 500 }
         );
     }
