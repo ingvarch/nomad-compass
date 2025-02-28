@@ -22,7 +22,7 @@ export const JobList: React.FC = () => {
 
       try {
         const client = createNomadClient(nomadAddr, token);
-        const response = await client.getJobs();
+        const response = await client.getJobs('*');
 
         console.log('Processed jobs in JobList:', response.Jobs);
 

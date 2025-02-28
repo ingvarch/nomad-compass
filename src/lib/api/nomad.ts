@@ -94,10 +94,18 @@ export class NomadClient {
   /**
    * Get all jobs
    */
-  async getJobs(): Promise<NomadJobsResponse> {
+  async getJobs(namespace?: string): Promise<NomadJobsResponse> {
     try {
+      const params: Record<string, any> = {};
+      if (namespace) {
+        params.namespace = namespace;
+      } else {
+        params.namespace = '*';
+      }
+
       const response = await this.request<any>('/v1/jobs', {
-        method: 'GET'
+        method: 'GET',
+        params: params
       });
 
       console.log('Processed jobs:', response);
