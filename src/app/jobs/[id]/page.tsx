@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import ProtectedLayout from '@/components/layout/ProtectedLayout';
 import { useAuth } from '@/context/AuthContext';
@@ -11,6 +11,7 @@ import JobActions from '@/components/jobs/JobActions';
 
 export default function JobDetailPage() {
     const params = useParams();
+    const searchParams = useSearchParams();
     const router = useRouter();
     const { token, nomadAddr } = useAuth();
     const [job, setJob] = useState<any>(null);
@@ -18,6 +19,7 @@ export default function JobDetailPage() {
     const [error, setError] = useState<string | null>(null);
 
     const jobId = params.id as string;
+    const namespace = searchParams.get('namespace') || 'default';
 
     useEffect(() => {
         const fetchJobDetail = async () => {
@@ -29,7 +31,7 @@ export default function JobDetailPage() {
 
             try {
                 const client = createNomadClient(nomadAddr, token);
-                const jobDetail = await client.getJob(jobId);
+                const jobDetail = await client.getJob(jobId, namespace);
                 setJob(jobDetail);
                 setError(null);
             } catch (err) {
@@ -41,7 +43,7 @@ export default function JobDetailPage() {
         };
 
         fetchJobDetail();
-    }, [token, nomadAddr, jobId]);
+    }, [token, nomadAddr, jobId, namespace]);
 
     // Format timestamp to readable date
     const formatDate = (timestamp: number): string => {

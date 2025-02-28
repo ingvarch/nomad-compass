@@ -131,7 +131,9 @@ export const JobList: React.FC = () => {
                   <div className="flex items-center">
                     <div className="ml-4">
                       <div className="text-sm font-medium text-gray-900">
-                        <Link href={`/jobs/${job.ID}`} className="text-blue-600 hover:text-blue-800">
+                        <Link
+                            href={`/jobs/${job.ID}?namespace=${job.Namespace || 'default'}`}
+                            className="text-blue-600 hover:text-blue-800">
                           {job.Name}
                         </Link>
                       </div>

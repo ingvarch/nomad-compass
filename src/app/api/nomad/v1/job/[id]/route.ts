@@ -6,10 +6,11 @@ export async function GET(
 ) {
     const nomadBaseUrl = process.env.NOMAD_ADDR || 'http://localhost:4646';
     const token = request.headers.get('X-Nomad-Token');
-    const jobId = context.params.id; // Имя переменной должно быть jobId, а не allocId
+    const jobId = context.params.id;
+    const namespace = request.nextUrl.searchParams.get('namespace') || 'default';
 
     try {
-        const response = await fetch(`${nomadBaseUrl}/v1/job/${jobId}/allocations`, {
+        const response = await fetch(`${nomadBaseUrl}/v1/job/${jobId}?namespace=${namespace}`, {
             headers: {
                 'X-Nomad-Token': token || '',
                 'Content-Type': 'application/json',
@@ -24,7 +25,7 @@ export async function GET(
     } catch (error) {
         console.error('Nomad API proxy error:', error);
         return NextResponse.json(
-            { error: `Failed to fetch allocations for job ${jobId}` },
+            { error: `Failed to fetch job ${jobId}` },
             { status: 500 }
         );
     }

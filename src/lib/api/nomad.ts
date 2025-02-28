@@ -123,8 +123,10 @@ export class NomadClient {
   /**
    * Get job details by ID
    */
-  async getJob(id: string): Promise<any> {
-    return this.request<any>(`/v1/job/${id}`);
+  async getJob(id: string, namespace: string = 'default'): Promise<any> {
+    return this.request<any>(`/v1/job/${id}`, {
+      params: { namespace }
+    });
   }
 
   /**
