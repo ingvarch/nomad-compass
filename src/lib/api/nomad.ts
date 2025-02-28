@@ -142,27 +142,33 @@ export class NomadClient {
   /**
    * Stop a job
    */
-  async stopJob(id: string): Promise<any> {
+  async stopJob(id: string, namespace: string = 'default'): Promise<any> {
     return this.request<any>(`/v1/job/${id}`, {
       method: 'DELETE',
+      params: { namespace }
     });
   }
 
   /**
    * Delete a job (purge)
    */
-  async deleteJob(id: string): Promise<any> {
+  async deleteJob(id: string, namespace: string = 'default'): Promise<any> {
     return this.request<any>(`/v1/job/${id}`, {
       method: 'DELETE',
-      params: { purge: 'true' }
+      params: {
+        namespace,
+        purge: 'true'
+      }
     });
   }
 
   /**
    * Get job allocations
    */
-  async getJobAllocations(jobId: string): Promise<any[]> {
-    return this.request<any[]>(`/v1/job/${jobId}/allocations`);
+  async getJobAllocations(jobId: string, namespace: string = 'default'): Promise<any[]> {
+    return this.request<any[]>(`/v1/job/${jobId}/allocations`, {
+      params: { namespace }
+    });
   }
 
   /**

@@ -35,9 +35,10 @@ export const JobActions: React.FC<JobActionsProps> = ({ jobId, jobStatus }) => {
             }
 
             const client = createNomadClient(nomadAddr, token);
+            const currentNamespace = new URLSearchParams(window.location.search).get('namespace') || 'default';
 
             // Get the job specification
-            const jobSpec = await client.getJob(jobId);
+            const jobSpec = await client.getJob(jobId, currentNamespace);
 
             // Check if the job has a valid specification
             if (!jobSpec || !jobSpec.ID) {
@@ -48,6 +49,9 @@ export const JobActions: React.FC<JobActionsProps> = ({ jobId, jobStatus }) => {
             if (jobSpec.Stop === true) {
                 jobSpec.Stop = false;
             }
+
+            // Устанавливаем namespace при создании джоба
+            jobSpec.Namespace = currentNamespace;
 
             // Submit the job again with the updated spec
             await client.createJob({ Job: jobSpec });
@@ -80,7 +84,8 @@ export const JobActions: React.FC<JobActionsProps> = ({ jobId, jobStatus }) => {
             }
 
             const client = createNomadClient(nomadAddr, token);
-            await client.stopJob(jobId);
+            const currentNamespace = new URLSearchParams(window.location.search).get('namespace') || 'default';
+            await client.stopJob(jobId, currentNamespace);
 
             alert('Job stopped successfully');
 
@@ -110,7 +115,8 @@ export const JobActions: React.FC<JobActionsProps> = ({ jobId, jobStatus }) => {
             }
 
             const client = createNomadClient(nomadAddr, token);
-            await client.deleteJob(jobId);
+            const currentNamespace = new URLSearchParams(window.location.search).get('namespace') || 'default';
+            await client.deleteJob(jobId, currentNamespace);
 
             alert('Job deleted successfully');
 

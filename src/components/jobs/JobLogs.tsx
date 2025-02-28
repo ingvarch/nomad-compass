@@ -20,11 +20,9 @@ export const JobLogs: React.FC<JobLogsProps> = ({ jobId, allocId, taskName }) =>
     const [selectedTask, setSelectedTask] = useState<string | null>(null);
     const [logType, setLogType] = useState<'stdout' | 'stderr'>('stdout');
 
-    // Fetch job allocations
+// Fetch job allocations
     useEffect(() => {
         const fetchAllocations = async () => {
-
-
             if (!token || !nomadAddr) {
                 setError('Authentication required');
                 setIsLoading(false);
@@ -32,10 +30,11 @@ export const JobLogs: React.FC<JobLogsProps> = ({ jobId, allocId, taskName }) =>
             }
 
             try {
-                // This is a simplified version - in a real app we would need to add the API for this
-
                 const client = createNomadClient(nomadAddr, token);
-                const allocs = await client.getJobAllocations(jobId);
+
+                const namespace = new URLSearchParams(window.location.search).get('namespace') || 'default';
+
+                const allocs = await client.getJobAllocations(jobId, namespace);
 
                 // Filter running allocations
                 const runningAllocs = allocs.filter((alloc: any) => alloc.ClientStatus === 'running');
