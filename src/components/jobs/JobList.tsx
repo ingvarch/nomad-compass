@@ -95,11 +95,6 @@ export const JobList: React.FC = () => {
               </p>
             </div>
           </div>
-          <div className="mt-2 text-xs text-gray-500">
-            <p>Debug Info:</p>
-            <p>Token Present: {token ? 'Yes' : 'No'}</p>
-            <p>Nomad Address: {nomadAddr || 'Not Set'}</p>
-          </div>
         </div>
     );
   }
