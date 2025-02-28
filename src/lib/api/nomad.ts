@@ -10,8 +10,14 @@ export class NomadClient {
   private token: string;
 
   constructor(nomadAddr: string, token: string) {
-    // Ensure nomadAddr doesn't end with a slash
-    this.baseUrl = nomadAddr.endsWith('/') ? nomadAddr.slice(0, -1) : nomadAddr;
+    // Check if we're in a browser environment and should use proxy
+    if (typeof window !== 'undefined') {
+      // Use our local API proxy to avoid CORS issues
+      this.baseUrl = '/api/nomad';
+    } else {
+      // Direct access in SSR context
+      this.baseUrl = nomadAddr.endsWith('/') ? nomadAddr.slice(0, -1) : nomadAddr;
+    }
     this.token = token;
   }
 
@@ -19,11 +25,11 @@ export class NomadClient {
    * Generic request method for Nomad API
    */
   private async request<T>(
-    endpoint: string,
-    options: RequestInit = {}
+      endpoint: string,
+      options: RequestInit = {}
   ): Promise<T> {
     const url = `${this.baseUrl}${endpoint}`;
-    
+
     // Add Nomad token header
     const headers = {
       'X-Nomad-Token': this.token,
@@ -52,7 +58,7 @@ export class NomadClient {
       if ((error as ApiError).statusCode) {
         throw error;
       }
-      
+
       // Handle network errors
       const networkError: ApiError = {
         statusCode: 0,
