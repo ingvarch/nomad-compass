@@ -29,7 +29,7 @@ export const JobCreateForm: React.FC = () => {
             DiskMB: 500,
         },
         envVars: [{ key: '', value: '' }],
-        // Расширенные настройки
+        // Advanced settings
         ports: [{ label: 'http', value: 8080, to: 8080, static: false }],
         healthChecks: [{
             type: 'http',
@@ -88,7 +88,7 @@ export const JobCreateForm: React.FC = () => {
                 }
             });
         } else if (name === 'datacenters') {
-            // Обработка датацентров как строки, разделенной запятыми
+            // Split comma-separated datacenters into an array
             setFormData({
                 ...formData,
                 datacenters: value.split(',').map(dc => dc.trim())
@@ -195,7 +195,7 @@ export const JobCreateForm: React.FC = () => {
 
     // Handle health check changes
     const handleHealthCheckChange = (field: keyof NomadHealthCheck, value: string | number) => {
-        // У нас пока только один health check, поэтому индекс всегда 0
+        // There is only one health check so index is always 0
         const updatedHealthChecks = [...formData.healthChecks];
 
         if (field === 'type') {
@@ -264,7 +264,7 @@ export const JobCreateForm: React.FC = () => {
                     Timeout: check.timeout * 1000000000, // Convert to nanoseconds
                     CheckRestart: {
                         Limit: 3,
-                        Grace: check.initialDelay * 1000000000,
+                        Grace: (check.initialDelay || 5) * 1000000000,
                         IgnoreWarnings: false
                     }
                 }]
