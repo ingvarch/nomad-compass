@@ -8,6 +8,7 @@ import { useAuth } from '@/context/AuthContext';
 import { createNomadClient } from '@/lib/api/nomad';
 import JobLogs from '@/components/jobs/JobLogs';
 import JobActions from '@/components/jobs/JobActions';
+import EnvironmentVariableDisplay from '@/components/jobs/EnvironmentVariableDisplay';
 
 export default function JobDetailPage() {
     const params = useParams();
@@ -255,21 +256,17 @@ export default function JobDetailPage() {
                                     {group.Tasks && group.Tasks.some((task: any) => task.Env && Object.keys(task.Env).length > 0) && (
                                         <div className="mt-4">
                                             <h5 className="text-sm font-medium text-gray-700 mb-2">Environment Variables</h5>
-                                            <div className="bg-gray-50 p-4 rounded-md">
-                                                {group.Tasks.map((task: any, taskIndex: number) => (
-                                                    task.Env && Object.keys(task.Env).length > 0 && (
-                                                        <div key={taskIndex} className="mb-2 last:mb-0">
-                                                            <div className="text-xs font-medium text-gray-500 mb-1">{task.Name}:</div>
-                                                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
-                                                                {Object.entries(task.Env).map(([key, value]: [string, any], envIndex: number) => (
-                                                                    <div key={envIndex} className="text-sm text-gray-700">
-                                                                        <span className="font-medium">{key}</span>: {value}
-                                                                    </div>
-                                                                ))}
+                                            <div className="bg-white shadow rounded-lg overflow-hidden">
+                                                <div className="p-6">
+                                                    {group.Tasks.map((task: any, taskIndex: number) => (
+                                                        task.Env && Object.keys(task.Env).length > 0 && (
+                                                            <div key={taskIndex} className="mb-4 last:mb-0">
+                                                                <div className="text-sm font-medium text-gray-700 mb-2">{task.Name}</div>
+                                                                <EnvironmentVariableDisplay envVars={task.Env} />
                                                             </div>
-                                                        </div>
-                                                    )
-                                                ))}
+                                                        )
+                                                    ))}
+                                                </div>
                                             </div>
                                         </div>
                                     )}
