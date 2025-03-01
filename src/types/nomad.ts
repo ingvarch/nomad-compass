@@ -68,6 +68,11 @@ export interface NomadTaskConfig {
     env?: Record<string, string>;
 }
 
+export interface DockerAuth {
+    username: string;
+    password: string;
+}
+
 export interface NomadJobFormData {
     name: string;
     resources: NomadResource;
@@ -80,6 +85,8 @@ export interface NomadJobFormData {
     enableHealthCheck: boolean;
     count: number;
     datacenters: string[];
+    usePrivateRegistry: boolean;
+    dockerAuth?: DockerAuth;
 }
 
 export interface NomadNamespace {

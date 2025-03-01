@@ -42,7 +42,12 @@ export const JobCreateForm: React.FC = () => {
         }],
         enableHealthCheck: false,
         count: 1,
-        datacenters: ['dc1']
+        datacenters: ['dc1'],
+        usePrivateRegistry: false,
+        dockerAuth: {
+            username: '',
+            password: ''
+        }
     });
 
     // Fetch available namespaces
@@ -92,6 +97,15 @@ export const JobCreateForm: React.FC = () => {
             setFormData({
                 ...formData,
                 datacenters: value.split(',').map(dc => dc.trim())
+            });
+        } else if (name.startsWith('dockerAuth.')) {
+            const field = name.split('.')[1];
+            setFormData({
+                ...formData,
+                dockerAuth: {
+                    ...formData.dockerAuth!,
+                    [field]: value
+                }
             });
         } else {
             setFormData({
@@ -272,6 +286,20 @@ export const JobCreateForm: React.FC = () => {
             return healthCheck;
         }) : [];
 
+        // Base task configuration
+        const taskConfig: any = {
+            image: formData.image,
+            ports: formData.ports.map(p => p.label).filter(label => label.trim() !== ''),
+        };
+
+        // DockerAuth for private registry
+        if (formData.usePrivateRegistry && formData.dockerAuth) {
+            taskConfig.auth = {
+                username: formData.dockerAuth.username,
+                password: formData.dockerAuth.password
+            };
+        }
+
         // Basic job template for Nomad
         return {
             Job: {
@@ -290,10 +318,7 @@ export const JobCreateForm: React.FC = () => {
                             {
                                 Name: formData.name,
                                 Driver: formData.plugin,
-                                Config: {
-                                    image: formData.image,
-                                    ports: formData.ports.map(p => p.label).filter(label => label.trim() !== ''),
-                                },
+                                Config: taskConfig,
                                 Env: env,
                                 Resources: {
                                     CPU: formData.resources.CPU,
@@ -327,6 +352,15 @@ export const JobCreateForm: React.FC = () => {
 
             if (!formData.image.trim()) {
                 throw new Error('Docker image is required');
+            }
+
+            if (formData.usePrivateRegistry) {
+                if (!formData.dockerAuth?.username) {
+                    throw new Error('Username is required for private registry');
+                }
+                if (!formData.dockerAuth?.password) {
+                    throw new Error('Password is required for private registry');
+                }
             }
 
             // Create job spec from form data
@@ -429,6 +463,63 @@ export const JobCreateForm: React.FC = () => {
                             required
                         />
                     </div>
+
+                    {/* Private Registry Checkbox */}
+                    <div className="mb-4 flex items-center">
+                        <input
+                            id="usePrivateRegistry"
+                            name="usePrivateRegistry"
+                            type="checkbox"
+                            checked={formData.usePrivateRegistry}
+                            onChange={handleCheckboxChange}
+                            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                            disabled={isLoading}
+                        />
+                        <label htmlFor="usePrivateRegistry" className="ml-2 block text-sm font-medium text-gray-700">
+                            Use Private Container Registry
+                        </label>
+                    </div>
+
+                    {/* Private Registry Credentials */}
+                    {formData.usePrivateRegistry && (
+                        <div className="mb-6 p-4 border border-gray-200 rounded-md bg-gray-50">
+                            <h4 className="text-md font-medium text-gray-700 mb-3">Registry Credentials</h4>
+
+                            {/* Username */}
+                            <div className="mb-3">
+                                <label htmlFor="dockerAuth.username" className="block text-sm font-medium text-gray-700 mb-1">
+                                    Username
+                                </label>
+                                <input
+                                    id="dockerAuth.username"
+                                    name="dockerAuth.username"
+                                    type="text"
+                                    value={formData.dockerAuth?.username || ''}
+                                    onChange={handleInputChange}
+                                    className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    disabled={isLoading}
+                                    required={formData.usePrivateRegistry}
+                                />
+                            </div>
+
+                            {/* Password */}
+                            <div className="mb-3">
+                                <label htmlFor="dockerAuth.password" className="block text-sm font-medium text-gray-700 mb-1">
+                                    Password
+                                </label>
+                                <input
+                                    id="dockerAuth.password"
+                                    name="dockerAuth.password"
+                                    type="password"
+                                    value={formData.dockerAuth?.password || ''}
+                                    onChange={handleInputChange}
+                                    className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    disabled={isLoading}
+                                    required={formData.usePrivateRegistry}
+                                />
+                            </div>
+                        </div>
+                    )}
 
                     {/* Container Runtime */}
                     <div className="mb-4">
