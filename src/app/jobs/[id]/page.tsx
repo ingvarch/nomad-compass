@@ -51,6 +51,175 @@ export default function JobDetailPage() {
         return new Date(timestamp * 1000).toLocaleString();
     };
 
+    // Get health check details
+    const getHealthChecks = (taskGroup: any) => {
+        if (!taskGroup || !taskGroup.Services || !taskGroup.Services.length) {
+            return null;
+        }
+
+        return taskGroup.Services.map((service: any, index: number) => {
+            if (!service.Checks || !service.Checks.length) {
+                return null;
+            }
+
+            return (
+                <div key={index} className="mt-4">
+                    <h5 className="text-sm font-medium text-gray-700 mb-2">Health Check for {service.Name}</h5>
+                    <div className="overflow-x-auto">
+                        <table className="min-w-full divide-y divide-gray-200">
+                            <thead className="bg-gray-50">
+                            <tr>
+                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Type
+                                </th>
+                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Path/Command
+                                </th>
+                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Interval
+                                </th>
+                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Timeout
+                                </th>
+                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Check Restart
+                                </th>
+                            </tr>
+                            </thead>
+                            <tbody className="bg-white divide-y divide-gray-200">
+                            {service.Checks.map((check: any, checkIndex: number) => (
+                                <tr key={checkIndex}>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                        {check.Type}
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                        {check.Path || check.Command || '-'}
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                        {check.Interval ? `${Math.round(check.Interval / 1000000000)}s` : '-'}
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                        {check.Timeout ? `${Math.round(check.Timeout / 1000000000)}s` : '-'}
+                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                        {check.CheckRestart ? (
+                                            <div>
+                                                <span>Limit: {check.CheckRestart.Limit}</span>
+                                                <br />
+                                                <span>Grace: {Math.round(check.CheckRestart.Grace / 1000000000)}s</span>
+                                            </div>
+                                        ) : '-'}
+                                    </td>
+                                </tr>
+                            ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            );
+        });
+    };
+
+    // Get network and port configuration
+    const getNetworkConfig = (taskGroup: any) => {
+        if (!taskGroup || !taskGroup.Networks || !taskGroup.Networks.length) {
+            return null;
+        }
+
+        return taskGroup.Networks.map((network: any, index: number) => {
+            const hasDynamic = network.DynamicPorts && network.DynamicPorts.length > 0;
+            const hasReserved = network.ReservedPorts && network.ReservedPorts.length > 0;
+
+            if (!hasDynamic && !hasReserved) {
+                return null;
+            }
+
+            return (
+                <div key={index} className="mt-4">
+                    <h5 className="text-sm font-medium text-gray-700 mb-2">Network Configuration (Mode: {network.Mode})</h5>
+
+                    {hasDynamic && (
+                        <div className="mb-4">
+                            <h6 className="text-xs font-medium text-gray-600 mb-1">Dynamic Ports</h6>
+                            <div className="overflow-x-auto">
+                                <table className="min-w-full divide-y divide-gray-200">
+                                    <thead className="bg-gray-50">
+                                    <tr>
+                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            Label
+                                        </th>
+                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            Host Port
+                                        </th>
+                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            Container Port
+                                        </th>
+                                    </tr>
+                                    </thead>
+                                    <tbody className="bg-white divide-y divide-gray-200">
+                                    {network.DynamicPorts.map((port: any, portIndex: number) => (
+                                        <tr key={portIndex}>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                {port.Label}
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                    <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                                                        Dynamic
+                                                    </span>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                {port.To || port.Value || '-'}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    )}
+
+                    {hasReserved && (
+                        <div>
+                            <h6 className="text-xs font-medium text-gray-600 mb-1">Static Ports</h6>
+                            <div className="overflow-x-auto">
+                                <table className="min-w-full divide-y divide-gray-200">
+                                    <thead className="bg-gray-50">
+                                    <tr>
+                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            Label
+                                        </th>
+                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            Host Port
+                                        </th>
+                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            Container Port
+                                        </th>
+                                    </tr>
+                                    </thead>
+                                    <tbody className="bg-white divide-y divide-gray-200">
+                                    {network.ReservedPorts.map((port: any, portIndex: number) => (
+                                        <tr key={portIndex}>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                {port.Label}
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                {port.Value}
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                {port.To || port.Value || '-'}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        });
+    };
+
     if (isLoading) {
         return (
             <ProtectedLayout>
@@ -104,8 +273,8 @@ export default function JobDetailPage() {
                                 Job ID: {job.ID}
                             </p>
                             <span className="px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800">
-                            Namespace: {job.Namespace || 'default'}
-                        </span>
+                                Namespace: {job.Namespace || 'default'}
+                            </span>
                         </div>
                     </div>
                     <div>
@@ -129,14 +298,14 @@ export default function JobDetailPage() {
                                 <div className="bg-gray-50 px-4 py-3 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6 rounded-md">
                                     <dt className="text-sm font-medium text-gray-500">Status</dt>
                                     <dd className="mt-1 text-sm text-gray-900 sm:mt-0 sm:col-span-2">
-                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                            job.Status === 'running' ? 'bg-green-100 text-green-800' :
-                                job.Status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                                    job.Stop ? 'bg-gray-100 text-gray-800' :
-                                        'bg-red-100 text-red-800'
-                        }`}>
-                            {job.Status} {job.Stop ? '(Stopped)' : ''}
-                        </span>
+                                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
+                                            job.Status === 'running' ? 'bg-green-100 text-green-800' :
+                                                job.Status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                                                    job.Stop ? 'bg-gray-100 text-gray-800' :
+                                                        'bg-red-100 text-red-800'
+                                        }`}>
+                                            {job.Status} {job.Stop ? '(Stopped)' : ''}
+                                        </span>
                                     </dd>
                                 </div>
                                 <div className="px-4 py-3 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
@@ -197,9 +366,20 @@ export default function JobDetailPage() {
                         <div className="p-6">
                             {job.TaskGroups.map((group: any, groupIndex: number) => (
                                 <div key={groupIndex} className="mb-6 last:mb-0">
-                                    <h4 className="text-md font-medium text-gray-800 mb-2">
-                                        {group.Name} <span className="text-sm font-normal text-gray-500">(Count: {group.Count})</span>
-                                    </h4>
+                                    <div className="flex justify-between items-center">
+                                        <h4 className="text-md font-medium text-gray-800 mb-2">
+                                            {group.Name}
+                                        </h4>
+                                        <span className="px-2 py-1 text-xs font-semibold rounded-full bg-indigo-100 text-indigo-800">
+                                            Count: {group.Count}
+                                        </span>
+                                    </div>
+
+                                    {/* Network Configuration */}
+                                    {getNetworkConfig(group)}
+
+                                    {/* Health Checks */}
+                                    {getHealthChecks(group)}
 
                                     {/* Tasks */}
                                     {group.Tasks && group.Tasks.length > 0 && (

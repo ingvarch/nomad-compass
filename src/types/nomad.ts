@@ -44,6 +44,24 @@ export interface NomadEnvVar {
     value: string;
 }
 
+export interface NomadPort {
+    label: string;
+    value: number;
+    to?: number;
+    static?: boolean;
+}
+
+export interface NomadHealthCheck {
+    type: 'http' | 'tcp' | 'script';
+    path?: string;
+    command?: string;
+    interval: number;
+    timeout: number;
+    initialDelay?: number;
+    failuresBeforeUnhealthy: number;
+    successesBeforeHealthy: number;
+}
+
 export interface NomadTaskConfig {
     image: string;
     plugin?: string;
@@ -57,6 +75,11 @@ export interface NomadJobFormData {
     plugin: string;
     namespace: string;
     envVars: NomadEnvVar[];
+    ports: NomadPort[];
+    healthChecks: NomadHealthCheck[];
+    enableHealthCheck: boolean;
+    count: number;
+    datacenters: string[];
 }
 
 export interface NomadNamespace {
