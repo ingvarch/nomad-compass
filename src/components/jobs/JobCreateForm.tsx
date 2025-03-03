@@ -36,6 +36,7 @@ export const JobCreateForm: React.FC = () => {
     const [namespaces, setNamespaces] = useState<string[]>(['default']);
     const [isLoadingNamespaces, setIsLoadingNamespaces] = useState(true);
     const [showAdvancedSettings, setShowAdvancedSettings] = useState(false);
+    const [isNameValid, setIsNameValid] = useState(true);
 
     // Default form values
     const [formData, setFormData] = useState<NomadJobFormData>({
@@ -100,10 +101,21 @@ export const JobCreateForm: React.FC = () => {
         fetchNamespaces();
     }, [token, nomadAddr]);
 
+    // Validate job name with regex
+    const validateJobName = (name: string): boolean => {
+        const jobNameRegex = /^[a-zA-Z0-9][a-zA-Z0-9_.-]*$/;
+        return jobNameRegex.test(name);
+    };
+
     // Handle form input changes
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
         const { name, value, type } = e.target;
         const newValue = type === 'number' ? Number(value) : value;
+
+        // Validate job name if that's what changed
+        if (name === 'name') {
+            setIsNameValid(validateJobName(value));
+        }
 
         if (name.startsWith('resources.')) {
             const resourceField = name.split('.')[1];
@@ -396,6 +408,12 @@ export const JobCreateForm: React.FC = () => {
                 throw new Error('Job name is required');
             }
 
+            // Validate job name format
+            if (!validateJobName(formData.name)) {
+                setIsNameValid(false);
+                throw new Error('Job name must start with a letter or number and contain only letters, numbers, hyphens, underscores, and dots');
+            }
+
             if (!formData.image.trim()) {
                 throw new Error('Docker image is required');
             }
@@ -542,8 +560,12 @@ export const JobCreateForm: React.FC = () => {
                     <div>
                         <button
                             type="submit"
-                            className="w-full py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors disabled:opacity-50"
-                            disabled={isLoading}
+                            className={`w-full py-2 px-4 text-white font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors ${
+                                !isNameValid || isLoading
+                                    ? 'bg-gray-400 cursor-not-allowed'
+                                    : 'bg-blue-600 hover:bg-blue-700'
+                            }`}
+                            disabled={!isNameValid || isLoading}
                         >
                             {isLoading ? 'Creating...' : 'Create Job'}
                         </button>

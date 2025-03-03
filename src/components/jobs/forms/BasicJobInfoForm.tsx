@@ -1,5 +1,5 @@
 // src/components/jobs/forms/BasicJobInfoForm.tsx
-import React from 'react';
+import React, { useState } from 'react';
 
 interface BasicJobInfoFormProps {
     name: string;
@@ -26,6 +26,20 @@ export const BasicJobInfoForm: React.FC<BasicJobInfoFormProps> = ({
                                                                       isLoading,
                                                                       isLoadingNamespaces
                                                                   }) => {
+    const [isNameValid, setIsNameValid] = useState(true);
+
+    // Validate job name using regex: only alphanumeric characters, hyphens, underscores, and dots
+    const validateJobName = (value: string) => {
+        const jobNameRegex = /^[a-zA-Z0-9][a-zA-Z0-9_.-]*$/;
+        return jobNameRegex.test(value);
+    };
+
+    const handleNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+        const newName = e.target.value;
+        setIsNameValid(validateJobName(newName));
+        onChange(e);
+    };
+
     return (
         <>
             {/* Job Name */}
@@ -38,12 +52,17 @@ export const BasicJobInfoForm: React.FC<BasicJobInfoFormProps> = ({
                     name="name"
                     type="text"
                     value={name}
-                    onChange={onChange}
+                    onChange={handleNameChange}
                     placeholder="my-service"
-                    className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className={`w-full p-2 border ${!isNameValid ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500`}
                     disabled={isLoading}
                     required
                 />
+                {!isNameValid && (
+                    <p className="mt-1 text-sm text-red-600">
+                        Job name must start with a letter or number and contain only letters, numbers, hyphens, underscores, and dots.
+                    </p>
+                )}
             </div>
 
             {/* Namespace Selector */}
