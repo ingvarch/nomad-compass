@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import ProtectedLayout from '@/components/layout/ProtectedLayout';
@@ -9,12 +9,14 @@ import { createNomadClient } from '@/lib/api/nomad';
 import JobLogs from '@/components/jobs/JobLogs';
 import JobActions from '@/components/jobs/JobActions';
 import EnvironmentVariableDisplay from '@/components/jobs/EnvironmentVariableDisplay';
+import { useToast } from '@/context/ToastContext';
 
 export default function JobDetailPage() {
     const params = useParams();
     const searchParams = useSearchParams();
     const router = useRouter();
     const { token, nomadAddr } = useAuth();
+    const { addToast } = useToast();
     const [job, setJob] = useState<any>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -22,29 +24,32 @@ export default function JobDetailPage() {
     const jobId = params.id as string;
     const namespace = searchParams.get('namespace') || 'default';
 
+    const fetchJobDetail = useCallback(async () => {
+        if (!token || !nomadAddr) {
+            setError('Authentication required');
+            setIsLoading(false);
+            return;
+        }
+
+        setIsLoading(true);
+        try {
+            const client = createNomadClient(nomadAddr, token);
+            const jobDetail = await client.getJob(jobId, namespace);
+            setJob(jobDetail);
+            setError(null);
+        } catch (err) {
+            console.error('Failed to fetch job details:', err);
+            setError('Failed to load job details. Please check your connection and try again.');
+            addToast('Failed to load job details', 'error');
+        } finally {
+            setIsLoading(false);
+        }
+    }, [token, nomadAddr, jobId, namespace, addToast]);
+
+    // Initial fetch
     useEffect(() => {
-        const fetchJobDetail = async () => {
-            if (!token || !nomadAddr) {
-                setError('Authentication required');
-                setIsLoading(false);
-                return;
-            }
-
-            try {
-                const client = createNomadClient(nomadAddr, token);
-                const jobDetail = await client.getJob(jobId, namespace);
-                setJob(jobDetail);
-                setError(null);
-            } catch (err) {
-                console.error('Failed to fetch job details:', err);
-                setError('Failed to load job details. Please check your connection and try again.');
-            } finally {
-                setIsLoading(false);
-            }
-        };
-
         fetchJobDetail();
-    }, [token, nomadAddr, jobId, namespace]);
+    }, [fetchJobDetail]);
 
     // Format timestamp to readable date
     const formatDate = (timestamp: number): string => {
@@ -218,6 +223,10 @@ export default function JobDetailPage() {
                 </div>
             );
         });
+    };
+
+    const handleStatusChange = () => {
+        fetchJobDetail();
     };
 
     if (isLoading) {
@@ -463,7 +472,11 @@ export default function JobDetailPage() {
 
                 {/* Actions */}
                 <div className="flex justify-between">
-                    <JobActions jobId={job.ID} jobStatus={job.Status} />
+                    <JobActions
+                        jobId={job.ID}
+                        jobStatus={job.Status}
+                        onStatusChange={handleStatusChange}
+                    />
                     <button
                         onClick={() => router.push('/jobs')}
                         className="inline-flex items-center px-4 py-2 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"

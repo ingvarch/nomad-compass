@@ -4,30 +4,46 @@ import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { createNomadClient } from '@/lib/api/nomad';
+import { useToast } from '@/context/ToastContext';
+import { X, Check } from 'lucide-react';
 
 interface JobActionsProps {
     jobId: string;
     jobStatus?: string;
+    onStatusChange?: () => void;
 }
 
-export const JobActions: React.FC<JobActionsProps> = ({ jobId, jobStatus }) => {
+export const JobActions: React.FC<JobActionsProps> = ({ jobId, jobStatus, onStatusChange }) => {
     const router = useRouter();
     const { token, nomadAddr } = useAuth();
+    const { addToast } = useToast();
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
+
+    const [confirmingAction, setConfirmingAction] = useState<'start' | 'stop' | 'delete' | null>(null);
 
     // Determine if the job is stopped based on status
     const isStopped = jobStatus?.toLowerCase() === 'dead' || false;
     // Determine if the job is running
     const isRunning = jobStatus?.toLowerCase() === 'running';
 
-    const startJob = async () => {
-        if (!confirm('Are you sure you want to start this job?')) {
-            return;
-        }
+    const requestConfirmation = (action: 'start' | 'stop' | 'delete') => {
+        setConfirmingAction(action);
+        setTimeout(() => {
+            if (confirmingAction === action) {
+                setConfirmingAction(null);
+            }
+        }, 10000);
+    };
 
+    const cancelAction = () => {
+        setConfirmingAction(null);
+    };
+
+    const startJob = async () => {
         setIsLoading(true);
         setError(null);
+        setConfirmingAction(null);
 
         try {
             if (!token || !nomadAddr) {
@@ -50,33 +66,36 @@ export const JobActions: React.FC<JobActionsProps> = ({ jobId, jobStatus }) => {
                 jobSpec.Stop = false;
             }
 
-            // Устанавливаем namespace при создании джоба
             jobSpec.Namespace = currentNamespace;
 
             // Submit the job again with the updated spec
             await client.createJob({ Job: jobSpec });
 
-            alert('Job started successfully');
+            addToast('Job started successfully', 'success');
 
-            // Redirect to jobs list
-            router.push('/jobs');
+            if (onStatusChange) {
+                onStatusChange();
+            }
+
+            router.refresh();
         } catch (err) {
             console.error('Failed to start job:', err);
-            setError(typeof err === 'object' && err !== null && 'message' in err
+
+            const errorMessage = typeof err === 'object' && err !== null && 'message' in err
                 ? (err as Error).message
-                : 'Failed to start job. Please try again.');
+                : 'Failed to start job. Please try again.';
+
+            setError(errorMessage);
+            addToast(errorMessage, 'error');
         } finally {
             setIsLoading(false);
         }
     };
 
     const stopJob = async () => {
-        if (!confirm('Are you sure you want to stop this job?')) {
-            return;
-        }
-
         setIsLoading(true);
         setError(null);
+        setConfirmingAction(null);
 
         try {
             if (!token || !nomadAddr) {
@@ -87,27 +106,31 @@ export const JobActions: React.FC<JobActionsProps> = ({ jobId, jobStatus }) => {
             const currentNamespace = new URLSearchParams(window.location.search).get('namespace') || 'default';
             await client.stopJob(jobId, currentNamespace);
 
-            alert('Job stopped successfully');
+            addToast('Job stopped successfully', 'success');
 
-            // Redirect to jobs list
-            router.push('/jobs');
+            if (onStatusChange) {
+                onStatusChange();
+            }
+
+            router.refresh();
         } catch (err) {
             console.error('Failed to stop job:', err);
-            setError(typeof err === 'object' && err !== null && 'message' in err
+
+            const errorMessage = typeof err === 'object' && err !== null && 'message' in err
                 ? (err as Error).message
-                : 'Failed to stop job. Please try again.');
+                : 'Failed to stop job. Please try again.';
+
+            setError(errorMessage);
+            addToast(errorMessage, 'error');
         } finally {
             setIsLoading(false);
         }
     };
 
     const deleteJob = async () => {
-        if (!confirm('Are you sure you want to permanently delete this job? This action cannot be undone.')) {
-            return;
-        }
-
         setIsLoading(true);
         setError(null);
+        setConfirmingAction(null);
 
         try {
             if (!token || !nomadAddr) {
@@ -118,19 +141,26 @@ export const JobActions: React.FC<JobActionsProps> = ({ jobId, jobStatus }) => {
             const currentNamespace = new URLSearchParams(window.location.search).get('namespace') || 'default';
             await client.deleteJob(jobId, currentNamespace);
 
-            alert('Job deleted successfully');
+            addToast('Job deleted successfully', 'success');
 
-            // Redirect to jobs list
             router.push('/jobs');
         } catch (err) {
             console.error('Failed to delete job:', err);
-            setError(typeof err === 'object' && err !== null && 'message' in err
+
+            const errorMessage = typeof err === 'object' && err !== null && 'message' in err
                 ? (err as Error).message
-                : 'Failed to delete job. Please try again.');
+                : 'Failed to delete job. Please try again.';
+
+            setError(errorMessage);
+            addToast(errorMessage, 'error');
         } finally {
             setIsLoading(false);
         }
     };
+
+    const confirmButtonStyle = "inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded shadow-sm text-white focus:outline-none focus:ring-2 focus:ring-offset-2";
+    const confirmYesStyle = "bg-green-600 hover:bg-green-700 focus:ring-green-500";
+    const confirmNoStyle = "bg-gray-500 hover:bg-gray-600 focus:ring-gray-400 ml-2";
 
     return (
         <div className="flex items-center space-x-2">
@@ -140,29 +170,94 @@ export const JobActions: React.FC<JobActionsProps> = ({ jobId, jobStatus }) => {
 
             {isStopped ? (
                 <>
-                    <button
-                        onClick={startJob}
-                        disabled={isLoading}
-                        className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50"
-                    >
-                        {isLoading ? 'Working...' : 'Start'}
-                    </button>
-                    <button
-                        onClick={deleteJob}
-                        disabled={isLoading}
-                        className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded shadow-sm text-white bg-gray-600 hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 disabled:opacity-50"
-                    >
-                        {isLoading ? 'Working...' : 'Delete'}
-                    </button>
+                    {confirmingAction === 'start' ? (
+                        <div className="flex items-center">
+                            <span className="text-sm text-gray-700 mr-2">Start job?</span>
+                            <button
+                                onClick={startJob}
+                                disabled={isLoading}
+                                className={`${confirmButtonStyle} ${confirmYesStyle}`}
+                            >
+                                <Check size={16} className="mr-1" /> Yes, Start
+                            </button>
+                            <button
+                                onClick={cancelAction}
+                                disabled={isLoading}
+                                className={`${confirmButtonStyle} ${confirmNoStyle}`}
+                            >
+                                <X size={16} className="mr-1" /> Cancel
+                            </button>
+                        </div>
+                    ) : (
+                        <button
+                            onClick={() => requestConfirmation('start')}
+                            disabled={isLoading}
+                            className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded shadow-sm text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50"
+                        >
+                            {isLoading ? 'Working...' : 'Start'}
+                        </button>
+                    )}
+
+                    {confirmingAction === 'delete' ? (
+                        <div className="flex items-center">
+                            <span className="text-sm text-gray-700 mr-2">Delete permanently?</span>
+                            <button
+                                onClick={deleteJob}
+                                disabled={isLoading}
+                                className={`${confirmButtonStyle} ${confirmYesStyle}`}
+                            >
+                                <Check size={16} className="mr-1" /> Yes, Delete
+                            </button>
+                            <button
+                                onClick={cancelAction}
+                                disabled={isLoading}
+                                className={`${confirmButtonStyle} ${confirmNoStyle}`}
+                            >
+                                <X size={16} className="mr-1" /> Cancel
+                            </button>
+                        </div>
+                    ) : (
+                        confirmingAction !== 'start' && (
+                            <button
+                                onClick={() => requestConfirmation('delete')}
+                                disabled={isLoading}
+                                className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded shadow-sm text-white bg-gray-600 hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500 disabled:opacity-50"
+                            >
+                                {isLoading ? 'Working...' : 'Delete'}
+                            </button>
+                        )
+                    )}
                 </>
             ) : (
-                <button
-                    onClick={stopJob}
-                    disabled={isLoading}
-                    className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50"
-                >
-                    {isLoading ? 'Working...' : 'Stop'}
-                </button>
+                <>
+                    {confirmingAction === 'stop' ? (
+                        <div className="flex items-center">
+                            <span className="text-sm text-gray-700 mr-2">Stop job?</span>
+                            <button
+                                onClick={stopJob}
+                                disabled={isLoading}
+                                className={`${confirmButtonStyle} ${confirmYesStyle}`}
+                            >
+                                <Check size={16} className="mr-1" /> Yes, Stop
+                            </button>
+                            <button
+                                onClick={cancelAction}
+                                disabled={isLoading}
+                                className={`${confirmButtonStyle} ${confirmNoStyle}`}
+                            >
+                                <X size={16} className="mr-1" /> Cancel
+                            </button>
+                        </div>
+                    ) : (
+                        <button
+                            onClick={() => requestConfirmation('stop')}
+                            disabled={isLoading}
+                            className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded shadow-sm text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-50"
+                        >
+                            {isLoading ? 'Working...' : 'Stop'}
+                        </button>
+                    )}
+                </>
             )}
         </div>
     );
