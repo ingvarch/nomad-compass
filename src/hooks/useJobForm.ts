@@ -161,7 +161,16 @@ export function useJobForm() {
 
     // Remove an environment variable field
     const removeEnvVar = (index: number) => {
-        if (formData.envVars.length <= 1) return;
+        if (formData.envVars.length <= 1) {
+            const updatedEnvVars = [...formData.envVars];
+            updatedEnvVars[0] = { key: '', value: '' };
+
+            setFormData({
+                ...formData,
+                envVars: updatedEnvVars
+            });
+            return;
+        }
 
         const updatedEnvVars = [...formData.envVars];
         updatedEnvVars.splice(index, 1);

@@ -53,7 +53,7 @@ export const EnvironmentVariablesForm: React.FC<EnvironmentVariablesFormProps> =
                         type="button"
                         onClick={() => onRemoveEnvVar(index)}
                         className="inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-                        disabled={isLoading || envVars.length <= 1}
+                        disabled={isLoading}
                     >
                         Remove
                     </button>
