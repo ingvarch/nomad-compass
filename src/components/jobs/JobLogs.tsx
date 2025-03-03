@@ -1,8 +1,9 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { createNomadClient } from '@/lib/api/nomad';
+import { RefreshCw, Pause, Play } from 'lucide-react';
 
 interface JobLogsProps {
     jobId: string;
@@ -20,7 +21,13 @@ export const JobLogs: React.FC<JobLogsProps> = ({ jobId, allocId, taskName }) =>
     const [selectedTask, setSelectedTask] = useState<string | null>(null);
     const [logType, setLogType] = useState<'stdout' | 'stderr'>('stdout');
 
-// Fetch job allocations
+    // Auto-refresh state
+    const [autoRefresh, setAutoRefresh] = useState<boolean>(false);
+    const [refreshInterval, setRefreshInterval] = useState<number>(5); // seconds
+    const refreshTimerRef = useRef<NodeJS.Timeout | null>(null);
+    const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
+
+    // Fetch job allocations
     useEffect(() => {
         const fetchAllocations = async () => {
             if (!token || !nomadAddr) {
@@ -65,38 +72,78 @@ export const JobLogs: React.FC<JobLogsProps> = ({ jobId, allocId, taskName }) =>
         fetchAllocations();
     }, [jobId, token, nomadAddr, allocId, taskName]);
 
-    // Fetch logs when allocation and task are selected
+    // Fetch logs
+    const fetchLogs = useCallback(async () => {
+        if (!token || !nomadAddr || !selectedAlloc || !selectedTask) {
+            return;
+        }
+
+        setIsLoading(true);
+        try {
+            const client = createNomadClient(nomadAddr, token);
+            const logs = await client.getAllocationLogs(
+                selectedAlloc,
+                selectedTask,
+                logType,
+                true
+            );
+
+            setLogs(logs.Data || 'No logs available');
+            setLastRefreshed(new Date());
+            setError(null);
+        } catch (err) {
+            console.error('Failed to fetch logs:', err);
+            setError('Failed to load logs. Please try again.');
+            setLogs('');
+        } finally {
+            setIsLoading(false);
+        }
+    }, [selectedAlloc, selectedTask, logType, token, nomadAddr]);
+
+    // Fetch logs on allocation or task change
     useEffect(() => {
-        const fetchLogs = async () => {
-            if (!token || !nomadAddr || !selectedAlloc || !selectedTask) {
-                return;
-            }
-
-            setIsLoading(true);
-            try {
-                const client = createNomadClient(nomadAddr, token);
-                const logs = await client.getAllocationLogs(
-                    selectedAlloc,
-                    selectedTask,
-                    logType,
-                    true
-                );
-
-                setLogs(logs.Data || 'No logs available');
-                setError(null);
-            } catch (err) {
-                console.error('Failed to fetch logs:', err);
-                setError('Failed to load logs. Please try again.');
-                setLogs('');
-            } finally {
-                setIsLoading(false);
-            }
-        };
-
         if (selectedAlloc && selectedTask) {
             fetchLogs();
         }
-    }, [selectedAlloc, selectedTask, logType, token, nomadAddr]);
+    }, [selectedAlloc, selectedTask, logType, fetchLogs]);
+
+    // Setup auto-refresh timer
+    useEffect(() => {
+        // Clear any existing timer when dependencies change
+        if (refreshTimerRef.current) {
+            clearInterval(refreshTimerRef.current);
+            refreshTimerRef.current = null;
+        }
+
+        // Only setup the timer if auto-refresh is enabled
+        if (autoRefresh && selectedAlloc && selectedTask) {
+            refreshTimerRef.current = setInterval(() => {
+                fetchLogs();
+            }, refreshInterval * 1000);
+        }
+
+        // Cleanup on unmount
+        return () => {
+            if (refreshTimerRef.current) {
+                clearInterval(refreshTimerRef.current);
+            }
+        };
+    }, [autoRefresh, refreshInterval, selectedAlloc, selectedTask, fetchLogs]);
+
+    // Toggle auto-refresh
+    const toggleAutoRefresh = () => {
+        setAutoRefresh(prev => !prev);
+    };
+
+    // Handle refresh interval change
+    const handleRefreshIntervalChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        setRefreshInterval(Number(e.target.value));
+    };
+
+    // Manual refresh
+    const handleManualRefresh = () => {
+        fetchLogs();
+    };
 
     if (error && !allocations.length) {
         return (
@@ -139,7 +186,7 @@ export const JobLogs: React.FC<JobLogsProps> = ({ jobId, allocId, taskName }) =>
             <div className="px-6 py-4 border-b border-gray-200 flex flex-wrap justify-between items-center">
                 <h3 className="text-lg font-medium text-gray-900">Job Logs</h3>
 
-                <div className="flex space-x-2 mt-2 sm:mt-0">
+                <div className="flex flex-wrap gap-2 mt-2 sm:mt-0">
                     {/* Allocation Selector */}
                     {allocations.length > 1 && (
                         <select
@@ -184,23 +231,73 @@ export const JobLogs: React.FC<JobLogsProps> = ({ jobId, allocId, taskName }) =>
                         <option value="stdout">stdout</option>
                         <option value="stderr">stderr</option>
                     </select>
+
+                    {/* Auto-refresh controls */}
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={toggleAutoRefresh}
+                            className={`inline-flex items-center px-2 py-1 text-sm font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 ${
+                                autoRefresh
+                                    ? 'text-white bg-blue-600 hover:bg-blue-700 focus:ring-blue-500'
+                                    : 'text-gray-700 bg-gray-100 hover:bg-gray-200 focus:ring-gray-500'
+                            }`}
+                            title={autoRefresh ? 'Disable auto-refresh' : 'Enable auto-refresh'}
+                        >
+                            {autoRefresh ? <Pause size={16} /> : <Play size={16} />}
+                            <span className="ml-1">Auto</span>
+                        </button>
+
+                        {autoRefresh && (
+                            <select
+                                value={refreshInterval}
+                                onChange={handleRefreshIntervalChange}
+                                className="block w-full sm:w-auto pl-2 pr-7 py-1 text-sm border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 rounded-md"
+                            >
+                                <option value="2">2s</option>
+                                <option value="5">5s</option>
+                                <option value="10">10s</option>
+                                <option value="30">30s</option>
+                                <option value="60">60s</option>
+                            </select>
+                        )}
+
+                        <button
+                            onClick={handleManualRefresh}
+                            className="inline-flex items-center px-2 py-1 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                            disabled={isLoading}
+                            title="Refresh logs"
+                        >
+                            <RefreshCw size={16} className={isLoading ? 'animate-spin' : ''} />
+                        </button>
+                    </div>
                 </div>
             </div>
 
             <div className="p-6">
-                {isLoading ? (
+                {isLoading && !logs && (
                     <div className="flex justify-center items-center h-24">
                         <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
                     </div>
-                ) : error ? (
+                )}
+
+                {error && (
                     <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
                         <span className="block sm:inline">{error}</span>
                     </div>
-                ) : (
-                    <pre className="bg-gray-800 text-white p-4 rounded-md overflow-auto max-h-96 text-sm font-mono">
-            {logs || 'No logs available'}
-          </pre>
                 )}
+
+                <div className="mb-2 flex justify-between items-center text-xs text-gray-500">
+                    {lastRefreshed && (
+                        <span>Last updated: {lastRefreshed.toLocaleTimeString()}</span>
+                    )}
+                    {autoRefresh && (
+                        <span>Auto-refreshing every {refreshInterval} seconds</span>
+                    )}
+                </div>
+
+                <pre className={`bg-gray-800 text-white p-4 rounded-md overflow-auto max-h-96 text-sm font-mono ${isLoading ? 'opacity-50' : ''}`}>
+                    {logs || 'No logs available'}
+                </pre>
             </div>
         </div>
     );
