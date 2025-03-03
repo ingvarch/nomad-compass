@@ -81,6 +81,8 @@ export interface NomadJobFormData {
     namespace: string;
     envVars: NomadEnvVar[];
     ports: NomadPort[];
+    enablePorts: boolean;
+    networkMode: 'none' | 'host' | 'bridge';
     healthChecks: NomadHealthCheck[];
     enableHealthCheck: boolean;
     count: number;

@@ -5,13 +5,27 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { createNomadClient } from '@/lib/api/nomad';
-import { NomadEnvVar, NomadJobFormData, NomadPort, NomadHealthCheck } from '@/types/nomad';
+import { NomadJobFormData, NomadPort, NomadHealthCheck } from '@/types/nomad';
 
 import BasicJobInfoForm from './forms/BasicJobInfoForm';
 import ResourcesForm from './forms/ResourcesForm';
 import EnvironmentVariablesForm from './forms/EnvironmentVariablesForm';
 import DockerAuthForm from './forms/DockerAuthForm';
 import AdvancedSettingsForm from './forms/AdvancedSettingsForm';
+
+interface NetworkConfig {
+    Mode: string;
+    DynamicPorts: Array<{Label: string, To: number}>;
+    ReservedPorts: Array<{Label: string, Value: number, To?: number}>;
+}
+
+interface TaskGroupConfig {
+    Name: string;
+    Count: number;
+    Tasks: Array<any>;
+    Networks?: Array<NetworkConfig>;
+    Services?: Array<any>;
+}
 
 export const JobCreateForm: React.FC = () => {
     const router = useRouter();
@@ -37,6 +51,8 @@ export const JobCreateForm: React.FC = () => {
         envVars: [{ key: '', value: '' }],
         // Advanced settings
         ports: [{ label: 'http', value: 8080, to: 8080, static: false }],
+        enablePorts: false,
+        networkMode: 'none',
         healthChecks: [{
             type: 'http',
             path: '/health',
@@ -119,6 +135,14 @@ export const JobCreateForm: React.FC = () => {
                 [name]: newValue
             });
         }
+    };
+
+    const handleSelectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        const { name, value } = e.target;
+        setFormData({
+            ...formData,
+            [name]: value
+        });
     };
 
     // Toggle checkbox
@@ -246,36 +270,42 @@ export const JobCreateForm: React.FC = () => {
             }
         });
 
-        // Prepare network configuration with ports
-        const network = {
-            Mode: 'host',
-            DynamicPorts: [] as Array<{Label: string, To: number}>,
-            ReservedPorts: [] as Array<{Label: string, Value: number, To?: number}>
-        };
+        // Prepare network configuration based on user selection
+        let network: NetworkConfig | undefined;
 
-        // Process ports configuration
-        formData.ports.forEach(port => {
-            if (port.label.trim() === '') return;
+        if (!formData.enablePorts) {
+            network = undefined;
+        } else {
+            network = {
+                Mode: formData.networkMode,
+                DynamicPorts: [] as Array<{Label: string, To: number}>,
+                ReservedPorts: [] as Array<{Label: string, Value: number, To?: number}>
+            };
 
-            if (port.static) {
-                network.ReservedPorts.push({
-                    Label: port.label,
-                    Value: port.value,
-                    ...(port.to && port.to !== port.value ? {To: port.to} : {})
-                });
-            } else {
-                network.DynamicPorts.push({
-                    Label: port.label,
-                    To: port.to || port.value
-                });
-            }
-        });
+            // Process ports configuration
+            formData.ports.forEach(port => {
+                if (port.label.trim() === '') return;
+
+                if (port.static) {
+                    network!.ReservedPorts.push({
+                        Label: port.label,
+                        Value: port.value,
+                        ...(port.to && port.to !== port.value ? {To: port.to} : {})
+                    });
+                } else {
+                    network!.DynamicPorts.push({
+                        Label: port.label,
+                        To: port.to || port.value
+                    });
+                }
+            });
+        }
 
         // Prepare services with health checks if enabled
         const services = formData.enableHealthCheck ? formData.healthChecks.map(check => {
             const healthCheck = {
                 Name: `${formData.name}-health`,
-                PortLabel: formData.ports.length > 0 ? formData.ports[0].label : 'http',
+                PortLabel: (formData.enablePorts && formData.ports.length > 0) ? formData.ports[0].label : 'http',
                 Checks: [{
                     Type: check.type,
                     ...(check.type === 'http' ? {Path: check.path} : {}),
@@ -295,8 +325,12 @@ export const JobCreateForm: React.FC = () => {
         // Base task configuration
         const taskConfig: any = {
             image: formData.image,
-            ports: formData.ports.map(p => p.label).filter(label => label.trim() !== ''),
         };
+
+        // Add ports to taskConfig only if enabled
+        if (formData.enablePorts && formData.networkMode !== 'none') {
+            taskConfig.ports = formData.ports.map(p => p.label).filter(label => label.trim() !== '');
+        }
 
         // DockerAuth for private registry
         if (formData.usePrivateRegistry && formData.dockerAuth) {
@@ -304,6 +338,32 @@ export const JobCreateForm: React.FC = () => {
                 username: formData.dockerAuth.username,
                 password: formData.dockerAuth.password
             };
+        }
+
+        const taskGroup: TaskGroupConfig = {
+            Name: formData.name,
+            Count: formData.count,
+            Tasks: [
+                {
+                    Name: formData.name,
+                    Driver: formData.plugin,
+                    Config: taskConfig,
+                    Env: env,
+                    Resources: {
+                        CPU: formData.resources.CPU,
+                        MemoryMB: formData.resources.MemoryMB,
+                        DiskMB: formData.resources.DiskMB
+                    }
+                }
+            ]
+        };
+
+        if (network) {
+            taskGroup.Networks = [network];
+        }
+
+        if (services.length > 0) {
+            taskGroup.Services = services;
         }
 
         // Basic job template for Nomad
@@ -314,27 +374,7 @@ export const JobCreateForm: React.FC = () => {
                 Namespace: formData.namespace,
                 Type: 'service',
                 Datacenters: formData.datacenters,
-                TaskGroups: [
-                    {
-                        Name: formData.name,
-                        Count: formData.count,
-                        Networks: [network],
-                        Services: services,
-                        Tasks: [
-                            {
-                                Name: formData.name,
-                                Driver: formData.plugin,
-                                Config: taskConfig,
-                                Env: env,
-                                Resources: {
-                                    CPU: formData.resources.CPU,
-                                    MemoryMB: formData.resources.MemoryMB,
-                                    DiskMB: formData.resources.DiskMB
-                                }
-                            }
-                        ]
-                    }
-                ]
+                TaskGroups: [taskGroup]
             }
         };
     };
@@ -483,9 +523,12 @@ export const JobCreateForm: React.FC = () => {
                             count={formData.count}
                             datacenters={formData.datacenters}
                             ports={formData.ports}
+                            enablePorts={formData.enablePorts}
+                            networkMode={formData.networkMode}
                             enableHealthCheck={formData.enableHealthCheck}
                             healthChecks={formData.healthChecks}
                             onInputChange={handleInputChange}
+                            onSelectChange={handleSelectChange}
                             onCheckboxChange={handleCheckboxChange}
                             onPortChange={handlePortChange}
                             onAddPort={addPort}

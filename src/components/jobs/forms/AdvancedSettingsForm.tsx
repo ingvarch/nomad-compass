@@ -8,9 +8,12 @@ interface AdvancedSettingsFormProps {
     count: number;
     datacenters: string[];
     ports: NomadPort[];
+    enablePorts: boolean;
+    networkMode: string;
     enableHealthCheck: boolean;
     healthChecks: NomadHealthCheck[];
     onInputChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
+    onSelectChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
     onCheckboxChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
     onPortChange: (index: number, field: keyof NomadPort, value: string) => void;
     onAddPort: () => void;
@@ -20,19 +23,22 @@ interface AdvancedSettingsFormProps {
 }
 
 export const AdvancedSettingsForm: React.FC<AdvancedSettingsFormProps> = ({
-  count,
-  datacenters,
-  ports,
-  enableHealthCheck,
-  healthChecks,
-  onInputChange,
-  onCheckboxChange,
-  onPortChange,
-  onAddPort,
-  onRemovePort,
-  onHealthCheckChange,
-  isLoading
-}) => {
+                                                                              count,
+                                                                              datacenters,
+                                                                              ports,
+                                                                              enablePorts,
+                                                                              networkMode,
+                                                                              enableHealthCheck,
+                                                                              healthChecks,
+                                                                              onInputChange,
+                                                                              onSelectChange,
+                                                                              onCheckboxChange,
+                                                                              onPortChange,
+                                                                              onAddPort,
+                                                                              onRemovePort,
+                                                                              onHealthCheckChange,
+                                                                              isLoading
+                                                                          }) => {
     return (
         <div className="mb-6 border p-4 rounded-md bg-gray-50">
             <h3 className="text-lg font-medium text-gray-900 mb-4">Advanced Settings</h3>
@@ -80,9 +86,13 @@ export const AdvancedSettingsForm: React.FC<AdvancedSettingsFormProps> = ({
             {/* Port Configuration */}
             <PortConfigurationForm
                 ports={ports}
+                enabled={enablePorts}
+                networkMode={networkMode}
                 onPortChange={onPortChange}
                 onAddPort={onAddPort}
                 onRemovePort={onRemovePort}
+                onToggle={onCheckboxChange}
+                onNetworkModeChange={onSelectChange}
                 isLoading={isLoading}
             />
 
