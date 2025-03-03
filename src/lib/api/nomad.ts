@@ -11,7 +11,7 @@ export class NomadClient {
   private token: string;
 
   constructor(nomadAddr: string, token: string) {
-    console.log('Initializing NomadClient with:', { nomadAddr, token }); // Лог инициализации
+    console.log('Initializing NomadClient with:', { nomadAddr, token }); // Log initialization
 
     // Check if we're in a browser environment and should use proxy
     if (typeof window !== 'undefined') {
@@ -130,13 +130,26 @@ export class NomadClient {
   }
 
   /**
-   * Create a new job
+   * Create a new job or update an existing job
+   *
+   * Nomad API uses the same endpoint for both create and update operations.
+   * If the job ID already exists, the job will be updated.
    */
   async createJob(jobSpec: any): Promise<any> {
     return this.request<any>('/v1/jobs', {
       method: 'POST',
       body: JSON.stringify(jobSpec),
     });
+  }
+
+  /**
+   * Update an existing job
+   *
+   * This is a wrapper around createJob but makes the semantic intention clearer.
+   * In Nomad's API, updating a job is just creating a job with an existing ID.
+   */
+  async updateJob(jobSpec: any): Promise<any> {
+    return this.createJob(jobSpec);
   }
 
   /**

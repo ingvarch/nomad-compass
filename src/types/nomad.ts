@@ -22,6 +22,42 @@ export interface NomadJob {
     };
     CreateTime: number;
     ModifyTime: number;
+    TaskGroups?: NomadTaskGroup[];
+    Datacenters?: string[];
+    Meta?: Record<string, string>;
+    Constraints?: any[];
+    Priority?: number;
+    Version?: number;
+}
+
+export interface NomadTaskGroup {
+    Name: string;
+    Count: number;
+    Tasks: NomadTask[];
+    Networks?: NomadNetwork[];
+    Services?: any[];
+    Meta?: Record<string, string>;
+    Constraints?: any[];
+}
+
+export interface NomadTask {
+    Name: string;
+    Driver: string;
+    Config: any;
+    Resources: NomadResource;
+    Env?: Record<string, string>;
+    Meta?: Record<string, string>;
+    Constraints?: any[];
+    Templates?: any[];
+    Leader?: boolean;
+    KillTimeout?: number;
+    ShutdownDelay?: number;
+}
+
+export interface NomadNetwork {
+    Mode: string;
+    DynamicPorts?: { Label: string, To?: number }[];
+    ReservedPorts?: { Label: string, Value: number, To?: number }[];
 }
 
 export interface NomadJobsResponse {

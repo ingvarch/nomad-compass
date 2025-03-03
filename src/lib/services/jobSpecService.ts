@@ -15,10 +15,24 @@ interface TaskGroupConfig {
     Services?: Array<any>;
 }
 
+interface JobSpec {
+    Job: {
+        ID: string;
+        Name: string;
+        Namespace: string;
+        Type: string;
+        Datacenters: string[];
+        TaskGroups: TaskGroupConfig[];
+        Meta?: Record<string, string>;
+        Constraints?: any[];
+        Priority?: number;
+    };
+}
+
 /**
  * Creates a Nomad job specification from form data
  */
-export function createJobSpec(formData: NomadJobFormData) {
+export function createJobSpec(formData: NomadJobFormData): JobSpec {
     // Convert environment variables to the format expected by Nomad
     const env: Record<string, string> = {};
     formData.envVars.forEach((envVar) => {
@@ -134,4 +148,99 @@ export function createJobSpec(formData: NomadJobFormData) {
             TaskGroups: [taskGroup]
         }
     };
+}
+
+/**
+ * Updates an existing Nomad job specification with form data
+ * This preserves important job metadata
+ */
+export function updateJobSpec(originalJob: any, formData: NomadJobFormData): JobSpec {
+    // Create a new job spec from the form data
+    const newJobSpec = createJobSpec(formData);
+
+    // Ensure we preserve the original Job ID, Name, and critical metadata
+    if (originalJob) {
+        // Copy important fields that shouldn't be changed
+        newJobSpec.Job.ID = originalJob.ID;
+        newJobSpec.Job.Name = originalJob.Name;
+
+        // Preserve job metadata if available
+        if (originalJob.Meta) {
+            newJobSpec.Job.Meta = originalJob.Meta;
+        }
+
+        // Preserve any job constraints
+        if (originalJob.Constraints) {
+            newJobSpec.Job.Constraints = originalJob.Constraints;
+        }
+
+        // Preserve job priorities
+        if (originalJob.Priority !== undefined) {
+            newJobSpec.Job.Priority = originalJob.Priority;
+        }
+
+        // Preserve task group metadata if necessary
+        if (originalJob.TaskGroups && originalJob.TaskGroups.length > 0 &&
+            newJobSpec.Job.TaskGroups && newJobSpec.Job.TaskGroups.length > 0) {
+
+            // For each task group in the new spec
+            newJobSpec.Job.TaskGroups.forEach((tg: any, index: number) => {
+                // Find matching original task group by name
+                const originalTG = originalJob.TaskGroups.find((otg: any) => otg.Name === tg.Name);
+
+                if (originalTG) {
+                    // Preserve task group metadata
+                    if (originalTG.Meta) {
+                        tg.Meta = originalTG.Meta;
+                    }
+
+                    // Preserve task group constraints
+                    if (originalTG.Constraints) {
+                        tg.Constraints = originalTG.Constraints;
+                    }
+
+                    // Preserve task metadata where possible
+                    if (originalTG.Tasks && originalTG.Tasks.length > 0 &&
+                        tg.Tasks && tg.Tasks.length > 0) {
+
+                        tg.Tasks.forEach((task: any, taskIndex: number) => {
+                            const originalTask = originalTG.Tasks.find((ot: any) => ot.Name === task.Name);
+
+                            if (originalTask) {
+                                // Preserve task metadata
+                                if (originalTask.Meta) {
+                                    task.Meta = originalTask.Meta;
+                                }
+
+                                // Preserve task constraints
+                                if (originalTask.Constraints) {
+                                    task.Constraints = originalTask.Constraints;
+                                }
+
+                                // Preserve templates if any
+                                if (originalTask.Templates) {
+                                    task.Templates = originalTask.Templates;
+                                }
+
+                                // Preserve other task configurations that might be important
+                                if (originalTask.Leader) {
+                                    task.Leader = originalTask.Leader;
+                                }
+
+                                if (originalTask.KillTimeout) {
+                                    task.KillTimeout = originalTask.KillTimeout;
+                                }
+
+                                if (originalTask.ShutdownDelay) {
+                                    task.ShutdownDelay = originalTask.ShutdownDelay;
+                                }
+                            }
+                        });
+                    }
+                }
+            });
+        }
+    }
+
+    return newJobSpec;
 }
