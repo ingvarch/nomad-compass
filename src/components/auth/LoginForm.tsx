@@ -82,24 +82,6 @@ export const LoginForm: React.FC = () => {
         )}
 
         <form onSubmit={handleSubmit}>
-          <div className="mb-4">
-            <label htmlFor="nomadAddr" className="block text-sm font-medium text-gray-700 mb-1">
-              Nomad Address
-            </label>
-            <input
-              id="nomadAddr"
-              type="text"
-              value={nomadAddr}
-              onChange={(e) => setNomadAddr(e.target.value)}
-              placeholder="http://nomad.example.com:4646"
-              className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              disabled={isLoading}
-            />
-            <p className="mt-1 text-xs text-gray-500">
-              Defaults to NOMAD_ADDR environment variable if available
-            </p>
-          </div>
-
           <div className="mb-6">
             <label htmlFor="token" className="block text-sm font-medium text-gray-700 mb-1">
               Nomad Token

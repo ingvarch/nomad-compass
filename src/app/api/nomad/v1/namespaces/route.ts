@@ -2,7 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 
 export async function GET(request: NextRequest) {
-    const nomadBaseUrl = process.env.NOMAD_ADDR || 'http://localhost:4646';
+    const nomadBaseUrl = process.env.NEXT_PUBLIC_NOMAD_ADDR || 'http://localhost:4646';
     const token = request.headers.get('X-Nomad-Token');
 
     try {
