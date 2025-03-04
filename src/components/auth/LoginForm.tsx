@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { createNomadClient } from '@/lib/api/nomad';
+import { NOMAD_BASE_URL } from '@/constants/env';
 
 export const LoginForm: React.FC = () => {
   const [token, setToken] = useState('');
@@ -15,9 +16,8 @@ export const LoginForm: React.FC = () => {
 
   // Try to get default Nomad address from environment variable
   useEffect(() => {
-    const envNomadAddr = process.env.NEXT_PUBLIC_NOMAD_ADDR;
-    if (envNomadAddr) {
-      setNomadAddr(envNomadAddr);
+    if (NOMAD_BASE_URL) {
+      setNomadAddr(NOMAD_BASE_URL);
     }
   }, []);
 

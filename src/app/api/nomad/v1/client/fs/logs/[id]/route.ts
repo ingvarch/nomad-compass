@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { NOMAD_BASE_URL } from '@/constants/env';
 
 export async function GET(
     request: NextRequest,
     context: any
 ) {
-    const nomadBaseUrl = process.env.NEXT_PUBLIC_NOMAD_ADDR || 'http://localhost:4646';
     const token = request.headers.get('X-Nomad-Token');
     const allocId = context.params.id;
 
@@ -22,7 +22,7 @@ export async function GET(
     }
 
     try {
-        const url = new URL(`${nomadBaseUrl}/v1/client/fs/logs/${allocId}`);
+        const url = new URL(`${NOMAD_BASE_URL}/v1/client/fs/logs/${allocId}`);
         url.searchParams.append('task', task);
         url.searchParams.append('type', type);
         if (plain) {

@@ -1,16 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { NOMAD_BASE_URL } from '@/constants/env';
 
 export async function GET(request: NextRequest) {
-    const nomadBaseUrl = process.env.NEXT_PUBLIC_NOMAD_ADDR || 'http://localhost:4646';
     const token = request.headers.get('X-Nomad-Token');
 
     console.log('Jobs request details:', {
-        nomadBaseUrl,
+        nomadBaseUrl: NOMAD_BASE_URL,
         tokenPresent: !!token
     });
 
     try {
-        const response = await fetch(`${nomadBaseUrl}/v1/jobs`, {
+        const response = await fetch(`${NOMAD_BASE_URL}/v1/jobs`, {
             headers: {
                 'X-Nomad-Token': token || '',
                 'Content-Type': 'application/json',
