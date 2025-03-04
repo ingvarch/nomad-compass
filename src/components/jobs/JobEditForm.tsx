@@ -33,6 +33,7 @@ export const JobEditForm: React.FC<JobEditFormProps> = ({ jobId, namespace = 'de
         addEnvVar,
         removeEnvVar,
         handlePortChange,
+        handlePortTaskChange,
         addPort,
         removePort,
         handleHealthCheckChange,
@@ -239,6 +240,23 @@ export const JobEditForm: React.FC<JobEditFormProps> = ({ jobId, namespace = 'de
 
                                     {formData.ports.map((port, index) => (
                                         <div key={index} className="flex flex-wrap space-x-2 mb-2 p-2 border rounded-md bg-white">
+                                            <div className="w-full md:w-auto mb-2 md:mb-0">
+                                                <label className="block text-xs font-medium text-gray-500 mb-1">Container</label>
+                                                <select
+                                                    value={port.taskName || ''}
+                                                    onChange={(e) => handlePortTaskChange(index, e.target.value)}
+                                                    className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                    disabled={isLoading}
+                                                >
+                                                    <option value="">All containers</option>
+                                                    {formData.tasks.map((task, taskIndex) => (
+                                                        <option key={taskIndex} value={task.name}>
+                                                            {task.name || `Container ${taskIndex + 1}`}
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                            </div>
+
                                             <div className="w-full md:w-auto mb-2 md:mb-0">
                                                 <label className="block text-xs font-medium text-gray-500 mb-1">Label</label>
                                                 <input

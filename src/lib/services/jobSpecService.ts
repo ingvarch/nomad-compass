@@ -3,8 +3,8 @@ import { NomadJobFormData, TaskFormData } from '@/types/nomad';
 
 interface NetworkConfig {
     Mode: string;
-    DynamicPorts: Array<{Label: string, To: number}>;
-    ReservedPorts: Array<{Label: string, Value: number, To?: number}>;
+    DynamicPorts: Array<{Label: string, To: number, TaskName?: string}>;
+    ReservedPorts: Array<{Label: string, Value: number, To?: number, TaskName?: string}>;
 }
 
 interface TaskGroupConfig {
@@ -72,7 +72,7 @@ function createTaskConfig(taskData: TaskFormData) {
 /**
  * Creates a Nomad job specification from form data
  */
-export function createJobSpec(formData: NomadJobFormData): JobSpec {
+function createJobSpec(formData: NomadJobFormData): JobSpec {
     // Prepare network configuration based on user selection
     let network: NetworkConfig | undefined;
 
@@ -81,25 +81,30 @@ export function createJobSpec(formData: NomadJobFormData): JobSpec {
     } else {
         network = {
             Mode: formData.networkMode,
-            DynamicPorts: [] as Array<{Label: string, To: number}>,
-            ReservedPorts: [] as Array<{Label: string, Value: number, To?: number}>
+            DynamicPorts: [] as Array<{Label: string, To: number, TaskName?: string}>,
+            ReservedPorts: [] as Array<{Label: string, Value: number, To?: number, TaskName?: string}>
         };
 
         // Process ports configuration
         formData.ports.forEach(port => {
             if (port.label.trim() === '') return;
 
+            // Создаём объект порта для Nomad
+            const portConfig: any = {
+                Label: port.label,
+                ...(port.to ? {To: port.to} : {})
+            };
+
+            // Если указано имя контейнера и оно существует в списке контейнеров
+            if (port.taskName && formData.tasks.some(task => task.name === port.taskName)) {
+                portConfig.TaskName = port.taskName;
+            }
+
             if (port.static) {
-                network!.ReservedPorts.push({
-                    Label: port.label,
-                    Value: port.value,
-                    ...(port.to && port.to !== port.value ? {To: port.to} : {})
-                });
+                portConfig.Value = port.value;
+                network!.ReservedPorts.push(portConfig);
             } else {
-                network!.DynamicPorts.push({
-                    Label: port.label,
-                    To: port.to || port.value
-                });
+                network!.DynamicPorts.push(portConfig);
             }
         });
     }
@@ -166,7 +171,7 @@ export function createJobSpec(formData: NomadJobFormData): JobSpec {
  * Updates an existing Nomad job specification with form data
  * This preserves important job metadata
  */
-export function updateJobSpec(originalJob: any, formData: NomadJobFormData): JobSpec {
+function updateJobSpec(originalJob: any, formData: NomadJobFormData): JobSpec {
     // Create a new job spec from the form data
     const newJobSpec = createJobSpec(formData);
 
@@ -211,3 +216,5 @@ export function updateJobSpec(originalJob: any, formData: NomadJobFormData): Job
 
     return newJobSpec;
 }
+
+export { createJobSpec, updateJobSpec };

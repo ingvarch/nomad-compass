@@ -537,6 +537,21 @@ export function useJobEditForm(jobId: string, namespace: string = 'default') {
         }
     };
 
+    const handlePortTaskChange = (portIndex: number, taskName: string) => {
+        if (!formData) return;
+
+        const updatedPorts = [...formData.ports];
+        updatedPorts[portIndex] = {
+            ...updatedPorts[portIndex],
+            taskName: taskName || undefined
+        };
+
+        setFormData({
+            ...formData,
+            ports: updatedPorts
+        });
+    };
+
     return {
         formData,
         initialJob,
@@ -555,6 +570,7 @@ export function useJobEditForm(jobId: string, namespace: string = 'default') {
         addEnvVar,
         removeEnvVar,
         handlePortChange,
+        handlePortTaskChange,
         addPort,
         removePort,
         handleHealthCheckChange,

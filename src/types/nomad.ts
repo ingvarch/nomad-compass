@@ -85,6 +85,7 @@ export interface NomadPort {
     value: number;
     to?: number;
     static?: boolean;
+    taskName?: string;
 }
 
 export interface NomadHealthCheck {

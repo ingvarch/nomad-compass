@@ -30,6 +30,7 @@ export const JobCreateForm: React.FC = () => {
         addEnvVar,
         removeEnvVar,
         handlePortChange,
+        handlePortTaskChange,
         addPort,
         removePort,
         handleHealthCheckChange,
@@ -138,6 +139,14 @@ export const JobCreateForm: React.FC = () => {
 
                         {formData.enablePorts && (
                             <div className="border p-4 rounded-md bg-white">
+                                {/* Пояснение о сетевой конфигурации */}
+                                <div className="mb-4 p-3 bg-blue-50 border-l-4 border-blue-400 text-blue-700 rounded">
+                                    <h5 className="font-medium">Group Network Configuration</h5>
+                                    <p className="text-sm mt-1">
+                                        Network settings are applied to the entire task group. All containers in this group will share the same network mode.
+                                    </p>
+                                </div>
+
                                 {/* Network Mode Selection */}
                                 <div className="mb-4">
                                     <label htmlFor="networkMode" className="block text-sm font-medium text-gray-700 mb-1">
@@ -173,6 +182,23 @@ export const JobCreateForm: React.FC = () => {
 
                                     {formData.ports.map((port, index) => (
                                         <div key={index} className="flex flex-wrap space-x-2 mb-2 p-2 border rounded-md bg-white">
+                                            <div className="w-full md:w-auto mb-2 md:mb-0">
+                                                <label className="block text-xs font-medium text-gray-500 mb-1">Container</label>
+                                                <select
+                                                    value={port.taskName || ''}
+                                                    onChange={(e) => handlePortTaskChange(index, e.target.value)}
+                                                    className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                    disabled={isLoading}
+                                                >
+                                                    <option value="">All containers</option>
+                                                    {formData.tasks.map((task, taskIndex) => (
+                                                        <option key={taskIndex} value={task.name}>
+                                                            {task.name || `Container ${taskIndex + 1}`}
+                                                        </option>
+                                                    ))}
+                                                </select>
+                                            </div>
+
                                             <div className="w-full md:w-auto mb-2 md:mb-0">
                                                 <label className="block text-xs font-medium text-gray-500 mb-1">Label</label>
                                                 <input

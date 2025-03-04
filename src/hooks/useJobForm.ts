@@ -410,6 +410,21 @@ export function useJobForm() {
         }
     };
 
+    const handlePortTaskChange = (portIndex: number, taskName: string) => {
+        if (!formData) return;
+
+        const updatedPorts = [...formData.ports];
+        updatedPorts[portIndex] = {
+            ...updatedPorts[portIndex],
+            taskName: taskName || undefined
+        };
+
+        setFormData({
+            ...formData,
+            ports: updatedPorts
+        });
+    };
+
     return {
         formData,
         isLoading,
@@ -427,6 +442,7 @@ export function useJobForm() {
         addEnvVar,
         removeEnvVar,
         handlePortChange,
+        handlePortTaskChange,
         addPort,
         removePort,
         handleHealthCheckChange,
