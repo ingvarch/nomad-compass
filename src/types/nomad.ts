@@ -109,13 +109,22 @@ export interface DockerAuth {
     password: string;
 }
 
-export interface NomadJobFormData {
+// New interface for task-specific form data
+export interface TaskFormData {
     name: string;
-    resources: NomadResource;
     image: string;
     plugin: string;
-    namespace: string;
+    resources: NomadResource;
     envVars: NomadEnvVar[];
+    usePrivateRegistry: boolean;
+    dockerAuth?: DockerAuth;
+}
+
+export interface NomadJobFormData {
+    name: string;
+    namespace: string;
+    // Tasks array to hold multiple containers
+    tasks: TaskFormData[];
     ports: NomadPort[];
     enablePorts: boolean;
     networkMode: 'none' | 'host' | 'bridge';
@@ -123,8 +132,6 @@ export interface NomadJobFormData {
     enableHealthCheck: boolean;
     count: number;
     datacenters: string[];
-    usePrivateRegistry: boolean;
-    dockerAuth?: DockerAuth;
 }
 
 export interface NomadNamespace {

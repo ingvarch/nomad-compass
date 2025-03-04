@@ -3,21 +3,32 @@ import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { createNomadClient } from '@/lib/api/nomad';
-import { NomadJobFormData, NomadPort, NomadHealthCheck, NomadEnvVar } from '@/types/nomad';
+import { NomadJobFormData, NomadPort, NomadHealthCheck, NomadEnvVar, TaskFormData } from '@/types/nomad';
 import { createJobSpec } from '@/lib/services/jobSpecService';
 import { validateJobName } from '@/lib/services/validationService';
 
-export const defaultFormValues: NomadJobFormData = {
+// Default task configuration
+export const defaultTaskData: TaskFormData = {
     name: '',
     image: '',
     plugin: 'podman',
-    namespace: 'default',
     resources: {
         CPU: 100,
         MemoryMB: 256,
         DiskMB: 500,
     },
     envVars: [{ key: '', value: '' }],
+    usePrivateRegistry: false,
+    dockerAuth: {
+        username: '',
+        password: ''
+    }
+};
+
+export const defaultFormValues: NomadJobFormData = {
+    name: '',
+    namespace: 'default',
+    tasks: [{ ...defaultTaskData }], // Start with one task
     ports: [{ label: 'http', value: 8080, to: 8080, static: false }],
     enablePorts: false,
     networkMode: 'none',
@@ -33,11 +44,6 @@ export const defaultFormValues: NomadJobFormData = {
     enableHealthCheck: false,
     count: 1,
     datacenters: ['dc1'],
-    usePrivateRegistry: false,
-    dockerAuth: {
-        username: '',
-        password: ''
-    }
 };
 
 export function useJobForm() {
@@ -88,29 +94,11 @@ export function useJobForm() {
             setIsNameValid(validateJobName(value));
         }
 
-        if (name.startsWith('resources.')) {
-            const resourceField = name.split('.')[1];
-            setFormData({
-                ...formData,
-                resources: {
-                    ...formData.resources,
-                    [resourceField]: parseInt(value, 10)
-                }
-            });
-        } else if (name === 'datacenters') {
+        if (name === 'datacenters') {
             // Split comma-separated datacenters into an array
             setFormData({
                 ...formData,
                 datacenters: value.split(',').map(dc => dc.trim())
-            });
-        } else if (name.startsWith('dockerAuth.')) {
-            const field = name.split('.')[1];
-            setFormData({
-                ...formData,
-                dockerAuth: {
-                    ...formData.dockerAuth!,
-                    [field]: value
-                }
             });
         } else {
             setFormData({
@@ -118,6 +106,50 @@ export function useJobForm() {
                 [name]: newValue
             });
         }
+    };
+
+    // Handle task-specific input changes
+    const handleTaskInputChange = (taskIndex: number, e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+        const { name, value, type } = e.target;
+        const newValue = type === 'number' ? Number(value) : value;
+
+        const updatedTasks = [...formData.tasks];
+
+        // Parse the task property path (e.g., "resources.CPU")
+        const parts = name.split('.');
+
+        if (parts.length === 1) {
+            // Simple property
+            updatedTasks[taskIndex] = {
+                ...updatedTasks[taskIndex],
+                [name]: newValue
+            };
+        } else if (parts.length === 2 && parts[0] === 'resources') {
+            // Resource property (CPU, MemoryMB, DiskMB)
+            const resourceField = parts[1];
+            updatedTasks[taskIndex] = {
+                ...updatedTasks[taskIndex],
+                resources: {
+                    ...updatedTasks[taskIndex].resources,
+                    [resourceField]: parseInt(value, 10)
+                }
+            };
+        } else if (parts.length === 2 && parts[0] === 'dockerAuth') {
+            // Docker auth property
+            const authField = parts[1];
+            updatedTasks[taskIndex] = {
+                ...updatedTasks[taskIndex],
+                dockerAuth: {
+                    ...updatedTasks[taskIndex].dockerAuth!,
+                    [authField]: value
+                }
+            };
+        }
+
+        setFormData({
+            ...formData,
+            tasks: updatedTasks
+        });
     };
 
     const handleSelectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -137,47 +169,105 @@ export function useJobForm() {
         });
     };
 
-    // Handle environment variable changes
-    const handleEnvVarChange = (index: number, field: 'key' | 'value', value: string) => {
-        const updatedEnvVars = [...formData.envVars];
-        updatedEnvVars[index] = {
-            ...updatedEnvVars[index],
-            [field]: value
+    // Toggle task-specific checkbox
+    const handleTaskCheckboxChange = (taskIndex: number, e: React.ChangeEvent<HTMLInputElement>) => {
+        const { name, checked } = e.target;
+
+        const updatedTasks = [...formData.tasks];
+        updatedTasks[taskIndex] = {
+            ...updatedTasks[taskIndex],
+            [name]: checked
         };
 
         setFormData({
             ...formData,
-            envVars: updatedEnvVars
+            tasks: updatedTasks
         });
     };
 
-    // Add a new environment variable field
-    const addEnvVar = () => {
+    // Add a new task to the form
+    const addTask = () => {
+        const newTask: TaskFormData = {
+            ...defaultTaskData,
+            name: `${formData.name ? formData.name + '-' : ''}task-${formData.tasks.length + 1}`
+        };
+
         setFormData({
             ...formData,
-            envVars: [...formData.envVars, { key: '', value: '' }]
+            tasks: [...formData.tasks, newTask]
         });
     };
 
-    // Remove an environment variable field
-    const removeEnvVar = (index: number) => {
-        if (formData.envVars.length <= 1) {
-            const updatedEnvVars = [...formData.envVars];
-            updatedEnvVars[0] = { key: '', value: '' };
-
-            setFormData({
-                ...formData,
-                envVars: updatedEnvVars
-            });
+    // Remove a task from the form
+    const removeTask = (taskIndex: number) => {
+        if (formData.tasks.length <= 1) {
+            // Don't remove the last task
             return;
         }
 
-        const updatedEnvVars = [...formData.envVars];
-        updatedEnvVars.splice(index, 1);
+        const updatedTasks = [...formData.tasks];
+        updatedTasks.splice(taskIndex, 1);
 
         setFormData({
             ...formData,
+            tasks: updatedTasks
+        });
+    };
+
+    // Handle environment variable changes for a specific task
+    const handleEnvVarChange = (taskIndex: number, varIndex: number, field: 'key' | 'value', value: string) => {
+        const updatedTasks = [...formData.tasks];
+        const updatedEnvVars = [...updatedTasks[taskIndex].envVars];
+
+        updatedEnvVars[varIndex] = {
+            ...updatedEnvVars[varIndex],
+            [field]: value
+        };
+
+        updatedTasks[taskIndex] = {
+            ...updatedTasks[taskIndex],
             envVars: updatedEnvVars
+        };
+
+        setFormData({
+            ...formData,
+            tasks: updatedTasks
+        });
+    };
+
+    // Add a new environment variable field to a specific task
+    const addEnvVar = (taskIndex: number) => {
+        const updatedTasks = [...formData.tasks];
+        updatedTasks[taskIndex] = {
+            ...updatedTasks[taskIndex],
+            envVars: [...updatedTasks[taskIndex].envVars, { key: '', value: '' }]
+        };
+
+        setFormData({
+            ...formData,
+            tasks: updatedTasks
+        });
+    };
+
+    // Remove an environment variable field from a specific task
+    const removeEnvVar = (taskIndex: number, varIndex: number) => {
+        const updatedTasks = [...formData.tasks];
+        const updatedEnvVars = [...updatedTasks[taskIndex].envVars];
+
+        if (updatedEnvVars.length <= 1) {
+            updatedEnvVars[0] = { key: '', value: '' };
+        } else {
+            updatedEnvVars.splice(varIndex, 1);
+        }
+
+        updatedTasks[taskIndex] = {
+            ...updatedTasks[taskIndex],
+            envVars: updatedEnvVars
+        };
+
+        setFormData({
+            ...formData,
+            tasks: updatedTasks
         });
     };
 
@@ -274,16 +364,25 @@ export function useJobForm() {
                 throw new Error('Job name must start with a letter or number and contain only letters, numbers, hyphens, underscores, and dots');
             }
 
-            if (!formData.image.trim()) {
-                throw new Error('Docker image is required');
-            }
+            // Validate tasks
+            for (let i = 0; i < formData.tasks.length; i++) {
+                const task = formData.tasks[i];
 
-            if (formData.usePrivateRegistry) {
-                if (!formData.dockerAuth?.username) {
-                    throw new Error('Username is required for private registry');
+                if (!task.name.trim()) {
+                    throw new Error(`Task ${i + 1} name is required`);
                 }
-                if (!formData.dockerAuth?.password) {
-                    throw new Error('Password is required for private registry');
+
+                if (!task.image.trim()) {
+                    throw new Error(`Task ${i + 1} image is required`);
+                }
+
+                if (task.usePrivateRegistry) {
+                    if (!task.dockerAuth?.username) {
+                        throw new Error(`Username is required for private registry in task ${i + 1}`);
+                    }
+                    if (!task.dockerAuth?.password) {
+                        throw new Error(`Password is required for private registry in task ${i + 1}`);
+                    }
                 }
             }
 
@@ -320,8 +419,10 @@ export function useJobForm() {
         success,
         namespaces,
         handleInputChange,
+        handleTaskInputChange,
         handleSelectChange,
         handleCheckboxChange,
+        handleTaskCheckboxChange,
         handleEnvVarChange,
         addEnvVar,
         removeEnvVar,
@@ -329,6 +430,8 @@ export function useJobForm() {
         addPort,
         removePort,
         handleHealthCheckChange,
+        addTask,
+        removeTask,
         handleSubmit
     };
 }

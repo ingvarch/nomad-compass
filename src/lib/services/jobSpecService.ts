@@ -1,5 +1,5 @@
 // src/lib/services/jobSpecService.ts
-import { NomadJobFormData } from '@/types/nomad';
+import { NomadJobFormData, TaskFormData } from '@/types/nomad';
 
 interface NetworkConfig {
     Mode: string;
@@ -13,6 +13,8 @@ interface TaskGroupConfig {
     Tasks: Array<any>;
     Networks?: Array<NetworkConfig>;
     Services?: Array<any>;
+    Meta?: Record<string, string>;
+    Constraints?: any[];
 }
 
 interface JobSpec {
@@ -30,17 +32,47 @@ interface JobSpec {
 }
 
 /**
- * Creates a Nomad job specification from form data
+ * Creates a task configuration object for a Nomad job
  */
-export function createJobSpec(formData: NomadJobFormData): JobSpec {
+function createTaskConfig(taskData: TaskFormData) {
     // Convert environment variables to the format expected by Nomad
     const env: Record<string, string> = {};
-    formData.envVars.forEach((envVar) => {
+    taskData.envVars.forEach((envVar) => {
         if (envVar.key.trim() !== '') {
             env[envVar.key] = envVar.value;
         }
     });
 
+    // Base task configuration
+    const taskConfig: any = {
+        image: taskData.image,
+    };
+
+    // DockerAuth for private registry
+    if (taskData.usePrivateRegistry && taskData.dockerAuth) {
+        taskConfig.auth = {
+            username: taskData.dockerAuth.username,
+            password: taskData.dockerAuth.password
+        };
+    }
+
+    return {
+        Name: taskData.name,
+        Driver: taskData.plugin,
+        Config: taskConfig,
+        Env: env,
+        Resources: {
+            CPU: taskData.resources.CPU,
+            MemoryMB: taskData.resources.MemoryMB,
+            DiskMB: taskData.resources.DiskMB
+        }
+    };
+}
+
+/**
+ * Creates a Nomad job specification from form data
+ */
+export function createJobSpec(formData: NomadJobFormData): JobSpec {
     // Prepare network configuration based on user selection
     let network: NetworkConfig | undefined;
 
@@ -93,40 +125,20 @@ export function createJobSpec(formData: NomadJobFormData): JobSpec {
         return healthCheck;
     }) : [];
 
-    // Base task configuration
-    const taskConfig: any = {
-        image: formData.image,
-    };
+    // Create task configurations for each task
+    const tasks = formData.tasks.map(taskData => {
+        // Ensure task name is set
+        if (!taskData.name.trim()) {
+            taskData.name = `${formData.name}-task-${formData.tasks.indexOf(taskData) + 1}`;
+        }
 
-    // Add ports to taskConfig only if enabled
-    if (formData.enablePorts && formData.networkMode !== 'none') {
-        taskConfig.ports = formData.ports.map(p => p.label).filter(label => label.trim() !== '');
-    }
-
-    // DockerAuth for private registry
-    if (formData.usePrivateRegistry && formData.dockerAuth) {
-        taskConfig.auth = {
-            username: formData.dockerAuth.username,
-            password: formData.dockerAuth.password
-        };
-    }
+        return createTaskConfig(taskData);
+    });
 
     const taskGroup: TaskGroupConfig = {
         Name: formData.name,
         Count: formData.count,
-        Tasks: [
-            {
-                Name: formData.name,
-                Driver: formData.plugin,
-                Config: taskConfig,
-                Env: env,
-                Resources: {
-                    CPU: formData.resources.CPU,
-                    MemoryMB: formData.resources.MemoryMB,
-                    DiskMB: formData.resources.DiskMB
-                }
-            }
-        ]
+        Tasks: tasks
     };
 
     if (network) {
@@ -183,62 +195,17 @@ export function updateJobSpec(originalJob: any, formData: NomadJobFormData): Job
         if (originalJob.TaskGroups && originalJob.TaskGroups.length > 0 &&
             newJobSpec.Job.TaskGroups && newJobSpec.Job.TaskGroups.length > 0) {
 
-            // For each task group in the new spec
-            newJobSpec.Job.TaskGroups.forEach((tg: any, index: number) => {
-                // Find matching original task group by name
-                const originalTG = originalJob.TaskGroups.find((otg: any) => otg.Name === tg.Name);
+            // Preserve original task group properties
+            const originalTG = originalJob.TaskGroups[0];
+            const newTG = newJobSpec.Job.TaskGroups[0];
 
-                if (originalTG) {
-                    // Preserve task group metadata
-                    if (originalTG.Meta) {
-                        tg.Meta = originalTG.Meta;
-                    }
+            if (originalTG.Meta) {
+                newTG.Meta = originalTG.Meta;
+            }
 
-                    // Preserve task group constraints
-                    if (originalTG.Constraints) {
-                        tg.Constraints = originalTG.Constraints;
-                    }
-
-                    // Preserve task metadata where possible
-                    if (originalTG.Tasks && originalTG.Tasks.length > 0 &&
-                        tg.Tasks && tg.Tasks.length > 0) {
-
-                        tg.Tasks.forEach((task: any, taskIndex: number) => {
-                            const originalTask = originalTG.Tasks.find((ot: any) => ot.Name === task.Name);
-
-                            if (originalTask) {
-                                // Preserve task metadata
-                                if (originalTask.Meta) {
-                                    task.Meta = originalTask.Meta;
-                                }
-
-                                // Preserve task constraints
-                                if (originalTask.Constraints) {
-                                    task.Constraints = originalTask.Constraints;
-                                }
-
-                                // Preserve templates if any
-                                if (originalTask.Templates) {
-                                    task.Templates = originalTask.Templates;
-                                }
-
-                                // Preserve other task configurations that might be important
-                                if (originalTask.Leader) {
-                                    task.Leader = originalTask.Leader;
-                                }
-
-                                if (originalTask.KillTimeout) {
-                                    task.KillTimeout = originalTask.KillTimeout;
-                                }
-
-                                if (originalTask.ShutdownDelay) {
-                                    task.ShutdownDelay = originalTask.ShutdownDelay;
-                                }
-                            }
-                        });
-                    }
-                }
-            });
+            if (originalTG.Constraints) {
+                newTG.Constraints = originalTG.Constraints;
+            }
         }
     }
 

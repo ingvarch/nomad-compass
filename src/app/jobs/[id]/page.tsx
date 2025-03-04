@@ -1,3 +1,4 @@
+// src/app/jobs/[id]/page.tsx
 'use client';
 
 import React, { useState, useEffect, useCallback } from 'react';
@@ -20,6 +21,8 @@ export default function JobDetailPage() {
     const [job, setJob] = useState<any>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [selectedTaskIndex, setSelectedTaskIndex] = useState<number>(0);
+    const [expandedTasks, setExpandedTasks] = useState<Record<string, boolean>>({});
 
     const jobId = params.id as string;
     const namespace = searchParams.get('namespace') || 'default';
@@ -36,6 +39,16 @@ export default function JobDetailPage() {
             const client = createNomadClient(nomadAddr, token);
             const jobDetail = await client.getJob(jobId, namespace);
             setJob(jobDetail);
+
+            // Initialize expanded state for all tasks
+            if (jobDetail.TaskGroups && jobDetail.TaskGroups.length > 0 && jobDetail.TaskGroups[0].Tasks) {
+                const initialExpandedState: Record<string, boolean> = {};
+                jobDetail.TaskGroups[0].Tasks.forEach((task: any, index: number) => {
+                    initialExpandedState[task.Name] = index === 0; // Only first task expanded by default
+                });
+                setExpandedTasks(initialExpandedState);
+            }
+
             setError(null);
         } catch (err) {
             console.error('Failed to fetch job details:', err);
@@ -50,6 +63,14 @@ export default function JobDetailPage() {
     useEffect(() => {
         fetchJobDetail();
     }, [fetchJobDetail]);
+
+    // Toggle task details visibility
+    const toggleTaskDetails = (taskName: string) => {
+        setExpandedTasks({
+            ...expandedTasks,
+            [taskName]: !expandedTasks[taskName]
+        });
+    };
 
     // Format timestamp to readable date
     const formatDate = (timestamp: number): string => {
@@ -271,6 +292,151 @@ export default function JobDetailPage() {
         );
     }
 
+    const getTasksList = () => {
+        if (!job.TaskGroups || !job.TaskGroups.length || !job.TaskGroups[0].Tasks) {
+            return <div className="text-gray-500">No tasks found in this job.</div>;
+        }
+
+        const tasks = job.TaskGroups[0].Tasks;
+        return (
+            <div className="space-y-4">
+                <h4 className="text-lg font-medium text-gray-800">Containers ({tasks.length})</h4>
+
+                {tasks.map((task: any, taskIndex: number) => (
+                    <div key={taskIndex} className="border rounded-lg overflow-hidden bg-white">
+                        {/* Task header (always visible) */}
+                        <div
+                            className="p-4 flex justify-between items-center cursor-pointer bg-gray-50"
+                            onClick={() => toggleTaskDetails(task.Name)}
+                        >
+                            <div className="flex items-center">
+                                <svg
+                                    className={`h-5 w-5 text-gray-500 transition-transform ${expandedTasks[task.Name] ? 'transform rotate-90' : ''}`}
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    viewBox="0 0 20 20"
+                                    fill="currentColor"
+                                >
+                                    <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                                </svg>
+                                <h5 className="text-md font-medium text-gray-900 ml-2">
+                                    {task.Name}
+                                    {taskIndex === 0 && (
+                                        <span className="ml-2 px-2 py-0.5 text-xs rounded-full bg-blue-100 text-blue-800">Primary</span>
+                                    )}
+                                </h5>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                                <span className="text-sm text-gray-500">{task.Driver}</span>
+                                <button
+                                    className={`px-3 py-1 text-xs font-medium rounded-full ${
+                                        selectedTaskIndex === taskIndex ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                                    }`}
+                                    onClick={(e) => {
+                                        e.stopPropagation();
+                                        setSelectedTaskIndex(taskIndex);
+                                    }}
+                                >
+                                    View Logs
+                                </button>
+                            </div>
+                        </div>
+
+                        {/* Task details (collapsible) */}
+                        {expandedTasks[task.Name] && (
+                            <div className="p-4 border-t">
+                                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                                    {/* Basic Info */}
+                                    <div className="bg-gray-50 p-4 rounded-md">
+                                        <h6 className="text-sm font-medium text-gray-700 mb-2">Task Details</h6>
+                                        <dl className="divide-y divide-gray-200">
+                                            <div className="py-2 grid grid-cols-2">
+                                                <dt className="text-sm font-medium text-gray-500">Name</dt>
+                                                <dd className="text-sm text-gray-900">{task.Name}</dd>
+                                            </div>
+                                            <div className="py-2 grid grid-cols-2">
+                                                <dt className="text-sm font-medium text-gray-500">Driver</dt>
+                                                <dd className="text-sm text-gray-900">{task.Driver}</dd>
+                                            </div>
+                                            <div className="py-2 grid grid-cols-2">
+                                                <dt className="text-sm font-medium text-gray-500">Image</dt>
+                                                <dd className="text-sm text-gray-900 break-words">{task.Config?.image || '-'}</dd>
+                                            </div>
+                                            {task.Leader && (
+                                                <div className="py-2 grid grid-cols-2">
+                                                    <dt className="text-sm font-medium text-gray-500">Leader</dt>
+                                                    <dd className="text-sm text-gray-900">Yes</dd>
+                                                </div>
+                                            )}
+                                        </dl>
+                                    </div>
+
+                                    {/* Resources */}
+                                    <div className="bg-gray-50 p-4 rounded-md">
+                                        <h6 className="text-sm font-medium text-gray-700 mb-2">Resources</h6>
+                                        <dl className="divide-y divide-gray-200">
+                                            <div className="py-2 grid grid-cols-2">
+                                                <dt className="text-sm font-medium text-gray-500">CPU</dt>
+                                                <dd className="text-sm text-gray-900">{task.Resources?.CPU || 0} MHz</dd>
+                                            </div>
+                                            <div className="py-2 grid grid-cols-2">
+                                                <dt className="text-sm font-medium text-gray-500">Memory</dt>
+                                                <dd className="text-sm text-gray-900">{task.Resources?.MemoryMB || 0} MB</dd>
+                                            </div>
+                                            <div className="py-2 grid grid-cols-2">
+                                                <dt className="text-sm font-medium text-gray-500">Disk</dt>
+                                                <dd className="text-sm text-gray-900">{task.Resources?.DiskMB || 0} MB</dd>
+                                            </div>
+                                        </dl>
+                                    </div>
+
+                                    {/* Environment Variables */}
+                                    <div className="bg-gray-50 p-4 rounded-md">
+                                        <h6 className="text-sm font-medium text-gray-700 mb-2">Environment Variables</h6>
+                                        {task.Env && Object.keys(task.Env).length > 0 ? (
+                                            <EnvironmentVariableDisplay envVars={task.Env} />
+                                        ) : (
+                                            <p className="text-sm text-gray-500">No environment variables defined</p>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Additional Config */}
+                                {task.Config && Object.keys(task.Config).filter(key => key !== 'image' && key !== 'auth').length > 0 && (
+                                    <div className="mt-4 bg-gray-50 p-4 rounded-md">
+                                        <h6 className="text-sm font-medium text-gray-700 mb-2">Additional Configuration</h6>
+                                        <pre className="text-xs bg-gray-100 p-3 rounded overflow-auto max-h-40">
+                                            {JSON.stringify(
+                                                Object.entries(task.Config)
+                                                    .filter(([key]) => key !== 'image' && key !== 'auth')
+                                                    .reduce((obj, [key, value]) => ({ ...obj, [key]: value }), {}),
+                                                null, 2
+                                            )}
+                                        </pre>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                    </div>
+                ))}
+
+                {/* Inter-container communication info */}
+                {job.TaskGroups[0].Tasks.length > 1 && (
+                    <div className="p-4 bg-blue-50 border-l-4 border-blue-400 text-blue-700 rounded mt-4">
+                        <h5 className="font-medium">Container Communication</h5>
+                        <p className="text-sm mt-1">
+                            Containers within this Task Group can communicate with each other via:
+                        </p>
+                        <ul className="text-sm mt-2 list-disc list-inside">
+                            <li>For direct communication: <code className="bg-blue-100 px-1 py-0.5 rounded">localhost:<em>port</em></code></li>
+                            <li>Through service discovery: <code className="bg-blue-100 px-1 py-0.5 rounded">[task-name].service.[namespace].consul</code></li>
+                            <li>Example: <code className="bg-blue-100 px-1 py-0.5 rounded">{job.TaskGroups[0].Tasks[1]?.Name || 'db'}.service.{job.Namespace}.consul</code></li>
+                        </ul>
+                    </div>
+                )}
+            </div>
+        );
+    };
+
     return (
         <ProtectedLayout>
             <div className="space-y-6">
@@ -376,104 +542,37 @@ export default function JobDetailPage() {
                 {job.TaskGroups && job.TaskGroups.length > 0 && (
                     <div className="bg-white shadow rounded-lg overflow-hidden">
                         <div className="px-6 py-5 border-b border-gray-200">
-                            <h3 className="text-lg font-medium text-gray-900">Task Groups</h3>
+                            <h3 className="text-lg font-medium text-gray-900">Task Group: {job.TaskGroups[0].Name}</h3>
                         </div>
                         <div className="p-6">
-                            {job.TaskGroups.map((group: any, groupIndex: number) => (
-                                <div key={groupIndex} className="mb-6 last:mb-0">
-                                    <div className="flex justify-between items-center">
-                                        <h4 className="text-md font-medium text-gray-800 mb-2">
-                                            {group.Name}
-                                        </h4>
-                                        <span className="px-2 py-1 text-xs font-semibold rounded-full bg-indigo-100 text-indigo-800">
-                                            Count: {group.Count}
-                                        </span>
-                                    </div>
-
-                                    {/* Network Configuration */}
-                                    {getNetworkConfig(group)}
-
-                                    {/* Health Checks */}
-                                    {getHealthChecks(group)}
-
-                                    {/* Tasks */}
-                                    {group.Tasks && group.Tasks.length > 0 && (
-                                        <div className="mt-4">
-                                            <h5 className="text-sm font-medium text-gray-700 mb-2">Tasks</h5>
-                                            <div className="overflow-x-auto">
-                                                <table className="min-w-full divide-y divide-gray-200">
-                                                    <thead className="bg-gray-50">
-                                                    <tr>
-                                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                            Name
-                                                        </th>
-                                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                            Driver
-                                                        </th>
-                                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                            Image
-                                                        </th>
-                                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                            Resources
-                                                        </th>
-                                                    </tr>
-                                                    </thead>
-                                                    <tbody className="bg-white divide-y divide-gray-200">
-                                                    {group.Tasks.map((task: any, taskIndex: number) => (
-                                                        <tr key={taskIndex}>
-                                                            <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                                                {task.Name}
-                                                            </td>
-                                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                                {task.Driver}
-                                                            </td>
-                                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                                {task.Config && task.Config.image}
-                                                            </td>
-                                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                                {task.Resources && (
-                                                                    <div>
-                                                                        <span className="mr-2">CPU: {task.Resources.CPU} MHz</span>
-                                                                        <span className="mr-2">Memory: {task.Resources.MemoryMB} MB</span>
-                                                                        {task.Resources.DiskMB && <span>Disk: {task.Resources.DiskMB} MB</span>}
-                                                                    </div>
-                                                                )}
-                                                            </td>
-                                                        </tr>
-                                                    ))}
-                                                    </tbody>
-                                                </table>
-                                            </div>
-                                        </div>
-                                    )}
-
-                                    {/* Environment Variables */}
-                                    {group.Tasks && group.Tasks.some((task: any) => task.Env && Object.keys(task.Env).length > 0) && (
-                                        <div className="mt-4">
-                                            <h5 className="text-sm font-medium text-gray-700 mb-2">Environment Variables</h5>
-                                            <div className="bg-white shadow rounded-lg overflow-hidden">
-                                                <div className="p-6">
-                                                    {group.Tasks.map((task: any, taskIndex: number) => (
-                                                        task.Env && Object.keys(task.Env).length > 0 && (
-                                                            <div key={taskIndex} className="mb-4 last:mb-0">
-                                                                <div className="text-sm font-medium text-gray-700 mb-2">{task.Name}</div>
-                                                                <EnvironmentVariableDisplay envVars={task.Env} />
-                                                            </div>
-                                                        )
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        </div>
-                                    )}
+                            <div className="flex justify-between items-start mb-4">
+                                <div>
+                                    <span className="px-2 py-1 text-xs font-semibold rounded-full bg-indigo-100 text-indigo-800">
+                                        Count: {job.TaskGroups[0].Count}
+                                    </span>
                                 </div>
-                            ))}
+                            </div>
+
+                            {/* Network Configuration */}
+                            {getNetworkConfig(job.TaskGroups[0])}
+
+                            {/* Health Checks */}
+                            {getHealthChecks(job.TaskGroups[0])}
+
+                            {/* Tasks (Containers) */}
+                            {getTasksList()}
                         </div>
                     </div>
                 )}
 
                 {/* Logs */}
                 <div className="mt-6">
-                    <JobLogs jobId={job.ID} />
+                    {job.TaskGroups && job.TaskGroups.length > 0 && job.TaskGroups[0].Tasks && job.TaskGroups[0].Tasks.length > 0 && (
+                        <JobLogs
+                            jobId={job.ID}
+                            taskName={job.TaskGroups[0].Tasks[selectedTaskIndex]?.Name}
+                        />
+                    )}
                 </div>
 
                 {/* Actions */}

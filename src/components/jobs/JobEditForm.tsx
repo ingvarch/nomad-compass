@@ -4,10 +4,7 @@
 import React, { useState } from 'react';
 import { useJobEditForm } from '@/hooks/useJobEditForm';
 import BasicJobInfoForm from './forms/BasicJobInfoForm';
-import ResourcesForm from './forms/ResourcesForm';
-import EnvironmentVariablesForm from './forms/EnvironmentVariablesForm';
-import DockerAuthForm from './forms/DockerAuthForm';
-import AdvancedSettingsForm from './forms/AdvancedSettingsForm';
+import TaskForm from './forms/TaskForm';
 import Link from 'next/link';
 
 interface JobEditFormProps {
@@ -28,8 +25,10 @@ export const JobEditForm: React.FC<JobEditFormProps> = ({ jobId, namespace = 'de
         success,
         namespaces,
         handleInputChange,
+        handleTaskInputChange,
         handleSelectChange,
         handleCheckboxChange,
+        handleTaskCheckboxChange,
         handleEnvVarChange,
         addEnvVar,
         removeEnvVar,
@@ -37,6 +36,8 @@ export const JobEditForm: React.FC<JobEditFormProps> = ({ jobId, namespace = 'de
         addPort,
         removePort,
         handleHealthCheckChange,
+        addTask,
+        removeTask,
         handleSubmit
     } = useJobEditForm(jobId, namespace);
 
@@ -134,82 +135,283 @@ export const JobEditForm: React.FC<JobEditFormProps> = ({ jobId, namespace = 'de
                         />
                     </div>
 
-                    {/* Docker Image */}
-                    <div className="mb-4">
-                        <label htmlFor="image" className="block text-sm font-medium text-gray-700 mb-1">
-                            Docker Image
-                        </label>
-                        <input
-                            id="image"
-                            name="image"
-                            type="text"
-                            value={formData.image}
-                            onChange={handleInputChange}
-                            placeholder="nginx:latest"
-                            className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            disabled={isSaving}
-                            required
-                        />
+                    {/* Tasks (Containers) */}
+                    <div className="mb-6 border-t pt-4">
+                        <div className="flex justify-between items-center mb-4">
+                            <h3 className="text-lg font-medium text-gray-900">Containers</h3>
+                            <button
+                                type="button"
+                                onClick={addTask}
+                                className="inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                                disabled={isSaving}
+                            >
+                                Add Container
+                            </button>
+                        </div>
+
+                        {/* Task Info Block */}
+                        <div className="space-y-6">
+                            {formData.tasks.map((task, index) => (
+                                <TaskForm
+                                    key={index}
+                                    taskIndex={index}
+                                    task={task}
+                                    isFirst={index === 0}
+                                    onInputChange={(e) => handleTaskInputChange(index, e)}
+                                    onCheckboxChange={(e) => handleTaskCheckboxChange(index, e)}
+                                    onEnvVarChange={(varIndex, field, value) => handleEnvVarChange(index, varIndex, field, value)}
+                                    onAddEnvVar={() => addEnvVar(index)}
+                                    onRemoveEnvVar={(varIndex) => removeEnvVar(index, varIndex)}
+                                    onRemoveTask={() => removeTask(index)}
+                                    groupName={formData.name}
+                                    namespace={formData.namespace}
+                                    isLoading={isSaving}
+                                />
+                            ))}
+                        </div>
+
+                        {formData.tasks.length > 1 && (
+                            <div className="mt-4 p-4 bg-blue-50 border-l-4 border-blue-400 text-blue-700 rounded">
+                                <h4 className="font-medium">Container Communication</h4>
+                                <p className="text-sm mt-1">
+                                    Containers within the same Task Group can communicate with each other via localhost or through service discovery.
+                                </p>
+                                <ul className="text-sm mt-2 list-disc list-inside">
+                                    <li>For direct communication: <code className="bg-blue-100 px-1 py-0.5 rounded">localhost:<em>port</em></code></li>
+                                    <li>Through service discovery: <code className="bg-blue-100 px-1 py-0.5 rounded">[task-name].service.[namespace].consul</code></li>
+                                    <li>Example: <code className="bg-blue-100 px-1 py-0.5 rounded">{formData.tasks[1]?.name || 'db'}.service.{formData.namespace}.consul</code></li>
+                                </ul>
+                            </div>
+                        )}
                     </div>
 
-                    {/* Container Runtime */}
-                    <div className="mb-4">
-                        <label htmlFor="plugin" className="block text-sm font-medium text-gray-700 mb-1">
-                            Container Runtime
-                        </label>
-                        <select
-                            id="plugin"
-                            name="plugin"
-                            value={formData.plugin}
-                            onChange={handleSelectChange}
-                            className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                            disabled={isSaving}
-                        >
-                            <option value="podman">Podman</option>
-                            <option value="docker">Docker</option>
-                        </select>
+                    {/* Network and Ports Configuration */}
+                    <div className="mb-6 border-t pt-4">
+                        <div className="flex items-center mb-2">
+                            <input
+                                id="enablePorts"
+                                name="enablePorts"
+                                type="checkbox"
+                                checked={formData.enablePorts}
+                                onChange={handleCheckboxChange}
+                                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                                disabled={isSaving}
+                            />
+                            <label htmlFor="enablePorts" className="ml-2 block text-md font-medium text-gray-700">
+                                Enable Network & Port Configuration
+                            </label>
+                        </div>
+
+                        {formData.enablePorts && (
+                            <div className="border p-4 rounded-md bg-white">
+                                {/* Network Mode Selection */}
+                                <div className="mb-4">
+                                    <label htmlFor="networkMode" className="block text-sm font-medium text-gray-700 mb-1">
+                                        Network Mode
+                                    </label>
+                                    <select
+                                        id="networkMode"
+                                        name="networkMode"
+                                        value={formData.networkMode}
+                                        onChange={handleSelectChange}
+                                        className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        disabled={isSaving}
+                                    >
+                                        <option value="host">Host</option>
+                                        <option value="bridge">Bridge</option>
+                                        <option value="none">None</option>
+                                    </select>
+                                </div>
+
+                                {/* Ports Configuration */}
+                                <div className="mb-4">
+                                    <div className="flex justify-between items-center mb-2">
+                                        <h4 className="text-md font-medium text-gray-700">Ports</h4>
+                                        <button
+                                            type="button"
+                                            onClick={addPort}
+                                            className="inline-flex items-center px-2 py-1 border border-transparent text-xs font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                                            disabled={isSaving}
+                                        >
+                                            Add Port
+                                        </button>
+                                    </div>
+
+                                    {formData.ports.map((port, index) => (
+                                        <div key={index} className="flex flex-wrap space-x-2 mb-2 p-2 border rounded-md bg-white">
+                                            <div className="w-full md:w-auto mb-2 md:mb-0">
+                                                <label className="block text-xs font-medium text-gray-500 mb-1">Label</label>
+                                                <input
+                                                    type="text"
+                                                    value={port.label}
+                                                    onChange={(e) => handlePortChange(index, 'label', e.target.value)}
+                                                    placeholder="http"
+                                                    className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                    disabled={isSaving}
+                                                />
+                                            </div>
+
+                                            <div className="w-full md:w-auto mb-2 md:mb-0">
+                                                <label className="block text-xs font-medium text-gray-500 mb-1">Port</label>
+                                                <input
+                                                    type="number"
+                                                    value={port.value}
+                                                    onChange={(e) => handlePortChange(index, 'value', e.target.value)}
+                                                    placeholder="8080"
+                                                    min="1"
+                                                    max="65535"
+                                                    className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                    disabled={isSaving}
+                                                />
+                                            </div>
+
+                                            <div className="w-full md:w-auto mb-2 md:mb-0">
+                                                <label className="block text-xs font-medium text-gray-500 mb-1">To (inside container)</label>
+                                                <input
+                                                    type="number"
+                                                    value={port.to}
+                                                    onChange={(e) => handlePortChange(index, 'to', e.target.value)}
+                                                    placeholder="8080"
+                                                    min="1"
+                                                    max="65535"
+                                                    className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                    disabled={isSaving}
+                                                />
+                                            </div>
+
+                                            <div className="w-full md:w-auto mb-2 md:mb-0">
+                                                <label className="block text-xs font-medium text-gray-500 mb-1">Static Port</label>
+                                                <select
+                                                    value={port.static ? 'true' : 'false'}
+                                                    onChange={(e) => handlePortChange(index, 'static', e.target.value)}
+                                                    className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                    disabled={isSaving}
+                                                >
+                                                    <option value="false">Dynamic</option>
+                                                    <option value="true">Static</option>
+                                                </select>
+                                            </div>
+
+                                            <div className="w-full md:w-auto flex items-end">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => removePort(index)}
+                                                    className="inline-flex items-center px-2 py-1 border border-transparent text-xs font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                                                    disabled={isSaving || formData.ports.length <= 1}
+                                                >
+                                                    Remove
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
                     </div>
 
-                    {/* Private Registry Checkbox */}
-                    <div className="mb-4 flex items-center">
-                        <input
-                            id="usePrivateRegistry"
-                            name="usePrivateRegistry"
-                            type="checkbox"
-                            checked={formData.usePrivateRegistry}
-                            onChange={handleCheckboxChange}
-                            className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                            disabled={isSaving}
-                        />
-                        <label htmlFor="usePrivateRegistry" className="ml-2 block text-sm font-medium text-gray-700">
-                            Use Private Container Registry
-                        </label>
+                    {/* Health Check Configuration */}
+                    <div className="mb-6 border-t pt-4">
+                        <div className="flex items-center mb-2">
+                            <input
+                                id="enableHealthCheck"
+                                name="enableHealthCheck"
+                                type="checkbox"
+                                checked={formData.enableHealthCheck}
+                                onChange={handleCheckboxChange}
+                                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                                disabled={isSaving}
+                            />
+                            <label htmlFor="enableHealthCheck" className="ml-2 block text-md font-medium text-gray-700">
+                                Enable Health Check
+                            </label>
+                        </div>
+
+                        {formData.enableHealthCheck && (
+                            <div className="border p-4 rounded-md bg-white">
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                    {/* Health Check Type */}
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                                            Check Type
+                                        </label>
+                                        <select
+                                            value={formData.healthChecks[0].type}
+                                            onChange={(e) => handleHealthCheckChange('type', e.target.value)}
+                                            className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                            disabled={isSaving}
+                                        >
+                                            <option value="http">HTTP</option>
+                                            <option value="tcp">TCP</option>
+                                            <option value="script">Script</option>
+                                        </select>
+                                    </div>
+
+                                    {/* Path (for HTTP) */}
+                                    {formData.healthChecks[0].type === 'http' && (
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                HTTP Path
+                                            </label>
+                                            <input
+                                                type="text"
+                                                value={formData.healthChecks[0].path || ''}
+                                                onChange={(e) => handleHealthCheckChange('path', e.target.value)}
+                                                placeholder="/health"
+                                                className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                disabled={isSaving}
+                                            />
+                                        </div>
+                                    )}
+
+                                    {/* Command (for Script) */}
+                                    {formData.healthChecks[0].type === 'script' && (
+                                        <div>
+                                            <label className="block text-sm font-medium text-gray-700 mb-1">
+                                                Script Command
+                                            </label>
+                                            <input
+                                                type="text"
+                                                value={formData.healthChecks[0].command || ''}
+                                                onChange={(e) => handleHealthCheckChange('command', e.target.value)}
+                                                placeholder="/bin/check-health.sh"
+                                                className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                disabled={isSaving}
+                                            />
+                                        </div>
+                                    )}
+
+                                    {/* Other health check fields */}
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                                            Check Interval (seconds)
+                                        </label>
+                                        <input
+                                            type="number"
+                                            value={formData.healthChecks[0].interval}
+                                            onChange={(e) => handleHealthCheckChange('interval', e.target.value)}
+                                            min="1"
+                                            className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                            disabled={isSaving}
+                                        />
+                                    </div>
+
+                                    <div>
+                                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                                            Timeout (seconds)
+                                        </label>
+                                        <input
+                                            type="number"
+                                            value={formData.healthChecks[0].timeout}
+                                            onChange={(e) => handleHealthCheckChange('timeout', e.target.value)}
+                                            min="1"
+                                            className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                            disabled={isSaving}
+                                        />
+                                    </div>
+                                </div>
+                            </div>
+                        )}
                     </div>
-
-                    {/* Private Registry Credentials */}
-                    {formData.usePrivateRegistry && (
-                        <DockerAuthForm
-                            dockerAuth={formData.dockerAuth!}
-                            onChange={handleInputChange}
-                            isLoading={isSaving}
-                        />
-                    )}
-
-                    {/* Resources */}
-                    <ResourcesForm
-                        resources={formData.resources}
-                        onChange={handleInputChange}
-                        isLoading={isSaving}
-                    />
-
-                    {/* Environment Variables */}
-                    <EnvironmentVariablesForm
-                        envVars={formData.envVars}
-                        onEnvVarChange={handleEnvVarChange}
-                        onAddEnvVar={addEnvVar}
-                        onRemoveEnvVar={removeEnvVar}
-                        isLoading={isSaving}
-                    />
 
                     {/* Advanced Settings Toggle */}
                     <div className="mb-6 border-t pt-4">
@@ -224,23 +426,49 @@ export const JobEditForm: React.FC<JobEditFormProps> = ({ jobId, namespace = 'de
 
                     {/* Advanced Settings Section */}
                     {showAdvancedSettings && (
-                        <AdvancedSettingsForm
-                            count={formData.count}
-                            datacenters={formData.datacenters}
-                            ports={formData.ports}
-                            enablePorts={formData.enablePorts}
-                            networkMode={formData.networkMode}
-                            enableHealthCheck={formData.enableHealthCheck}
-                            healthChecks={formData.healthChecks}
-                            onInputChange={handleInputChange}
-                            onSelectChange={handleSelectChange}
-                            onCheckboxChange={handleCheckboxChange}
-                            onPortChange={handlePortChange}
-                            onAddPort={addPort}
-                            onRemovePort={removePort}
-                            onHealthCheckChange={handleHealthCheckChange}
-                            isLoading={isSaving}
-                        />
+                        <div className="mb-6 border p-4 rounded-md bg-gray-50">
+                            <h3 className="text-lg font-medium text-gray-900 mb-4">Advanced Settings</h3>
+
+                            {/* Task Count */}
+                            <div className="mb-4">
+                                <label htmlFor="count" className="block text-sm font-medium text-gray-700 mb-1">
+                                    Task Count (Replicas)
+                                </label>
+                                <input
+                                    id="count"
+                                    name="count"
+                                    type="number"
+                                    min="1"
+                                    value={formData.count}
+                                    onChange={handleInputChange}
+                                    className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    disabled={isSaving}
+                                />
+                                <p className="mt-1 text-xs text-gray-500">
+                                    Number of instances of this job to run
+                                </p>
+                            </div>
+
+                            {/* Datacenters */}
+                            <div className="mb-4">
+                                <label htmlFor="datacenters" className="block text-sm font-medium text-gray-700 mb-1">
+                                    Datacenters
+                                </label>
+                                <input
+                                    id="datacenters"
+                                    name="datacenters"
+                                    type="text"
+                                    value={formData.datacenters.join(', ')}
+                                    onChange={handleInputChange}
+                                    placeholder="dc1, dc2, dc3"
+                                    className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    disabled={isSaving}
+                                />
+                                <p className="mt-1 text-xs text-gray-500">
+                                    Comma-separated list of datacenters where this job can run
+                                </p>
+                            </div>
+                        </div>
                     )}
 
                     {/* Action Buttons */}
