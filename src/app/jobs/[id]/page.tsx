@@ -147,6 +147,7 @@ export default function JobDetailPage() {
     };
 
     // Get network and port configuration
+    // Get network and port configuration
     const getNetworkConfig = (taskGroup: any) => {
         if (!taskGroup || !taskGroup.Networks || !taskGroup.Networks.length) {
             return null;
@@ -160,87 +161,122 @@ export default function JobDetailPage() {
                 return null;
             }
 
+            // Group ports by task
+            const portsByTask: Record<string, { dynamic: any[], reserved: any[] }> = {
+                "": { dynamic: [], reserved: [] } // Empty key for ports without a specific task
+            };
+
+            // Organize dynamic ports by task
+            if (hasDynamic) {
+                network.DynamicPorts.forEach((port: any) => {
+                    const taskName = port.TaskName || "";
+                    if (!portsByTask[taskName]) {
+                        portsByTask[taskName] = { dynamic: [], reserved: [] };
+                    }
+                    portsByTask[taskName].dynamic.push(port);
+                });
+            }
+
+            // Organize reserved ports by task
+            if (hasReserved) {
+                network.ReservedPorts.forEach((port: any) => {
+                    const taskName = port.TaskName || "";
+                    if (!portsByTask[taskName]) {
+                        portsByTask[taskName] = { dynamic: [], reserved: [] };
+                    }
+                    portsByTask[taskName].reserved.push(port);
+                });
+            }
+
             return (
                 <div key={index} className="mt-4">
                     <h5 className="text-sm font-medium text-gray-700 mb-2">Network Configuration (Mode: {network.Mode})</h5>
 
-                    {hasDynamic && (
-                        <div className="mb-4">
-                            <h6 className="text-xs font-medium text-gray-600 mb-1">Dynamic Ports</h6>
-                            <div className="overflow-x-auto">
-                                <table className="min-w-full divide-y divide-gray-200">
-                                    <thead className="bg-gray-50">
-                                    <tr>
-                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Label
-                                        </th>
-                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Host Port
-                                        </th>
-                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Container Port
-                                        </th>
-                                    </tr>
-                                    </thead>
-                                    <tbody className="bg-white divide-y divide-gray-200">
-                                    {network.DynamicPorts.map((port: any, portIndex: number) => (
-                                        <tr key={portIndex}>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                {port.Label}
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                    {Object.entries(portsByTask).map(([taskName, ports]) => (
+                        <div key={taskName} className="mb-4">
+                            <h6 className="text-xs font-medium text-gray-600 mb-1">
+                                {taskName ? `Ports for task: ${taskName}` : 'Shared Ports (All Tasks)'}
+                            </h6>
+
+                            {ports.dynamic.length > 0 && (
+                                <div className="mb-3">
+                                    <div className="text-xs text-gray-500 mb-1">Dynamic Ports</div>
+                                    <div className="overflow-x-auto">
+                                        <table className="min-w-full divide-y divide-gray-200">
+                                            <thead className="bg-gray-50">
+                                            <tr>
+                                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                    Label
+                                                </th>
+                                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                    Host Port
+                                                </th>
+                                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                    Container Port
+                                                </th>
+                                            </tr>
+                                            </thead>
+                                            <tbody className="bg-white divide-y divide-gray-200">
+                                            {ports.dynamic.map((port: any, portIndex: number) => (
+                                                <tr key={portIndex}>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                        {port.Label}
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                                                     <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
                                                         Dynamic
                                                     </span>
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                {port.To || port.Value || '-'}
-                                            </td>
-                                        </tr>
-                                    ))}
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
-                    )}
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                        {port.To || port.Value || '-'}
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            )}
 
-                    {hasReserved && (
-                        <div>
-                            <h6 className="text-xs font-medium text-gray-600 mb-1">Static Ports</h6>
-                            <div className="overflow-x-auto">
-                                <table className="min-w-full divide-y divide-gray-200">
-                                    <thead className="bg-gray-50">
-                                    <tr>
-                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Label
-                                        </th>
-                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Host Port
-                                        </th>
-                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                            Container Port
-                                        </th>
-                                    </tr>
-                                    </thead>
-                                    <tbody className="bg-white divide-y divide-gray-200">
-                                    {network.ReservedPorts.map((port: any, portIndex: number) => (
-                                        <tr key={portIndex}>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                {port.Label}
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                {port.Value}
-                                            </td>
-                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                {port.To || port.Value || '-'}
-                                            </td>
-                                        </tr>
-                                    ))}
-                                    </tbody>
-                                </table>
-                            </div>
+                            {ports.reserved.length > 0 && (
+                                <div>
+                                    <div className="text-xs text-gray-500 mb-1">Static Ports</div>
+                                    <div className="overflow-x-auto">
+                                        <table className="min-w-full divide-y divide-gray-200">
+                                            <thead className="bg-gray-50">
+                                            <tr>
+                                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                    Label
+                                                </th>
+                                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                    Host Port
+                                                </th>
+                                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                                    Container Port
+                                                </th>
+                                            </tr>
+                                            </thead>
+                                            <tbody className="bg-white divide-y divide-gray-200">
+                                            {ports.reserved.map((port: any, portIndex: number) => (
+                                                <tr key={portIndex}>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                        {port.Label}
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                        {port.Value}
+                                                    </td>
+                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                        {port.To || port.Value || '-'}
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            )}
                         </div>
-                    )}
+                    ))}
                 </div>
             );
         });
