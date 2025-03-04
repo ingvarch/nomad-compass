@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { NOMAD_BASE_URL } from '@/constants/env';
+import { nomadAddr } from '@/constants/env';
 
 export async function GET(
     request: NextRequest,
@@ -7,6 +7,7 @@ export async function GET(
 ) {
     const token = request.headers.get('X-Nomad-Token');
     const allocId = context.params.id;
+    // const nomadAddr = process.env.NOMAD_ADDR || 'http://localhost:4646';
 
     // Get query parameters
     const searchParams = request.nextUrl.searchParams;
@@ -22,7 +23,7 @@ export async function GET(
     }
 
     try {
-        const url = new URL(`${NOMAD_BASE_URL}/v1/client/fs/logs/${allocId}`);
+        const url = new URL(`${nomadAddr}/v1/client/fs/logs/${allocId}`);
         url.searchParams.append('task', task);
         url.searchParams.append('type', type);
         if (plain) {

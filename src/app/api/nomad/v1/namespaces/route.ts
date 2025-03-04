@@ -1,12 +1,13 @@
 // src/app/api/nomad/v1/namespaces/route.ts
 import { NextRequest, NextResponse } from 'next/server';
-import { NOMAD_BASE_URL } from '@/constants/env';
+import { nomadAddr } from '@/constants/env';
 
 export async function GET(request: NextRequest) {
     const token = request.headers.get('X-Nomad-Token');
+    // const nomadAddr = process.env.NOMAD_ADDR || 'http://localhost:4646';
 
     try {
-        const response = await fetch(`${NOMAD_BASE_URL}/v1/namespaces`, {
+        const response = await fetch(`${nomadAddr}/v1/namespaces`, {
             headers: {
                 'X-Nomad-Token': token || '',
                 'Content-Type': 'application/json',

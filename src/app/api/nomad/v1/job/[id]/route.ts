@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { NOMAD_BASE_URL } from '@/constants/env';
+import { nomadAddr } from '@/constants/env';
 
 export async function GET(
     request: NextRequest,
@@ -8,9 +8,10 @@ export async function GET(
     const token = request.headers.get('X-Nomad-Token');
     const jobId = context.params.id;
     const namespace = request.nextUrl.searchParams.get('namespace') || 'default';
+    // const nomadAddr = process.env.NOMAD_ADDR || 'http://localhost:4646';
 
     try {
-        const response = await fetch(`${NOMAD_BASE_URL}/v1/job/${jobId}?namespace=${namespace}`, {
+        const response = await fetch(`${nomadAddr}/v1/job/${jobId}?namespace=${namespace}`, {
             headers: {
                 'X-Nomad-Token': token || '',
                 'Content-Type': 'application/json',
@@ -39,8 +40,9 @@ export async function DELETE(
     const jobId = context.params.id;
     const url = new URL(request.url);
     const purge = url.searchParams.get('purge') === 'true';
+    const nomadAddr = process.env.NOMAD_ADDR || 'http://localhost:4646';
 
-    let apiUrl = `${NOMAD_BASE_URL}/v1/job/${jobId}`;
+    let apiUrl = `${nomadAddr}/v1/job/${jobId}`;
     if (purge) {
         apiUrl += '?purge=true';
     }
