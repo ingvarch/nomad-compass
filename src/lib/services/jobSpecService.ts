@@ -89,13 +89,11 @@ function createJobSpec(formData: NomadJobFormData): JobSpec {
         formData.ports.forEach(port => {
             if (port.label.trim() === '') return;
 
-            // Создаём объект порта для Nomad
             const portConfig: any = {
                 Label: port.label,
                 ...(port.to ? {To: port.to} : {})
             };
 
-            // Если указано имя контейнера и оно существует в списке контейнеров
             if (port.taskName && formData.tasks.some(task => task.name === port.taskName)) {
                 portConfig.TaskName = port.taskName;
             }
@@ -114,6 +112,7 @@ function createJobSpec(formData: NomadJobFormData): JobSpec {
         const healthCheck = {
             Name: `${formData.name}-health`,
             PortLabel: (formData.enablePorts && formData.ports.length > 0) ? formData.ports[0].label : 'http',
+            Provider: formData.serviceProvider || (formData.enablePorts ? 'nomad' : 'consul'), // Use nomad by default if network is enabled
             Checks: [{
                 Type: check.type,
                 ...(check.type === 'http' ? {Path: check.path} : {}),

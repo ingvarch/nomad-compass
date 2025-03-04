@@ -113,8 +113,11 @@ export const JobCreateForm: React.FC = () => {
                                 </p>
                                 <ul className="text-sm mt-2 list-disc list-inside">
                                     <li>For direct communication: <code className="bg-blue-100 px-1 py-0.5 rounded">localhost:<em>port</em></code></li>
-                                    <li>Through service discovery: <code className="bg-blue-100 px-1 py-0.5 rounded">[task-name].service.[namespace].consul</code></li>
-                                    <li>Example: <code className="bg-blue-100 px-1 py-0.5 rounded">{formData.tasks[1]?.name || 'db'}.service.{formData.namespace}.consul</code></li>
+                                    <li>Through service discovery with Nomad: <code className="bg-blue-100 px-1 py-0.5 rounded">[task-name].service.[namespace].nomad</code></li>
+                                    {formData.serviceProvider === 'consul' && (
+                                        <li>Through service discovery with Consul: <code className="bg-blue-100 px-1 py-0.5 rounded">[task-name].service.[namespace].consul</code></li>
+                                    )}
+                                    <li>Example: <code className="bg-blue-100 px-1 py-0.5 rounded">{formData.tasks[1]?.name || 'db'}.service.{formData.namespace}.{formData.serviceProvider || 'nomad'}</code></li>
                                 </ul>
                             </div>
                         )}
@@ -139,7 +142,6 @@ export const JobCreateForm: React.FC = () => {
 
                         {formData.enablePorts && (
                             <div className="border p-4 rounded-md bg-white">
-                                {/* Пояснение о сетевой конфигурации */}
                                 <div className="mb-4 p-3 bg-blue-50 border-l-4 border-blue-400 text-blue-700 rounded">
                                     <h5 className="font-medium">Group Network Configuration</h5>
                                     <p className="text-sm mt-1">
@@ -164,6 +166,27 @@ export const JobCreateForm: React.FC = () => {
                                         <option value="bridge">Bridge</option>
                                         <option value="none">None</option>
                                     </select>
+                                </div>
+
+                                {/* Service Provider Selection */}
+                                <div className="mb-4">
+                                    <label htmlFor="serviceProvider" className="block text-sm font-medium text-gray-700 mb-1">
+                                        Service Registration Provider
+                                    </label>
+                                    <select
+                                        id="serviceProvider"
+                                        name="serviceProvider"
+                                        value={formData.serviceProvider || 'nomad'}
+                                        onChange={handleSelectChange}
+                                        className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        disabled={isLoading}
+                                    >
+                                        <option value="nomad">Nomad</option>
+                                        <option value="consul">Consul</option>
+                                    </select>
+                                    <p className="mt-1 text-xs text-gray-500">
+                                        All services within a single task group must utilize the same provider.
+                                    </p>
                                 </div>
 
                                 {/* Ports Configuration */}

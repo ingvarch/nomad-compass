@@ -148,7 +148,8 @@ export function useJobEditForm(jobId: string, namespace: string = 'default') {
                         label: port.Label,
                         value: 0, // Dynamic ports don't have a specific value
                         to: port.To || 0,
-                        static: false
+                        static: false,
+                        taskName: 'TaskName' in port ? (port.TaskName as string) : undefined
                     }))
                 ];
             }
@@ -161,7 +162,8 @@ export function useJobEditForm(jobId: string, namespace: string = 'default') {
                         label: port.Label,
                         value: port.Value,
                         to: port.To || port.Value,
-                        static: true
+                        static: true,
+                        taskName: 'TaskName' in port ? (port.TaskName as string) : undefined
                     }))
                 ];
             }
@@ -172,9 +174,11 @@ export function useJobEditForm(jobId: string, namespace: string = 'default') {
             ports = [{ label: 'http', value: 8080, to: 8080, static: false }];
         }
 
-        // Extract health checks
+        // Extract health checks and service provider
         const service = taskGroup.Services && taskGroup.Services.length > 0 ? taskGroup.Services[0] : null;
         const healthCheck = service && service.Checks && service.Checks.length > 0 ? service.Checks[0] : null;
+
+        const serviceProvider = service?.Provider || (enablePorts ? 'nomad' : 'consul');
 
         const healthCheckData: NomadHealthCheck = {
             type: (healthCheck?.Type || 'http') as 'http' | 'tcp' | 'script',
@@ -195,6 +199,7 @@ export function useJobEditForm(jobId: string, namespace: string = 'default') {
             ports,
             enablePorts,
             networkMode,
+            serviceProvider,
             healthChecks: [healthCheckData],
             enableHealthCheck: !!healthCheck,
             count: taskGroup.Count || 1,
@@ -284,10 +289,20 @@ export function useJobEditForm(jobId: string, namespace: string = 'default') {
         if (!formData) return;
 
         const { name, checked } = e.target;
-        setFormData({
-            ...formData,
-            [name]: checked
-        });
+
+        // If we enable network settings, set the service provider to 'nomad' by default
+        if (name === 'enablePorts' && checked) {
+            setFormData({
+                ...formData,
+                [name]: checked,
+                serviceProvider: 'nomad'
+            });
+        } else {
+            setFormData({
+                ...formData,
+                [name]: checked
+            });
+        }
     };
 
     // Toggle task-specific checkbox

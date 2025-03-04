@@ -270,8 +270,8 @@ export const TaskForm: React.FC<TaskFormProps> = ({
                         </p>
                         <ul className="text-xs mt-1 ml-4 list-disc">
                             <li>Localhost: <code className="bg-blue-100 px-1 py-0.5 rounded">localhost</code> (All ports are shared within the task group)</li>
-                            <li>Service name: <code className="bg-blue-100 px-1 py-0.5 rounded">{task.name}.service.{namespace}.nomad</code></li>
-                            <li>Consul DNS: <code className="bg-blue-100 px-1 py-0.5 rounded">{task.name}.service.consul</code> (if Consul is enabled)</li>
+                            <li>Service name (Nomad): <code className="bg-blue-100 px-1 py-0.5 rounded">{task.name}.service.{namespace}.nomad</code></li>
+                            <li>Consul DNS (if provider is Consul): <code className="bg-blue-100 px-1 py-0.5 rounded">{task.name}.service.consul</code></li>
                         </ul>
                     </div>
                 )}

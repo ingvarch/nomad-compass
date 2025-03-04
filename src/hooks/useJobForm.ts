@@ -32,6 +32,7 @@ export const defaultFormValues: NomadJobFormData = {
     ports: [{ label: 'http', value: 8080, to: 8080, static: false }],
     enablePorts: false,
     networkMode: 'none',
+    serviceProvider: 'nomad',
     healthChecks: [{
         type: 'http',
         path: '/health',
@@ -163,10 +164,20 @@ export function useJobForm() {
     // Toggle checkbox
     const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, checked } = e.target;
-        setFormData({
-            ...formData,
-            [name]: checked
-        });
+
+        // If we enable network settings, set the service provider to 'nomad' by default
+        if (name === 'enablePorts' && checked) {
+            setFormData({
+                ...formData,
+                [name]: checked,
+                serviceProvider: 'nomad'
+            });
+        } else {
+            setFormData({
+                ...formData,
+                [name]: checked
+            });
+        }
     };
 
     // Toggle task-specific checkbox

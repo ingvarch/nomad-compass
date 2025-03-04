@@ -129,6 +129,7 @@ export interface NomadJobFormData {
     ports: NomadPort[];
     enablePorts: boolean;
     networkMode: 'none' | 'host' | 'bridge';
+    serviceProvider: 'nomad' | 'consul';
     healthChecks: NomadHealthCheck[];
     enableHealthCheck: boolean;
     count: number;

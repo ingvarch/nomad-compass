@@ -179,8 +179,11 @@ export const JobEditForm: React.FC<JobEditFormProps> = ({ jobId, namespace = 'de
                                 </p>
                                 <ul className="text-sm mt-2 list-disc list-inside">
                                     <li>For direct communication: <code className="bg-blue-100 px-1 py-0.5 rounded">localhost:<em>port</em></code></li>
-                                    <li>Through service discovery: <code className="bg-blue-100 px-1 py-0.5 rounded">[task-name].service.[namespace].consul</code></li>
-                                    <li>Example: <code className="bg-blue-100 px-1 py-0.5 rounded">{formData.tasks[1]?.name || 'db'}.service.{formData.namespace}.consul</code></li>
+                                    <li>Through service discovery with Nomad: <code className="bg-blue-100 px-1 py-0.5 rounded">[task-name].service.[namespace].nomad</code></li>
+                                    {formData.serviceProvider === 'consul' && (
+                                        <li>Through service discovery with Consul: <code className="bg-blue-100 px-1 py-0.5 rounded">[task-name].service.[namespace].consul</code></li>
+                                    )}
+                                    <li>Example: <code className="bg-blue-100 px-1 py-0.5 rounded">{formData.tasks[1]?.name || 'db'}.service.{formData.namespace}.{formData.serviceProvider || 'nomad'}</code></li>
                                 </ul>
                             </div>
                         )}
@@ -222,6 +225,27 @@ export const JobEditForm: React.FC<JobEditFormProps> = ({ jobId, namespace = 'de
                                         <option value="bridge">Bridge</option>
                                         <option value="none">None</option>
                                     </select>
+                                </div>
+
+                                {/* Service Provider Selection */}
+                                <div className="mb-4">
+                                    <label htmlFor="serviceProvider" className="block text-sm font-medium text-gray-700 mb-1">
+                                        Service Registration Provider
+                                    </label>
+                                    <select
+                                        id="serviceProvider"
+                                        name="serviceProvider"
+                                        value={formData.serviceProvider || 'nomad'}
+                                        onChange={handleSelectChange}
+                                        className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        disabled={isSaving}
+                                    >
+                                        <option value="nomad">Nomad</option>
+                                        <option value="consul">Consul</option>
+                                    </select>
+                                    <p className="mt-1 text-xs text-gray-500">
+                                        All services within a single task group must utilize the same provider.
+                                    </p>
                                 </div>
 
                                 {/* Ports Configuration */}
