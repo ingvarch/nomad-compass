@@ -116,24 +116,6 @@ export const TaskForm: React.FC<TaskFormProps> = ({
                     />
                 </div>
 
-                {/* Container Runtime */}
-                <div className="mb-4">
-                    <label htmlFor={`task-${taskIndex}-plugin`} className="block text-sm font-medium text-gray-700 mb-1">
-                        Container Runtime
-                    </label>
-                    <select
-                        id={`task-${taskIndex}-plugin`}
-                        name="plugin"
-                        value={task.plugin}
-                        onChange={onInputChange}
-                        className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        disabled={isLoading}
-                    >
-                        <option value="podman">Podman</option>
-                        <option value="docker">Docker</option>
-                    </select>
-                </div>
-
                 {/* Private Registry Checkbox */}
                 <div className="mb-4 flex items-center">
                     <input
@@ -159,6 +141,24 @@ export const TaskForm: React.FC<TaskFormProps> = ({
                         prefix={`task-${taskIndex}-`}
                     />
                 )}
+
+                {/* Container Runtime */}
+                <div className="mb-4">
+                    <label htmlFor={`task-${taskIndex}-plugin`} className="block text-sm font-medium text-gray-700 mb-1">
+                        Container Runtime
+                    </label>
+                    <select
+                        id={`task-${taskIndex}-plugin`}
+                        name="plugin"
+                        value={task.plugin}
+                        onChange={onInputChange}
+                        className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        disabled={isLoading}
+                    >
+                        <option value="podman">Podman</option>
+                        <option value="docker">Docker</option>
+                    </select>
+                </div>
 
                 {/* Resources */}
                 <div className="mb-4">
@@ -252,7 +252,7 @@ export const TaskForm: React.FC<TaskFormProps> = ({
                             <button
                                 type="button"
                                 onClick={() => onRemoveEnvVar(index)}
-                                className="inline-flex items-center px-3 py-2 border border-transparent text-xs font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                                className="inline-flex items-center px-2 py-1 border border-transparent text-xs font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
                                 disabled={isLoading}
                             >
                                 Remove

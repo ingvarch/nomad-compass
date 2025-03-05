@@ -162,24 +162,6 @@ export const TaskGroupForm: React.FC<TaskGroupFormProps> = ({
                     />
                 </div>
 
-                {/* Container Runtime */}
-                <div className="mb-4">
-                    <label htmlFor={`group-${groupIndex}-plugin`} className="block text-sm font-medium text-gray-700 mb-1">
-                        Container Runtime
-                    </label>
-                    <select
-                        id={`group-${groupIndex}-plugin`}
-                        name="plugin"
-                        value={group.plugin}
-                        onChange={onInputChange}
-                        className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        disabled={isLoading}
-                    >
-                        <option value="podman">Podman</option>
-                        <option value="docker">Docker</option>
-                    </select>
-                </div>
-
                 {/* Private Registry Checkbox */}
                 <div className="mb-4 flex items-center">
                     <input
@@ -236,6 +218,24 @@ export const TaskGroupForm: React.FC<TaskGroupFormProps> = ({
                         </div>
                     </div>
                 )}
+
+                {/* Container Runtime */}
+                <div className="mb-4">
+                    <label htmlFor={`group-${groupIndex}-plugin`} className="block text-sm font-medium text-gray-700 mb-1">
+                        Container Runtime
+                    </label>
+                    <select
+                        id={`group-${groupIndex}-plugin`}
+                        name="plugin"
+                        value={group.plugin}
+                        onChange={onInputChange}
+                        className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        disabled={isLoading}
+                    >
+                        <option value="podman">Podman</option>
+                        <option value="docker">Docker</option>
+                    </select>
+                </div>
 
                 {/* Resources */}
                 <div className="mb-4">
