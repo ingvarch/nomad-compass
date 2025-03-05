@@ -56,8 +56,8 @@ export interface NomadTask {
 
 export interface NomadNetwork {
     Mode: string;
-    DynamicPorts?: { Label: string, To?: number }[];
-    ReservedPorts?: { Label: string, Value: number, To?: number }[];
+    DynamicPorts?: { Label: string, To?: number, TaskName?: string }[];
+    ReservedPorts?: { Label: string, Value: number, To?: number, TaskName?: string }[];
 }
 
 export interface NomadJobsResponse {
@@ -129,7 +129,7 @@ export interface NomadJobFormData {
     ports: NomadPort[];
     enablePorts: boolean;
     networkMode: 'none' | 'host' | 'bridge';
-    serviceProvider: 'nomad' | 'consul';
+    serviceProvider: 'nomad';
     healthChecks: NomadHealthCheck[];
     enableHealthCheck: boolean;
     count: number;

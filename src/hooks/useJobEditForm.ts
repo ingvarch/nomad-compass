@@ -132,11 +132,11 @@ export function useJobEditForm(jobId: string, namespace: string = 'default') {
         // Extract network mode and ensure it's a valid value for our type
         let networkMode: 'none' | 'host' | 'bridge' = 'none';
         if (networkConfig && networkConfig.Mode) {
-            if (networkConfig.Mode === 'host' || networkConfig.Mode === 'bridge' || networkConfig.Mode === 'none') {
+            if (networkConfig.Mode === 'host' || networkConfig.Mode === 'bridge') {
                 networkMode = networkConfig.Mode;
             }
         } else if (tasks.length > 1) {
-            networkMode = 'none';
+            networkMode = 'bridge';
         }
 
         // Extract ports
@@ -176,22 +176,10 @@ export function useJobEditForm(jobId: string, namespace: string = 'default') {
             ports = [{ label: 'http', value: 8080, to: 8080, static: false }];
         }
 
-        // Extract health checks and service provider
+        // Extract health checks
         const services = taskGroup.Services || [];
         const service = services.length > 0 ? services[0] : null;
         const healthCheck = service && service.Checks && service.Checks.length > 0 ? service.Checks[0] : null;
-
-        // Determine service provider - check all services
-        let serviceProvider: 'nomad' | 'consul' = 'nomad';
-        if (services.length > 0) {
-            // Use the provider of the first service that has one defined
-            for (const svc of services) {
-                if (svc.Provider) {
-                    serviceProvider = svc.Provider === 'consul' ? 'consul' : 'nomad';
-                    break;
-                }
-            }
-        }
 
         const healthCheckData: NomadHealthCheck = {
             type: (healthCheck?.Type || 'http') as 'http' | 'tcp' | 'script',
@@ -212,7 +200,7 @@ export function useJobEditForm(jobId: string, namespace: string = 'default') {
             ports,
             enablePorts: enablePorts || tasks.length > 1, // Always enable for multi-container
             networkMode,
-            serviceProvider,
+            serviceProvider: 'nomad',
             healthChecks: [healthCheckData],
             enableHealthCheck: !!healthCheck,
             count: taskGroup.Count || 1,
@@ -316,13 +304,13 @@ export function useJobEditForm(jobId: string, namespace: string = 'default') {
             }
         }
 
-        // If we enable network settings, set the service provider to 'nomad' by default
+        // If we enable network settings, set defaults
         if (name === 'enablePorts' && checked) {
             setFormData({
                 ...formData,
                 [name]: checked,
-                serviceProvider: 'nomad',
-                networkMode: 'none'
+                networkMode: 'bridge',
+                serviceProvider: 'nomad'
             });
         } else {
             setFormData({
@@ -364,8 +352,8 @@ export function useJobEditForm(jobId: string, namespace: string = 'default') {
             setFormData({
                 ...formData,
                 tasks: [...formData.tasks, newTask],
-                enablePorts: false,
-                networkMode: 'none'
+                enablePorts: true,
+                networkMode: 'bridge'
             });
         } else {
             setFormData({
@@ -461,10 +449,16 @@ export function useJobEditForm(jobId: string, namespace: string = 'default') {
         const updatedPorts = [...formData.ports];
 
         if (field === 'static') {
+            const isStatic = value === 'true';
             updatedPorts[index] = {
                 ...updatedPorts[index],
-                [field]: value === 'true'
+                [field]: isStatic
             };
+
+            // If toggling from dynamic to static, set a default value
+            if (isStatic && !updatedPorts[index].value) {
+                updatedPorts[index].value = 8080 + index;
+            }
         } else if (field === 'label') {
             updatedPorts[index] = {
                 ...updatedPorts[index],
@@ -489,7 +483,7 @@ export function useJobEditForm(jobId: string, namespace: string = 'default') {
 
         setFormData({
             ...formData,
-            ports: [...formData.ports, { label: '', value: 0, to: 0, static: false }]
+            ports: [...formData.ports, { label: '', value: 0, to: 8080, static: false }]
         });
     };
 

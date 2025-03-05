@@ -180,10 +180,7 @@ export const JobEditForm: React.FC<JobEditFormProps> = ({ jobId, namespace = 'de
                                 <ul className="text-sm mt-2 list-disc list-inside">
                                     <li>For direct communication: <code className="bg-blue-100 px-1 py-0.5 rounded">localhost:<em>port</em></code></li>
                                     <li>Through service discovery with Nomad: <code className="bg-blue-100 px-1 py-0.5 rounded">[task-name].service.[namespace].nomad</code></li>
-                                    {formData.serviceProvider === 'consul' && (
-                                        <li>Through service discovery with Consul: <code className="bg-blue-100 px-1 py-0.5 rounded">[task-name].service.[namespace].consul</code></li>
-                                    )}
-                                    <li>Example: <code className="bg-blue-100 px-1 py-0.5 rounded">{formData.tasks[1]?.name || 'db'}.service.{formData.namespace}.{formData.serviceProvider || 'nomad'}</code></li>
+                                    <li>Example: <code className="bg-blue-100 px-1 py-0.5 rounded">{formData.tasks[1]?.name || 'db'}.service.{formData.namespace}.nomad</code></li>
                                 </ul>
                             </div>
                         )}
@@ -221,31 +218,21 @@ export const JobEditForm: React.FC<JobEditFormProps> = ({ jobId, namespace = 'de
                                         className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                                         disabled={isSaving}
                                     >
-                                        <option value="host">Host</option>
                                         <option value="bridge">Bridge</option>
+                                        <option value="host">Host</option>
                                         <option value="none">None</option>
                                     </select>
-                                </div>
-
-                                {/* Service Provider Selection */}
-                                <div className="mb-4">
-                                    <label htmlFor="serviceProvider" className="block text-sm font-medium text-gray-700 mb-1">
-                                        Service Registration Provider
-                                    </label>
-                                    <select
-                                        id="serviceProvider"
-                                        name="serviceProvider"
-                                        value={formData.serviceProvider || 'nomad'}
-                                        onChange={handleSelectChange}
-                                        className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                        disabled={isSaving}
-                                    >
-                                        <option value="nomad">Nomad</option>
-                                        <option value="consul">Consul</option>
-                                    </select>
                                     <p className="mt-1 text-xs text-gray-500">
-                                        All services within a single task group must utilize the same provider.
+                                        Select the container network mode. 'Bridge' is recommended for service discovery, 'Host' uses host network directly.
                                     </p>
+
+                                    {formData.networkMode === 'none' && formData.tasks.length > 1 && (
+                                        <div className="mt-2 p-3 bg-red-50 border-l-4 border-red-400 text-red-700">
+                                            <p className="text-sm">
+                                                <strong>Warning:</strong> Using <code>none</code> mode will prevent containers from communicating by service name. For multi-container jobs, use <code>bridge</code> mode.
+                                            </p>
+                                        </div>
+                                    )}
                                 </div>
 
                                 {/* Ports Configuration */}
@@ -263,8 +250,8 @@ export const JobEditForm: React.FC<JobEditFormProps> = ({ jobId, namespace = 'de
                                     </div>
 
                                     {formData.ports.map((port, index) => (
-                                        <div key={index} className="flex flex-wrap space-x-2 mb-2 p-2 border rounded-md bg-white">
-                                            <div className="w-full md:w-auto mb-2 md:mb-0">
+                                        <div key={index} className="flex flex-wrap items-end gap-2 mb-2 p-2 border rounded-md bg-white">
+                                            <div className="w-full md:w-auto">
                                                 <label className="block text-xs font-medium text-gray-500 mb-1">Container</label>
                                                 <select
                                                     value={port.taskName || ''}
@@ -272,7 +259,7 @@ export const JobEditForm: React.FC<JobEditFormProps> = ({ jobId, namespace = 'de
                                                     className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                                                     disabled={isLoading}
                                                 >
-                                                    <option value="">All containers</option>
+                                                    <option value="">Group-level port</option>
                                                     {formData.tasks.map((task, taskIndex) => (
                                                         <option key={taskIndex} value={task.name}>
                                                             {task.name || `Container ${taskIndex + 1}`}
@@ -281,7 +268,7 @@ export const JobEditForm: React.FC<JobEditFormProps> = ({ jobId, namespace = 'de
                                                 </select>
                                             </div>
 
-                                            <div className="w-full md:w-auto mb-2 md:mb-0">
+                                            <div className="w-full md:w-auto">
                                                 <label className="block text-xs font-medium text-gray-500 mb-1">Label</label>
                                                 <input
                                                     type="text"
@@ -293,22 +280,37 @@ export const JobEditForm: React.FC<JobEditFormProps> = ({ jobId, namespace = 'de
                                                 />
                                             </div>
 
-                                            <div className="w-full md:w-auto mb-2 md:mb-0">
-                                                <label className="block text-xs font-medium text-gray-500 mb-1">Port</label>
-                                                <input
-                                                    type="number"
-                                                    value={port.value}
-                                                    onChange={(e) => handlePortChange(index, 'value', e.target.value)}
-                                                    placeholder="8080"
-                                                    min="1"
-                                                    max="65535"
+                                            <div className="w-full md:w-auto">
+                                                <label className="block text-xs font-medium text-gray-500 mb-1">Port Type</label>
+                                                <select
+                                                    value={port.static ? 'true' : 'false'}
+                                                    onChange={(e) => handlePortChange(index, 'static', e.target.value)}
                                                     className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                                                     disabled={isSaving}
-                                                />
+                                                >
+                                                    <option value="false">Dynamic</option>
+                                                    <option value="true">Static</option>
+                                                </select>
                                             </div>
 
-                                            <div className="w-full md:w-auto mb-2 md:mb-0">
-                                                <label className="block text-xs font-medium text-gray-500 mb-1">To (inside container)</label>
+                                            {port.static && (
+                                                <div className="w-full md:w-auto">
+                                                    <label className="block text-xs font-medium text-gray-500 mb-1">Host Port</label>
+                                                    <input
+                                                        type="number"
+                                                        value={port.value}
+                                                        onChange={(e) => handlePortChange(index, 'value', e.target.value)}
+                                                        placeholder="8080"
+                                                        min="1"
+                                                        max="65535"
+                                                        className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                        disabled={isSaving}
+                                                    />
+                                                </div>
+                                            )}
+
+                                            <div className="w-full md:w-auto">
+                                                <label className="block text-xs font-medium text-gray-500 mb-1">Container Port</label>
                                                 <input
                                                     type="number"
                                                     value={port.to}
@@ -321,31 +323,32 @@ export const JobEditForm: React.FC<JobEditFormProps> = ({ jobId, namespace = 'de
                                                 />
                                             </div>
 
-                                            <div className="w-full md:w-auto mb-2 md:mb-0">
-                                                <label className="block text-xs font-medium text-gray-500 mb-1">Static Port</label>
-                                                <select
-                                                    value={port.static ? 'true' : 'false'}
-                                                    onChange={(e) => handlePortChange(index, 'static', e.target.value)}
-                                                    className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                                    disabled={isSaving}
-                                                >
-                                                    <option value="false">Dynamic</option>
-                                                    <option value="true">Static</option>
-                                                </select>
-                                            </div>
-
-                                            <div className="w-full md:w-auto flex items-end">
-                                                <button
-                                                    type="button"
-                                                    onClick={() => removePort(index)}
-                                                    className="inline-flex items-center px-2 py-1 border border-transparent text-xs font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-                                                    disabled={isSaving || formData.ports.length <= 1}
-                                                >
-                                                    Remove
-                                                </button>
-                                            </div>
+                                            <button
+                                                type="button"
+                                                onClick={() => removePort(index)}
+                                                className="px-3 py-2 border border-transparent text-xs font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 h-10"
+                                                disabled={isSaving || formData.ports.length <= 1}
+                                            >
+                                                Remove
+                                            </button>
                                         </div>
                                     ))}
+                                </div>
+
+                                <div className="mt-4 p-3 bg-blue-50 border-l-4 border-blue-400 text-blue-700">
+                                    <h5 className="font-medium">Port Environment Variables</h5>
+                                    <p className="text-sm mt-1">
+                                        Nomad injects environment variables for each port at runtime:
+                                    </p>
+                                    <ul className="text-sm mt-2 list-disc list-inside">
+                                        <li><code className="bg-blue-100 px-1 py-0.5 rounded">NOMAD_PORT_<em>label</em></code> - Container port value</li>
+                                        <li><code className="bg-blue-100 px-1 py-0.5 rounded">NOMAD_HOST_PORT_<em>label</em></code> - Host port value</li>
+                                        <li><code className="bg-blue-100 px-1 py-0.5 rounded">NOMAD_ADDR_<em>label</em></code> - IP:port for a service</li>
+                                        <li><code className="bg-blue-100 px-1 py-0.5 rounded">NOMAD_HOST_ADDR_<em>label</em></code> - Host IP:port</li>
+                                    </ul>
+                                    <p className="text-sm mt-2">
+                                        Example: <code className="bg-blue-100 px-1 py-0.5 rounded">redis_url=$NOMAD_ADDR_redis</code>
+                                    </p>
                                 </div>
                             </div>
                         )}

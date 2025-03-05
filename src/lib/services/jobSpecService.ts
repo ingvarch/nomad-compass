@@ -99,9 +99,11 @@ function createJobSpec(formData: NomadJobFormData): JobSpec {
             }
 
             if (port.static) {
+                // For static ports, include the host port value
                 portConfig.Value = port.value;
                 network!.ReservedPorts.push(portConfig);
             } else {
+                // For dynamic ports, don't include a specific value
                 network!.DynamicPorts.push(portConfig);
             }
         });
@@ -125,7 +127,7 @@ function createJobSpec(formData: NomadJobFormData): JobSpec {
                     TaskName: task.name,
                     AddressMode: "auto",
                     PortLabel: taskPorts[0].label, // Use the first port
-                    Provider: formData.serviceProvider || "nomad",
+                    Provider: "nomad", // Always use Nomad provider
                 };
 
                 // Add health check if enabled

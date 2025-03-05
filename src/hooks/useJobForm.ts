@@ -180,12 +180,11 @@ export function useJobForm() {
 
         // If we enable network settings, set the service provider to 'nomad' by default
         if (name === 'enablePorts' && checked) {
-            setFormData({
-                ...formData,
+            setFormData(prev => ({
+                ...prev,
                 [name]: checked,
-                serviceProvider: 'nomad',
                 networkMode: 'bridge' // Default to bridge for better service discovery
-            });
+            }));
         } else {
             setFormData({
                 ...formData,
@@ -216,11 +215,6 @@ export function useJobForm() {
             ...defaultTaskData,
             name: `${formData.name ? formData.name + '-' : ''}task-${formData.tasks.length + 1}`
         };
-
-        setFormData({
-            ...formData,
-            tasks: [...formData.tasks, newTask]
-        });
 
         // If adding a task and network is not enabled, automatically enable it
         if (!formData.enablePorts) {
@@ -316,10 +310,16 @@ export function useJobForm() {
         const updatedPorts = [...formData.ports];
 
         if (field === 'static') {
+            const isStatic = value === 'true';
             updatedPorts[index] = {
                 ...updatedPorts[index],
-                [field]: value === 'true'
+                [field]: isStatic
             };
+
+            // If toggling from dynamic to static, set a default value
+            if (isStatic && !updatedPorts[index].value) {
+                updatedPorts[index].value = 8080 + index;
+            }
         } else if (field === 'label') {
             updatedPorts[index] = {
                 ...updatedPorts[index],
@@ -342,7 +342,7 @@ export function useJobForm() {
     const addPort = () => {
         setFormData({
             ...formData,
-            ports: [...formData.ports, { label: '', value: 0, to: 0, static: false }]
+            ports: [...formData.ports, { label: '', value: 0, to: 8080, static: false }]
         });
     };
 
@@ -467,8 +467,6 @@ export function useJobForm() {
     };
 
     const handlePortTaskChange = (portIndex: number, taskName: string) => {
-        if (!formData) return;
-
         const updatedPorts = [...formData.ports];
         updatedPorts[portIndex] = {
             ...updatedPorts[portIndex],

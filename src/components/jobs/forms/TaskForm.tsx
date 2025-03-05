@@ -252,7 +252,7 @@ export const TaskForm: React.FC<TaskFormProps> = ({
                             <button
                                 type="button"
                                 onClick={() => onRemoveEnvVar(index)}
-                                className="inline-flex items-center px-2 py-1 border border-transparent text-xs font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                                className="inline-flex items-center px-3 py-2 border border-transparent text-xs font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
                                 disabled={isLoading}
                             >
                                 Remove
@@ -261,19 +261,20 @@ export const TaskForm: React.FC<TaskFormProps> = ({
                     ))}
                 </div>
 
-                {/* Communication Info */}
+                {/* Nomad Environment Variables Information */}
                 <div className="p-3 bg-blue-50 border-l-4 border-blue-400 text-blue-700 rounded mb-4">
-                    <h5 className="font-semibold text-sm">Service Discovery Information</h5>
+                    <h5 className="font-semibold text-sm">Nomad Runtime Environment Variables</h5>
                     <p className="text-xs mt-1">
-                        When networking is enabled with bridge or host mode, this container can be accessed by:
+                        Nomad injects these variables inside the container at runtime:
                     </p>
                     <ul className="text-xs mt-1 ml-4 list-disc">
-                        <li>Localhost: <code className="bg-blue-100 px-1 py-0.5 rounded">localhost</code> (All ports are shared within the task group)</li>
-                        <li>Service name (Nomad): <code className="bg-blue-100 px-1 py-0.5 rounded">{task.name}.service.{namespace}.nomad</code></li>
-                        <li>Consul DNS (if provider is Consul): <code className="bg-blue-100 px-1 py-0.5 rounded">{task.name}.service.{namespace}.consul</code></li>
+                        <li>General: <code className="bg-blue-100 px-1 py-0.5 rounded">NOMAD_ALLOC_ID</code> - Allocation ID</li>
+                        <li>Network: <code className="bg-blue-100 px-1 py-0.5 rounded">NOMAD_PORT_<em>label</em></code> - Port values</li>
+                        <li>Network: <code className="bg-blue-100 px-1 py-0.5 rounded">NOMAD_ADDR_<em>label</em></code> - IP:port for service ports</li>
+                        <li>Tasks: <code className="bg-blue-100 px-1 py-0.5 rounded">NOMAD_TASK_NAME</code> - Name of the task</li>
                     </ul>
-                    <p className="text-xs mt-2 text-blue-800 font-semibold">
-                        Note: Service discovery requires network mode to be 'bridge' or 'host', not 'none'.
+                    <p className="text-xs mt-2">
+                        To see all variables: add a command like <code className="bg-blue-100 px-1 py-0.5 rounded">env | grep NOMAD</code> to your container
                     </p>
                 </div>
             </div>
