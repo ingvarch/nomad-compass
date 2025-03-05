@@ -72,7 +72,7 @@ export interface ApiError {
 export interface NomadResource {
     CPU: number;
     MemoryMB: number;
-    DiskMB?: number;
+    DiskMB: number;
 }
 
 export interface NomadEnvVar {
@@ -107,6 +107,16 @@ export interface NomadTaskConfig {
 export interface DockerAuth {
     username: string;
     password: string;
+}
+
+export interface TaskFormData {
+    name: string;
+    image: string;
+    plugin: string;
+    resources: NomadResource;
+    envVars: NomadEnvVar[];
+    usePrivateRegistry: boolean;
+    dockerAuth?: DockerAuth;
 }
 
 export interface TaskGroupFormData {

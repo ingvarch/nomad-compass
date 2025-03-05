@@ -1,5 +1,5 @@
 // src/lib/services/jobSpecService.ts
-import { NomadJobFormData, TaskGroupFormData } from '@/types/nomad';
+import { NomadJobFormData, TaskGroupFormData, NomadPort, NomadHealthCheck, NomadEnvVar } from '@/types/nomad';
 
 interface NetworkConfig {
     Mode: string;
@@ -248,7 +248,7 @@ function convertJobToFormData(job: any): NomadJobFormData {
         const networkMode = (networkConfig && networkConfig.Mode) ? networkConfig.Mode : 'none';
 
         // Extract ports
-        let ports = [];
+        let ports: NomadPort[] = [];
 
         if (networkConfig) {
             // Add dynamic ports
