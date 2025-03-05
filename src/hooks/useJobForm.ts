@@ -165,12 +165,26 @@ export function useJobForm() {
     const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         const { name, checked } = e.target;
 
+        // If we disable network settings, show a warning or prevent it since it will break service discovery
+        if (name === 'enablePorts' && !checked) {
+            if (formData.tasks.length > 1) {
+                // Show confirmation dialog if there are multiple tasks
+                const confirm = window.confirm(
+                    "Disabling network ports will prevent containers from communicating via service discovery. Are you sure you want to continue?"
+                );
+                if (!confirm) {
+                    return; // Don't change the setting if user cancels
+                }
+            }
+        }
+
         // If we enable network settings, set the service provider to 'nomad' by default
         if (name === 'enablePorts' && checked) {
             setFormData({
                 ...formData,
                 [name]: checked,
-                serviceProvider: 'nomad'
+                serviceProvider: 'nomad',
+                networkMode: 'bridge' // Default to bridge for better service discovery
             });
         } else {
             setFormData({
@@ -207,6 +221,21 @@ export function useJobForm() {
             ...formData,
             tasks: [...formData.tasks, newTask]
         });
+
+        // If adding a task and network is not enabled, automatically enable it
+        if (!formData.enablePorts) {
+            setFormData(prev => ({
+                ...prev,
+                tasks: [...prev.tasks, newTask],
+                enablePorts: true,
+                networkMode: 'bridge'
+            }));
+        } else {
+            setFormData({
+                ...formData,
+                tasks: [...formData.tasks, newTask]
+            });
+        }
     };
 
     // Remove a task from the form
@@ -394,6 +423,22 @@ export function useJobForm() {
                     if (!task.dockerAuth?.password) {
                         throw new Error(`Password is required for private registry in task ${i + 1}`);
                     }
+                }
+            }
+
+            // If we have multiple tasks, make sure networking is enabled
+            if (formData.tasks.length > 1 && !formData.enablePorts) {
+                throw new Error('Network configuration must be enabled when using multiple containers');
+            }
+
+            // If network is enabled but mode is "none", show warning for service discovery
+            if (formData.tasks.length > 1 && formData.enablePorts && formData.networkMode === 'none') {
+                const confirm = window.confirm(
+                    "Using 'none' network mode will prevent containers from communicating using service discovery. It's recommended to use 'bridge' mode for multi-container deployments. Continue anyway?"
+                );
+                if (!confirm) {
+                    setIsLoading(false);
+                    return;
                 }
             }
 

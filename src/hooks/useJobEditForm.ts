@@ -132,9 +132,11 @@ export function useJobEditForm(jobId: string, namespace: string = 'default') {
         // Extract network mode and ensure it's a valid value for our type
         let networkMode: 'none' | 'host' | 'bridge' = 'none';
         if (networkConfig && networkConfig.Mode) {
-            if (networkConfig.Mode === 'host' || networkConfig.Mode === 'bridge') {
+            if (networkConfig.Mode === 'host' || networkConfig.Mode === 'bridge' || networkConfig.Mode === 'none') {
                 networkMode = networkConfig.Mode;
             }
+        } else if (tasks.length > 1) {
+            networkMode = 'none';
         }
 
         // Extract ports
@@ -175,10 +177,21 @@ export function useJobEditForm(jobId: string, namespace: string = 'default') {
         }
 
         // Extract health checks and service provider
-        const service = taskGroup.Services && taskGroup.Services.length > 0 ? taskGroup.Services[0] : null;
+        const services = taskGroup.Services || [];
+        const service = services.length > 0 ? services[0] : null;
         const healthCheck = service && service.Checks && service.Checks.length > 0 ? service.Checks[0] : null;
 
-        const serviceProvider = service?.Provider || (enablePorts ? 'nomad' : 'consul');
+        // Determine service provider - check all services
+        let serviceProvider: 'nomad' | 'consul' = 'nomad';
+        if (services.length > 0) {
+            // Use the provider of the first service that has one defined
+            for (const svc of services) {
+                if (svc.Provider) {
+                    serviceProvider = svc.Provider === 'consul' ? 'consul' : 'nomad';
+                    break;
+                }
+            }
+        }
 
         const healthCheckData: NomadHealthCheck = {
             type: (healthCheck?.Type || 'http') as 'http' | 'tcp' | 'script',
@@ -197,7 +210,7 @@ export function useJobEditForm(jobId: string, namespace: string = 'default') {
             namespace: job.Namespace || 'default',
             tasks: tasks,
             ports,
-            enablePorts,
+            enablePorts: enablePorts || tasks.length > 1, // Always enable for multi-container
             networkMode,
             serviceProvider,
             healthChecks: [healthCheckData],
@@ -290,12 +303,26 @@ export function useJobEditForm(jobId: string, namespace: string = 'default') {
 
         const { name, checked } = e.target;
 
+        // If we disable network settings, show a warning or prevent it since it will break service discovery
+        if (name === 'enablePorts' && !checked) {
+            if (formData.tasks.length > 1) {
+                // Show confirmation dialog if there are multiple tasks
+                const confirm = window.confirm(
+                    "Disabling network ports will prevent containers from communicating via service discovery. Are you sure you want to continue?"
+                );
+                if (!confirm) {
+                    return; // Don't change the setting if user cancels
+                }
+            }
+        }
+
         // If we enable network settings, set the service provider to 'nomad' by default
         if (name === 'enablePorts' && checked) {
             setFormData({
                 ...formData,
                 [name]: checked,
-                serviceProvider: 'nomad'
+                serviceProvider: 'nomad',
+                networkMode: 'none'
             });
         } else {
             setFormData({
@@ -332,10 +359,20 @@ export function useJobEditForm(jobId: string, namespace: string = 'default') {
             name: `${formData.name ? formData.name + '-' : ''}task-${formData.tasks.length + 1}`
         };
 
-        setFormData({
-            ...formData,
-            tasks: [...formData.tasks, newTask]
-        });
+        // If adding a task and network is not enabled, automatically enable it
+        if (!formData.enablePorts) {
+            setFormData({
+                ...formData,
+                tasks: [...formData.tasks, newTask],
+                enablePorts: false,
+                networkMode: 'none'
+            });
+        } else {
+            setFormData({
+                ...formData,
+                tasks: [...formData.tasks, newTask]
+            });
+        }
     };
 
     // Remove a task from the form
@@ -524,6 +561,22 @@ export function useJobEditForm(jobId: string, namespace: string = 'default') {
                     if (!task.dockerAuth?.password) {
                         throw new Error(`Password is required for private registry in task ${i + 1}`);
                     }
+                }
+            }
+
+            // If we have multiple tasks, make sure networking is enabled
+            if (formData.tasks.length > 1 && !formData.enablePorts) {
+                throw new Error('Network configuration must be enabled when using multiple containers');
+            }
+
+            // If network is enabled but mode is "none", show warning for service discovery
+            if (formData.tasks.length > 1 && formData.enablePorts && formData.networkMode === 'none') {
+                const confirm = window.confirm(
+                    "Using 'none' network mode will prevent containers from communicating using service discovery. It's recommended to use 'bridge' mode for multi-container deployments. Continue anyway?"
+                );
+                if (!confirm) {
+                    setIsSaving(false);
+                    return;
                 }
             }
 

@@ -57,19 +57,27 @@ export const PortConfigurationForm: React.FC<PortConfigurationFormProps> = ({
                             className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                             disabled={isLoading}
                         >
-                            <option value="none">None</option>
-                            <option value="host">Host</option>
                             <option value="bridge">Bridge</option>
+                            <option value="host">Host</option>
+                            <option value="none">None</option>
                         </select>
                         <p className="mt-1 text-xs text-gray-500">
-                            Select the container network mode. 'None' creates an isolated network without interfaces, 'Host' uses host network directly.
+                            Select the container network mode. 'Bridge' is recommended for service discovery, 'Host' uses host network directly, and 'None' creates an isolated network without interfaces.
                         </p>
+                        {networkMode === 'none' && (
+                            <div className="mt-2 p-3 bg-yellow-50 border-l-4 border-yellow-400 text-yellow-700">
+                                <p className="text-sm">
+                                    Warning: Using <code>none</code> mode will prevent containers from communicating by service name (like db.service.default.nomad). For service discovery to work, use <code>bridge</code> or <code>host</code> mode.
+                                </p>
+                            </div>
+                        )}
                     </div>
 
                     {networkMode === 'bridge' && (
-                        <div className="mb-4 p-3 bg-yellow-50 border-l-4 border-yellow-400 text-yellow-700">
+                        <div className="mb-4 p-3 bg-blue-50 border-l-4 border-blue-400 text-blue-700">
                             <p className="text-sm">
-                                To use <code>bridge</code> mode, you must have the <a href="https://developer.hashicorp.com/nomad/docs/networking/cni" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">CNI plugins</a> installed at the location specified by the client's <code>cni_path</code> configuration. <a href="https://developer.hashicorp.com/nomad/docs/networking/cni" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">Learn more</a>
+                                <strong>Bridge mode:</strong> This enables container-to-container communication using service names like <code>db.service.default.nomad</code>.
+                                Make sure you have the <a href="https://developer.hashicorp.com/nomad/docs/networking/cni" target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:underline">CNI plugins</a> installed on your Nomad clients.
                             </p>
                         </div>
                     )}

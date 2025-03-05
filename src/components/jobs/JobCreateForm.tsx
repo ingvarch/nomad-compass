@@ -84,6 +84,31 @@ export const JobCreateForm: React.FC = () => {
                             </button>
                         </div>
 
+                        {/* Network Mode Info */}
+                        {formData.tasks.length > 1 && (
+                            <div className="mb-4 p-3 bg-blue-50 border-l-4 border-blue-400 text-blue-700 rounded">
+                                <h4 className="font-medium">Multi-Container Setup</h4>
+                                <p className="text-sm mt-1">
+                                    Your job has multiple containers. For proper communication between them:
+                                </p>
+                                <ul className="text-sm mt-2 list-disc list-inside ml-2">
+                                    <li>Network settings are <strong>{formData.enablePorts ? 'enabled' : 'disabled'}</strong></li>
+                                    <li>Network mode is set to <strong>{formData.networkMode}</strong></li>
+                                    <li>Service provider is <strong>{formData.serviceProvider}</strong></li>
+                                </ul>
+                                {!formData.enablePorts && (
+                                    <div className="mt-2 text-red-600 font-semibold text-sm">
+                                        Warning: You must enable network settings for multi-container communication
+                                    </div>
+                                )}
+                                {formData.enablePorts && formData.networkMode === 'none' && (
+                                    <div className="mt-2 text-red-600 font-semibold text-sm">
+                                        Warning: 'None' network mode prevents service discovery between containers
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
                         {/* Task Info Block */}
                         <div className="space-y-6">
                             {formData.tasks.map((task, index) => (
@@ -119,6 +144,13 @@ export const JobCreateForm: React.FC = () => {
                                     )}
                                     <li>Example: <code className="bg-blue-100 px-1 py-0.5 rounded">{formData.tasks[1]?.name || 'db'}.service.{formData.namespace}.{formData.serviceProvider || 'nomad'}</code></li>
                                 </ul>
+                                <div className="mt-2 font-semibold">
+                                    {formData.enablePorts && formData.networkMode === 'bridge' ? (
+                                        <div className="text-green-700">✓ Your current settings support service discovery</div>
+                                    ) : (
+                                        <div className="text-yellow-700">⚠️ Change network mode to 'bridge' for service discovery to work properly</div>
+                                    )}
+                                </div>
                             </div>
                         )}
                     </div>
@@ -162,10 +194,21 @@ export const JobCreateForm: React.FC = () => {
                                         className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                                         disabled={isLoading}
                                     >
-                                        <option value="host">Host</option>
                                         <option value="bridge">Bridge</option>
+                                        <option value="host">Host</option>
                                         <option value="none">None</option>
                                     </select>
+                                    <p className="mt-1 text-xs text-gray-500">
+                                        Select the container network mode. 'Bridge' is recommended for service discovery, 'Host' uses host network directly.
+                                    </p>
+
+                                    {formData.networkMode === 'none' && formData.tasks.length > 1 && (
+                                        <div className="mt-2 p-3 bg-red-50 border-l-4 border-red-400 text-red-700">
+                                            <p className="text-sm">
+                                                <strong>Warning:</strong> Using <code>none</code> mode will prevent containers from communicating by service name. For multi-container jobs, use <code>bridge</code> mode.
+                                            </p>
+                                        </div>
+                                    )}
                                 </div>
 
                                 {/* Service Provider Selection */}

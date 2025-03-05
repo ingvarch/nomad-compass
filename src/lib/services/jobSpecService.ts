@@ -80,7 +80,7 @@ function createJobSpec(formData: NomadJobFormData): JobSpec {
         network = undefined;
     } else {
         network = {
-            Mode: formData.networkMode,
+            Mode: formData.networkMode || 'bridge', // Default to bridge if not specified
             DynamicPorts: [] as Array<{Label: string, To: number, TaskName?: string}>,
             ReservedPorts: [] as Array<{Label: string, Value: number, To?: number, TaskName?: string}>
         };
@@ -107,27 +107,48 @@ function createJobSpec(formData: NomadJobFormData): JobSpec {
         });
     }
 
-    // Prepare services with health checks if enabled
-    const services = formData.enableHealthCheck ? formData.healthChecks.map(check => {
-        const healthCheck = {
-            Name: `${formData.name}-health`,
-            PortLabel: (formData.enablePorts && formData.ports.length > 0) ? formData.ports[0].label : 'http',
-            Provider: formData.serviceProvider || (formData.enablePorts ? 'nomad' : 'consul'), // Use nomad by default if network is enabled
-            Checks: [{
-                Type: check.type,
-                ...(check.type === 'http' ? {Path: check.path} : {}),
-                ...(check.type === 'script' ? {Command: check.command} : {}),
-                Interval: check.interval * 1000000000, // Convert to nanoseconds
-                Timeout: check.timeout * 1000000000, // Convert to nanoseconds
-                CheckRestart: {
-                    Limit: 3,
-                    Grace: (check.initialDelay || 5) * 1000000000,
-                    IgnoreWarnings: false
+    // Create individual services for each task
+    const taskServices: any[] = [];
+
+    // Only create services if networking is enabled
+    if (formData.enablePorts) {
+        // Create a service for each task
+        formData.tasks.forEach(task => {
+            // Find ports for this task
+            const taskPorts = formData.ports.filter(port =>
+                port.taskName === task.name || !port.taskName);
+
+            if (taskPorts.length > 0) {
+                // Create a service for this task with proper type
+                const service: any = {
+                    Name: task.name,
+                    TaskName: task.name,
+                    AddressMode: "auto",
+                    PortLabel: taskPorts[0].label, // Use the first port
+                    Provider: formData.serviceProvider || "nomad",
+                };
+
+                // Add health check if enabled
+                if (formData.enableHealthCheck) {
+                    const healthCheck = formData.healthChecks[0];
+                    service.Checks = [{
+                        Type: healthCheck.type,
+                        ...(healthCheck.type === 'http' ? {Path: healthCheck.path} : {}),
+                        ...(healthCheck.type === 'script' ? {Command: healthCheck.command} : {}),
+                        Interval: healthCheck.interval * 1000000000, // Convert to nanoseconds
+                        Timeout: healthCheck.timeout * 1000000000, // Convert to nanoseconds
+                        CheckRestart: {
+                            Limit: 3,
+                            Grace: (healthCheck.initialDelay || 5) * 1000000000,
+                            IgnoreWarnings: false
+                        }
+                    }];
                 }
-            }]
-        };
-        return healthCheck;
-    }) : [];
+
+                taskServices.push(service);
+            }
+        });
+    }
 
     // Create task configurations for each task
     const tasks = formData.tasks.map(taskData => {
@@ -149,8 +170,8 @@ function createJobSpec(formData: NomadJobFormData): JobSpec {
         taskGroup.Networks = [network];
     }
 
-    if (services.length > 0) {
-        taskGroup.Services = services;
+    if (taskServices.length > 0) {
+        taskGroup.Services = taskServices;
     }
 
     // Basic job template for Nomad

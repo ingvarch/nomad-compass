@@ -94,7 +94,7 @@ export const TaskForm: React.FC<TaskFormProps> = ({
                         required
                     />
                     <p className="mt-1 text-xs text-gray-500">
-                        A unique name for this container within the task group
+                        A unique name for this container within the task group. This name will be used for service discovery.
                     </p>
                 </div>
 
@@ -262,19 +262,20 @@ export const TaskForm: React.FC<TaskFormProps> = ({
                 </div>
 
                 {/* Communication Info */}
-                {!isFirst && (
-                    <div className="p-3 bg-blue-50 border-l-4 border-blue-400 text-blue-700 rounded mb-4">
-                        <h5 className="font-semibold text-sm">Container Access Information</h5>
-                        <p className="text-xs mt-1">
-                            This container can be accessed by other containers in the same task group via:
-                        </p>
-                        <ul className="text-xs mt-1 ml-4 list-disc">
-                            <li>Localhost: <code className="bg-blue-100 px-1 py-0.5 rounded">localhost</code> (All ports are shared within the task group)</li>
-                            <li>Service name (Nomad): <code className="bg-blue-100 px-1 py-0.5 rounded">{task.name}.service.{namespace}.nomad</code></li>
-                            <li>Consul DNS (if provider is Consul): <code className="bg-blue-100 px-1 py-0.5 rounded">{task.name}.service.consul</code></li>
-                        </ul>
-                    </div>
-                )}
+                <div className="p-3 bg-blue-50 border-l-4 border-blue-400 text-blue-700 rounded mb-4">
+                    <h5 className="font-semibold text-sm">Service Discovery Information</h5>
+                    <p className="text-xs mt-1">
+                        When networking is enabled with bridge or host mode, this container can be accessed by:
+                    </p>
+                    <ul className="text-xs mt-1 ml-4 list-disc">
+                        <li>Localhost: <code className="bg-blue-100 px-1 py-0.5 rounded">localhost</code> (All ports are shared within the task group)</li>
+                        <li>Service name (Nomad): <code className="bg-blue-100 px-1 py-0.5 rounded">{task.name}.service.{namespace}.nomad</code></li>
+                        <li>Consul DNS (if provider is Consul): <code className="bg-blue-100 px-1 py-0.5 rounded">{task.name}.service.{namespace}.consul</code></li>
+                    </ul>
+                    <p className="text-xs mt-2 text-blue-800 font-semibold">
+                        Note: Service discovery requires network mode to be 'bridge' or 'host', not 'none'.
+                    </p>
+                </div>
             </div>
         </div>
     );
