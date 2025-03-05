@@ -43,8 +43,9 @@ export default function JobDetailPage() {
             // Initialize expanded state for all task groups
             if (jobDetail.TaskGroups && jobDetail.TaskGroups.length > 0) {
                 const initialExpandedState: Record<string, boolean> = {};
-                jobDetail.TaskGroups.forEach((group: any, index: number) => {
-                    initialExpandedState[group.Name] = index === 0; // Only first group expanded by default
+                jobDetail.TaskGroups.forEach((group: any) => {
+                    initialExpandedState[group.Name] = false; // All groups collapsed by default
+                    initialExpandedState[`${group.Name}-container`] = false; // All containers collapsed by default too
                 });
                 setExpandedGroups(initialExpandedState);
             }
@@ -401,7 +402,18 @@ export default function JobDetailPage() {
                     <div className="space-y-6">
                         {job.TaskGroups.map((taskGroup: any, groupIndex: number) => (
                             <div key={groupIndex} className="bg-white shadow rounded-lg overflow-hidden">
-                                <div className="px-6 py-5 border-b border-gray-200">
+                                <div 
+                                    className="px-6 py-5 border-b border-gray-200 flex items-center cursor-pointer"
+                                    onClick={() => toggleGroupDetails(taskGroup.Name)}
+                                >
+                                    <svg
+                                        className={`h-5 w-5 text-gray-500 transition-transform mr-2 ${expandedGroups[taskGroup.Name] ? 'transform rotate-90' : ''}`}
+                                        xmlns="http://www.w3.org/2000/svg"
+                                        viewBox="0 0 20 20"
+                                        fill="currentColor"
+                                    >
+                                        <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                                    </svg>
                                     <h3 className="text-lg font-medium text-gray-900">
                                         Task Group: {taskGroup.Name}
                                         <span className="ml-2 px-2 py-1 text-xs font-semibold rounded-full bg-indigo-100 text-indigo-800">
@@ -409,6 +421,7 @@ export default function JobDetailPage() {
                                         </span>
                                     </h3>
                                 </div>
+                                {expandedGroups[taskGroup.Name] && (
                                 <div className="p-6">
                                     {/* Network Configuration */}
                                     {getNetworkConfig(taskGroup)}
@@ -423,11 +436,18 @@ export default function JobDetailPage() {
                                             {/* Task header */}
                                             <div
                                                 className="p-4 flex justify-between items-center cursor-pointer bg-gray-50"
-                                                onClick={() => toggleGroupDetails(taskGroup.Name)}
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    const containerName = `${taskGroup.Name}-container`;
+                                                    setExpandedGroups({
+                                                        ...expandedGroups,
+                                                        [containerName]: !expandedGroups[containerName]
+                                                    });
+                                                }}
                                             >
                                                 <div className="flex items-center">
                                                     <svg
-                                                        className={`h-5 w-5 text-gray-500 transition-transform ${expandedGroups[taskGroup.Name] ? 'transform rotate-90' : ''}`}
+                                                        className={`h-5 w-5 text-gray-500 transition-transform ${expandedGroups[`${taskGroup.Name}-container`] ? 'transform rotate-90' : ''}`}
                                                         xmlns="http://www.w3.org/2000/svg"
                                                         viewBox="0 0 20 20"
                                                         fill="currentColor"
@@ -455,7 +475,7 @@ export default function JobDetailPage() {
                                             </div>
 
                                             {/* Task details (collapsible) */}
-                                            {expandedGroups[taskGroup.Name] && (
+                                            {expandedGroups[`${taskGroup.Name}-container`] && (
                                                 <div className="p-4 border-t">
                                                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
                                                         {/* Basic Info */}
@@ -532,6 +552,7 @@ export default function JobDetailPage() {
                                         </div>
                                     </div>
                                 </div>
+                                )}
                             </div>
                         ))}
                     </div>
