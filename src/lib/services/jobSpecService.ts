@@ -1,16 +1,28 @@
 // src/lib/services/jobSpecService.ts
-import { NomadJobFormData, TaskFormData } from '@/types/nomad';
+import { NomadJobFormData, TaskGroupFormData } from '@/types/nomad';
 
 interface NetworkConfig {
     Mode: string;
-    DynamicPorts: Array<{Label: string, To: number, TaskName?: string}>;
-    ReservedPorts: Array<{Label: string, Value: number, To?: number, TaskName?: string}>;
+    DynamicPorts: Array<{Label: string, To: number}>;
+    ReservedPorts: Array<{Label: string, Value: number, To?: number}>;
+}
+
+interface TaskConfig {
+    Name: string;
+    Driver: string;
+    Config: any;
+    Env: Record<string, string>;
+    Resources: {
+        CPU: number;
+        MemoryMB: number;
+        DiskMB: number;
+    };
 }
 
 interface TaskGroupConfig {
     Name: string;
     Count: number;
-    Tasks: Array<any>;
+    Tasks: Array<TaskConfig>;
     Networks?: Array<NetworkConfig>;
     Services?: Array<any>;
     Meta?: Record<string, string>;
@@ -34,10 +46,10 @@ interface JobSpec {
 /**
  * Creates a task configuration object for a Nomad job
  */
-function createTaskConfig(taskData: TaskFormData) {
+function createTaskConfig(groupData: TaskGroupFormData): TaskConfig {
     // Convert environment variables to the format expected by Nomad
     const env: Record<string, string> = {};
-    taskData.envVars.forEach((envVar) => {
+    groupData.envVars.forEach((envVar) => {
         if (envVar.key.trim() !== '') {
             env[envVar.key] = envVar.value;
         }
@@ -45,26 +57,26 @@ function createTaskConfig(taskData: TaskFormData) {
 
     // Base task configuration
     const taskConfig: any = {
-        image: taskData.image,
+        image: groupData.image,
     };
 
     // DockerAuth for private registry
-    if (taskData.usePrivateRegistry && taskData.dockerAuth) {
+    if (groupData.usePrivateRegistry && groupData.dockerAuth) {
         taskConfig.auth = {
-            username: taskData.dockerAuth.username,
-            password: taskData.dockerAuth.password
+            username: groupData.dockerAuth.username,
+            password: groupData.dockerAuth.password
         };
     }
 
     return {
-        Name: taskData.name,
-        Driver: taskData.plugin,
+        Name: groupData.name,
+        Driver: groupData.plugin,
         Config: taskConfig,
         Env: env,
         Resources: {
-            CPU: taskData.resources.CPU,
-            MemoryMB: taskData.resources.MemoryMB,
-            DiskMB: taskData.resources.DiskMB
+            CPU: groupData.resources.CPU,
+            MemoryMB: groupData.resources.MemoryMB,
+            DiskMB: groupData.resources.DiskMB || 500
         }
     };
 }
@@ -73,108 +85,83 @@ function createTaskConfig(taskData: TaskFormData) {
  * Creates a Nomad job specification from form data
  */
 function createJobSpec(formData: NomadJobFormData): JobSpec {
-    // Prepare network configuration based on user selection
-    let network: NetworkConfig | undefined;
+    // Create task groups (one task per group)
+    const taskGroups = formData.taskGroups.map(groupData => {
+        // Prepare network configuration based on user selection
+        let network: NetworkConfig | undefined;
 
-    if (!formData.enablePorts) {
-        network = undefined;
-    } else {
-        network = {
-            Mode: formData.networkMode || 'bridge', // Default to bridge if not specified
-            DynamicPorts: [] as Array<{Label: string, To: number, TaskName?: string}>,
-            ReservedPorts: [] as Array<{Label: string, Value: number, To?: number, TaskName?: string}>
-        };
-
-        // Process ports configuration
-        formData.ports.forEach(port => {
-            if (port.label.trim() === '') return;
-
-            const portConfig: any = {
-                Label: port.label,
-                ...(port.to ? {To: port.to} : {})
+        if (!groupData.enableNetwork) {
+            network = undefined;
+        } else {
+            network = {
+                Mode: groupData.networkMode || 'bridge', // Default to bridge if not specified
+                DynamicPorts: [] as Array<{Label: string, To: number}>,
+                ReservedPorts: [] as Array<{Label: string, Value: number, To?: number}>
             };
 
-            if (port.taskName && formData.tasks.some(task => task.name === port.taskName)) {
-                portConfig.TaskName = port.taskName;
-            }
+            // Process ports configuration
+            groupData.ports.forEach(port => {
+                if (port.label.trim() === '') return;
 
-            if (port.static) {
-                // For static ports, include the host port value
-                portConfig.Value = port.value;
-                network!.ReservedPorts.push(portConfig);
-            } else {
-                // For dynamic ports, don't include a specific value
-                network!.DynamicPorts.push(portConfig);
-            }
-        });
-    }
-
-    // Create individual services for each task
-    const taskServices: any[] = [];
-
-    // Only create services if networking is enabled
-    if (formData.enablePorts) {
-        // Create a service for each task
-        formData.tasks.forEach(task => {
-            // Find ports for this task
-            const taskPorts = formData.ports.filter(port =>
-                port.taskName === task.name || !port.taskName);
-
-            if (taskPorts.length > 0) {
-                // Create a service for this task with proper type
-                const service: any = {
-                    Name: task.name,
-                    TaskName: task.name,
-                    AddressMode: "auto",
-                    PortLabel: taskPorts[0].label, // Use the first port
-                    Provider: "nomad", // Always use Nomad provider
+                const portConfig: any = {
+                    Label: port.label,
+                    ...(port.to ? {To: port.to} : {})
                 };
 
-                // Add health check if enabled
-                if (formData.enableHealthCheck) {
-                    const healthCheck = formData.healthChecks[0];
-                    service.Checks = [{
-                        Type: healthCheck.type,
-                        ...(healthCheck.type === 'http' ? {Path: healthCheck.path} : {}),
-                        ...(healthCheck.type === 'script' ? {Command: healthCheck.command} : {}),
-                        Interval: healthCheck.interval * 1000000000, // Convert to nanoseconds
-                        Timeout: healthCheck.timeout * 1000000000, // Convert to nanoseconds
-                        CheckRestart: {
-                            Limit: 3,
-                            Grace: (healthCheck.initialDelay || 5) * 1000000000,
-                            IgnoreWarnings: false
-                        }
-                    }];
+                if (port.static) {
+                    // For static ports, include the host port value
+                    portConfig.Value = port.value;
+                    network!.ReservedPorts.push(portConfig);
+                } else {
+                    // For dynamic ports, don't include a specific value
+                    network!.DynamicPorts.push(portConfig);
                 }
-
-                taskServices.push(service);
-            }
-        });
-    }
-
-    // Create task configurations for each task
-    const tasks = formData.tasks.map(taskData => {
-        // Ensure task name is set
-        if (!taskData.name.trim()) {
-            taskData.name = `${formData.name}-task-${formData.tasks.indexOf(taskData) + 1}`;
+            });
         }
 
-        return createTaskConfig(taskData);
+        // Create task configuration for this group (one task per group)
+        const task = createTaskConfig(groupData);
+
+        // Task group configuration
+        const taskGroup: TaskGroupConfig = {
+            Name: groupData.name,
+            Count: groupData.count,
+            Tasks: [task]
+        };
+
+        if (network) {
+            taskGroup.Networks = [network];
+        }
+
+        // Add health check service if enabled
+        if (groupData.enableHealthCheck && groupData.healthCheck) {
+            const healthCheck = groupData.healthCheck;
+
+            const service = {
+                Name: groupData.name,
+                TaskName: groupData.name,
+                AddressMode: "auto",
+                PortLabel: groupData.ports.length > 0 ? groupData.ports[0].label : "http",
+                Provider: "nomad",
+                Checks: [{
+                    Type: healthCheck.type,
+                    ...(healthCheck.type === 'http' ? {Path: healthCheck.path} : {}),
+                    ...(healthCheck.type === 'script' ? {Command: healthCheck.command} : {}),
+                    Interval: healthCheck.interval * 1000000000, // Convert to nanoseconds
+                    Timeout: healthCheck.timeout * 1000000000, // Convert to nanoseconds
+                    CheckRestart: {
+                        Limit: 3,
+                        Grace: (healthCheck.initialDelay || 5) * 1000000000,
+                        IgnoreWarnings: false
+                    }
+                }]
+            };
+
+            taskGroup.Services = [service];
+        }
+
+        return taskGroup;
     });
-
-    const taskGroup: TaskGroupConfig = {
-        Name: formData.name,
-        Count: formData.count,
-        Tasks: tasks
-    };
-
-    if (network) {
-        taskGroup.Networks = [network];
-    }
-
-    if (taskServices.length > 0) {
-        taskGroup.Services = taskServices;
-    }
 
     // Basic job template for Nomad
     return {
@@ -184,7 +171,7 @@ function createJobSpec(formData: NomadJobFormData): JobSpec {
             Namespace: formData.namespace,
             Type: 'service',
             Datacenters: formData.datacenters,
-            TaskGroups: [taskGroup]
+            TaskGroups: taskGroups
         }
     };
 }
@@ -218,25 +205,131 @@ function updateJobSpec(originalJob: any, formData: NomadJobFormData): JobSpec {
             newJobSpec.Job.Priority = originalJob.Priority;
         }
 
-        // Preserve task group metadata if necessary
-        if (originalJob.TaskGroups && originalJob.TaskGroups.length > 0 &&
-            newJobSpec.Job.TaskGroups && newJobSpec.Job.TaskGroups.length > 0) {
-
-            // Preserve original task group properties
-            const originalTG = originalJob.TaskGroups[0];
-            const newTG = newJobSpec.Job.TaskGroups[0];
-
-            if (originalTG.Meta) {
-                newTG.Meta = originalTG.Meta;
-            }
-
-            if (originalTG.Constraints) {
-                newTG.Constraints = originalTG.Constraints;
-            }
+        // Attempt to preserve metadata for task groups that still exist with the same name
+        if (originalJob.TaskGroups && originalJob.TaskGroups.length > 0) {
+            newJobSpec.Job.TaskGroups.forEach(newTG => {
+                const originalTG = originalJob.TaskGroups.find((tg: any) => tg.Name === newTG.Name);
+                if (originalTG) {
+                    if (originalTG.Meta) {
+                        newTG.Meta = originalTG.Meta;
+                    }
+                    if (originalTG.Constraints) {
+                        newTG.Constraints = originalTG.Constraints;
+                    }
+                }
+            });
         }
     }
 
     return newJobSpec;
 }
 
-export { createJobSpec, updateJobSpec };
+/**
+ * Converts a job from the API to our form data structure
+ */
+function convertJobToFormData(job: any): NomadJobFormData {
+    // Extract task groups
+    const taskGroups = job.TaskGroups.map((group: any) => {
+        // In our new model, each group has exactly one task
+        const task = group.Tasks[0];
+        const config = task.Config || {};
+
+        // Extract environment variables
+        const envVars = task.Env ?
+            Object.entries(task.Env).map(([key, value]) => ({ key, value: value as string })) :
+            [{ key: '', value: '' }];
+
+        // Extract Docker auth if present
+        const usePrivateRegistry = !!(config.auth && config.auth.username && config.auth.password);
+
+        // Extract network configuration
+        const networkConfig = group.Networks && group.Networks.length > 0 ? group.Networks[0] : null;
+        const enableNetwork = !!networkConfig;
+        const networkMode = (networkConfig && networkConfig.Mode) ? networkConfig.Mode : 'none';
+
+        // Extract ports
+        let ports = [];
+
+        if (networkConfig) {
+            // Add dynamic ports
+            if (networkConfig.DynamicPorts && networkConfig.DynamicPorts.length > 0) {
+                ports = [
+                    ...ports,
+                    ...networkConfig.DynamicPorts.map((port: any) => ({
+                        label: port.Label,
+                        value: 0, // Dynamic ports don't have a specific value
+                        to: port.To || 0,
+                        static: false
+                    }))
+                ];
+            }
+
+            // Add reserved ports
+            if (networkConfig.ReservedPorts && networkConfig.ReservedPorts.length > 0) {
+                ports = [
+                    ...ports,
+                    ...networkConfig.ReservedPorts.map((port: any) => ({
+                        label: port.Label,
+                        value: port.Value,
+                        to: port.To || port.Value,
+                        static: true
+                    }))
+                ];
+            }
+        }
+
+        // If no ports found, add a default one
+        if (ports.length === 0) {
+            ports = [{ label: 'http', value: 8080, to: 8080, static: false }];
+        }
+
+        // Extract health checks
+        const services = group.Services || [];
+        const service = services.length > 0 ? services[0] : null;
+        const healthCheck = service && service.Checks && service.Checks.length > 0 ? service.Checks[0] : null;
+
+        const healthCheckData = healthCheck ? {
+            type: (healthCheck.Type || 'http') as 'http' | 'tcp' | 'script',
+            path: healthCheck.Type === 'http' ? healthCheck.Path : '/health',
+            command: healthCheck.Type === 'script' ? healthCheck.Command : '',
+            interval: healthCheck ? Math.floor(healthCheck.Interval / 1000000000) : 30, // Convert from nanoseconds
+            timeout: healthCheck ? Math.floor(healthCheck.Timeout / 1000000000) : 5, // Convert from nanoseconds
+            initialDelay: healthCheck.CheckRestart ? Math.floor(healthCheck.CheckRestart.Grace / 1000000000) : 5,
+            failuresBeforeUnhealthy: 3,
+            successesBeforeHealthy: 2
+        } : undefined;
+
+        return {
+            name: group.Name,
+            count: group.Count || 1,
+            image: config.image || '',
+            plugin: task.Driver || 'podman',
+            resources: {
+                CPU: task.Resources?.CPU || 100,
+                MemoryMB: task.Resources?.MemoryMB || 256,
+                DiskMB: task.Resources?.DiskMB || 500,
+            },
+            envVars: envVars.length > 0 ? envVars : [{ key: '', value: '' }],
+            usePrivateRegistry,
+            dockerAuth: usePrivateRegistry ? {
+                username: config.auth.username,
+                password: config.auth.password
+            } : undefined,
+            enableNetwork,
+            networkMode: networkMode as 'none' | 'host' | 'bridge',
+            ports,
+            enableHealthCheck: !!healthCheck,
+            healthCheck: healthCheckData
+        };
+    });
+
+    return {
+        name: job.Name,
+        namespace: job.Namespace || 'default',
+        taskGroups,
+        serviceProvider: 'nomad',
+        datacenters: job.Datacenters || ['dc1'],
+    };
+}
+
+export { createJobSpec, updateJobSpec, convertJobToFormData };

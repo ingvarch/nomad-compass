@@ -21,8 +21,8 @@ export default function JobDetailPage() {
     const [job, setJob] = useState<any>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [selectedTaskIndex, setSelectedTaskIndex] = useState<number>(0);
-    const [expandedTasks, setExpandedTasks] = useState<Record<string, boolean>>({});
+    const [selectedTaskGroup, setSelectedTaskGroup] = useState<number>(0);
+    const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
 
     const jobId = params.id as string;
     const namespace = searchParams.get('namespace') || 'default';
@@ -40,13 +40,13 @@ export default function JobDetailPage() {
             const jobDetail = await client.getJob(jobId, namespace);
             setJob(jobDetail);
 
-            // Initialize expanded state for all tasks
-            if (jobDetail.TaskGroups && jobDetail.TaskGroups.length > 0 && jobDetail.TaskGroups[0].Tasks) {
+            // Initialize expanded state for all task groups
+            if (jobDetail.TaskGroups && jobDetail.TaskGroups.length > 0) {
                 const initialExpandedState: Record<string, boolean> = {};
-                jobDetail.TaskGroups[0].Tasks.forEach((task: any, index: number) => {
-                    initialExpandedState[task.Name] = index === 0; // Only first task expanded by default
+                jobDetail.TaskGroups.forEach((group: any, index: number) => {
+                    initialExpandedState[group.Name] = index === 0; // Only first group expanded by default
                 });
-                setExpandedTasks(initialExpandedState);
+                setExpandedGroups(initialExpandedState);
             }
 
             setError(null);
@@ -64,11 +64,11 @@ export default function JobDetailPage() {
         fetchJobDetail();
     }, [fetchJobDetail]);
 
-    // Toggle task details visibility
-    const toggleTaskDetails = (taskName: string) => {
-        setExpandedTasks({
-            ...expandedTasks,
-            [taskName]: !expandedTasks[taskName]
+    // Toggle task group details visibility
+    const toggleGroupDetails = (groupName: string) => {
+        setExpandedGroups({
+            ...expandedGroups,
+            [groupName]: !expandedGroups[groupName]
         });
     };
 
@@ -77,7 +77,7 @@ export default function JobDetailPage() {
         return new Date(timestamp * 1000).toLocaleString();
     };
 
-    // Get health check details
+    // Get health check details for a task group
     const getHealthChecks = (taskGroup: any) => {
         if (!taskGroup || !taskGroup.Services || !taskGroup.Services.length) {
             return null;
@@ -147,7 +147,6 @@ export default function JobDetailPage() {
     };
 
     // Get network and port configuration
-    // Get network and port configuration
     const getNetworkConfig = (taskGroup: any) => {
         if (!taskGroup || !taskGroup.Networks || !taskGroup.Networks.length) {
             return null;
@@ -161,122 +160,87 @@ export default function JobDetailPage() {
                 return null;
             }
 
-            // Group ports by task
-            const portsByTask: Record<string, { dynamic: any[], reserved: any[] }> = {
-                "": { dynamic: [], reserved: [] } // Empty key for ports without a specific task
-            };
-
-            // Organize dynamic ports by task
-            if (hasDynamic) {
-                network.DynamicPorts.forEach((port: any) => {
-                    const taskName = port.TaskName || "";
-                    if (!portsByTask[taskName]) {
-                        portsByTask[taskName] = { dynamic: [], reserved: [] };
-                    }
-                    portsByTask[taskName].dynamic.push(port);
-                });
-            }
-
-            // Organize reserved ports by task
-            if (hasReserved) {
-                network.ReservedPorts.forEach((port: any) => {
-                    const taskName = port.TaskName || "";
-                    if (!portsByTask[taskName]) {
-                        portsByTask[taskName] = { dynamic: [], reserved: [] };
-                    }
-                    portsByTask[taskName].reserved.push(port);
-                });
-            }
-
             return (
                 <div key={index} className="mt-4">
                     <h5 className="text-sm font-medium text-gray-700 mb-2">Network Configuration (Mode: {network.Mode})</h5>
 
-                    {Object.entries(portsByTask).map(([taskName, ports]) => (
-                        <div key={taskName} className="mb-4">
-                            <h6 className="text-xs font-medium text-gray-600 mb-1">
-                                {taskName ? `Ports for task: ${taskName}` : 'Shared Ports (All Tasks)'}
-                            </h6>
-
-                            {ports.dynamic.length > 0 && (
-                                <div className="mb-3">
-                                    <div className="text-xs text-gray-500 mb-1">Dynamic Ports</div>
-                                    <div className="overflow-x-auto">
-                                        <table className="min-w-full divide-y divide-gray-200">
-                                            <thead className="bg-gray-50">
-                                            <tr>
-                                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                    Label
-                                                </th>
-                                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                    Host Port
-                                                </th>
-                                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                    Container Port
-                                                </th>
-                                            </tr>
-                                            </thead>
-                                            <tbody className="bg-white divide-y divide-gray-200">
-                                            {ports.dynamic.map((port: any, portIndex: number) => (
-                                                <tr key={portIndex}>
-                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                        {port.Label}
-                                                    </td>
-                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                    <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
-                                                        Dynamic
-                                                    </span>
-                                                    </td>
-                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                        {port.To || port.Value || '-'}
-                                                    </td>
-                                                </tr>
-                                            ))}
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </div>
-                            )}
-
-                            {ports.reserved.length > 0 && (
-                                <div>
-                                    <div className="text-xs text-gray-500 mb-1">Static Ports</div>
-                                    <div className="overflow-x-auto">
-                                        <table className="min-w-full divide-y divide-gray-200">
-                                            <thead className="bg-gray-50">
-                                            <tr>
-                                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                    Label
-                                                </th>
-                                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                    Host Port
-                                                </th>
-                                                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                                    Container Port
-                                                </th>
-                                            </tr>
-                                            </thead>
-                                            <tbody className="bg-white divide-y divide-gray-200">
-                                            {ports.reserved.map((port: any, portIndex: number) => (
-                                                <tr key={portIndex}>
-                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                        {port.Label}
-                                                    </td>
-                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                        {port.Value}
-                                                    </td>
-                                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                                        {port.To || port.Value || '-'}
-                                                    </td>
-                                                </tr>
-                                            ))}
-                                            </tbody>
-                                        </table>
-                                    </div>
-                                </div>
-                            )}
+                    {hasDynamic && (
+                        <div className="mb-3">
+                            <div className="text-xs text-gray-500 mb-1">Dynamic Ports</div>
+                            <div className="overflow-x-auto">
+                                <table className="min-w-full divide-y divide-gray-200">
+                                    <thead className="bg-gray-50">
+                                    <tr>
+                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            Label
+                                        </th>
+                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            Host Port
+                                        </th>
+                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            Container Port
+                                        </th>
+                                    </tr>
+                                    </thead>
+                                    <tbody className="bg-white divide-y divide-gray-200">
+                                    {network.DynamicPorts.map((port: any, portIndex: number) => (
+                                        <tr key={portIndex}>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                {port.Label}
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                            <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800">
+                                                Dynamic
+                                            </span>
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                {port.To || port.Value || '-'}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
-                    ))}
+                    )}
+
+                    {hasReserved && (
+                        <div>
+                            <div className="text-xs text-gray-500 mb-1">Static Ports</div>
+                            <div className="overflow-x-auto">
+                                <table className="min-w-full divide-y divide-gray-200">
+                                    <thead className="bg-gray-50">
+                                    <tr>
+                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            Label
+                                        </th>
+                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            Host Port
+                                        </th>
+                                        <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                            Container Port
+                                        </th>
+                                    </tr>
+                                    </thead>
+                                    <tbody className="bg-white divide-y divide-gray-200">
+                                    {network.ReservedPorts.map((port: any, portIndex: number) => (
+                                        <tr key={portIndex}>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                {port.Label}
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                {port.Value}
+                                            </td>
+                                            <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                {port.To || port.Value || '-'}
+                                            </td>
+                                        </tr>
+                                    ))}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    )}
                 </div>
             );
         });
@@ -286,6 +250,7 @@ export default function JobDetailPage() {
         fetchJobDetail();
     };
 
+    // Render loading state
     if (isLoading) {
         return (
             <ProtectedLayout>
@@ -296,6 +261,7 @@ export default function JobDetailPage() {
         );
     }
 
+    // Render error state
     if (error) {
         return (
             <ProtectedLayout>
@@ -307,6 +273,7 @@ export default function JobDetailPage() {
         );
     }
 
+    // Render "not found" state
     if (!job) {
         return (
             <ProtectedLayout>
@@ -327,151 +294,6 @@ export default function JobDetailPage() {
             </ProtectedLayout>
         );
     }
-
-    const getTasksList = () => {
-        if (!job.TaskGroups || !job.TaskGroups.length || !job.TaskGroups[0].Tasks) {
-            return <div className="text-gray-500">No tasks found in this job.</div>;
-        }
-
-        const tasks = job.TaskGroups[0].Tasks;
-        return (
-            <div className="space-y-4">
-                <h4 className="text-lg font-medium text-gray-800">Containers ({tasks.length})</h4>
-
-                {tasks.map((task: any, taskIndex: number) => (
-                    <div key={taskIndex} className="border rounded-lg overflow-hidden bg-white">
-                        {/* Task header (always visible) */}
-                        <div
-                            className="p-4 flex justify-between items-center cursor-pointer bg-gray-50"
-                            onClick={() => toggleTaskDetails(task.Name)}
-                        >
-                            <div className="flex items-center">
-                                <svg
-                                    className={`h-5 w-5 text-gray-500 transition-transform ${expandedTasks[task.Name] ? 'transform rotate-90' : ''}`}
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    viewBox="0 0 20 20"
-                                    fill="currentColor"
-                                >
-                                    <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
-                                </svg>
-                                <h5 className="text-md font-medium text-gray-900 ml-2">
-                                    {task.Name}
-                                    {taskIndex === 0 && (
-                                        <span className="ml-2 px-2 py-0.5 text-xs rounded-full bg-blue-100 text-blue-800">Primary</span>
-                                    )}
-                                </h5>
-                            </div>
-                            <div className="flex items-center space-x-2">
-                                <span className="text-sm text-gray-500">{task.Driver}</span>
-                                <button
-                                    className={`px-3 py-1 text-xs font-medium rounded-full ${
-                                        selectedTaskIndex === taskIndex ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                                    }`}
-                                    onClick={(e) => {
-                                        e.stopPropagation();
-                                        setSelectedTaskIndex(taskIndex);
-                                    }}
-                                >
-                                    View Logs
-                                </button>
-                            </div>
-                        </div>
-
-                        {/* Task details (collapsible) */}
-                        {expandedTasks[task.Name] && (
-                            <div className="p-4 border-t">
-                                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-                                    {/* Basic Info */}
-                                    <div className="bg-gray-50 p-4 rounded-md">
-                                        <h6 className="text-sm font-medium text-gray-700 mb-2">Task Details</h6>
-                                        <dl className="divide-y divide-gray-200">
-                                            <div className="py-2 grid grid-cols-2">
-                                                <dt className="text-sm font-medium text-gray-500">Name</dt>
-                                                <dd className="text-sm text-gray-900">{task.Name}</dd>
-                                            </div>
-                                            <div className="py-2 grid grid-cols-2">
-                                                <dt className="text-sm font-medium text-gray-500">Driver</dt>
-                                                <dd className="text-sm text-gray-900">{task.Driver}</dd>
-                                            </div>
-                                            <div className="py-2 grid grid-cols-2">
-                                                <dt className="text-sm font-medium text-gray-500">Image</dt>
-                                                <dd className="text-sm text-gray-900 break-words">{task.Config?.image || '-'}</dd>
-                                            </div>
-                                            {task.Leader && (
-                                                <div className="py-2 grid grid-cols-2">
-                                                    <dt className="text-sm font-medium text-gray-500">Leader</dt>
-                                                    <dd className="text-sm text-gray-900">Yes</dd>
-                                                </div>
-                                            )}
-                                        </dl>
-                                    </div>
-
-                                    {/* Resources */}
-                                    <div className="bg-gray-50 p-4 rounded-md">
-                                        <h6 className="text-sm font-medium text-gray-700 mb-2">Resources</h6>
-                                        <dl className="divide-y divide-gray-200">
-                                            <div className="py-2 grid grid-cols-2">
-                                                <dt className="text-sm font-medium text-gray-500">CPU</dt>
-                                                <dd className="text-sm text-gray-900">{task.Resources?.CPU || 0} MHz</dd>
-                                            </div>
-                                            <div className="py-2 grid grid-cols-2">
-                                                <dt className="text-sm font-medium text-gray-500">Memory</dt>
-                                                <dd className="text-sm text-gray-900">{task.Resources?.MemoryMB || 0} MB</dd>
-                                            </div>
-                                            <div className="py-2 grid grid-cols-2">
-                                                <dt className="text-sm font-medium text-gray-500">Disk</dt>
-                                                <dd className="text-sm text-gray-900">{task.Resources?.DiskMB || 0} MB</dd>
-                                            </div>
-                                        </dl>
-                                    </div>
-
-                                    {/* Environment Variables */}
-                                    <div className="bg-gray-50 p-4 rounded-md">
-                                        <h6 className="text-sm font-medium text-gray-700 mb-2">Environment Variables</h6>
-                                        {task.Env && Object.keys(task.Env).length > 0 ? (
-                                            <EnvironmentVariableDisplay envVars={task.Env} />
-                                        ) : (
-                                            <p className="text-sm text-gray-500">No environment variables defined</p>
-                                        )}
-                                    </div>
-                                </div>
-
-                                {/* Additional Config */}
-                                {task.Config && Object.keys(task.Config).filter(key => key !== 'image' && key !== 'auth').length > 0 && (
-                                    <div className="mt-4 bg-gray-50 p-4 rounded-md">
-                                        <h6 className="text-sm font-medium text-gray-700 mb-2">Additional Configuration</h6>
-                                        <pre className="text-xs bg-gray-100 p-3 rounded overflow-auto max-h-40">
-                                            {JSON.stringify(
-                                                Object.entries(task.Config)
-                                                    .filter(([key]) => key !== 'image' && key !== 'auth')
-                                                    .reduce((obj, [key, value]) => ({ ...obj, [key]: value }), {}),
-                                                null, 2
-                                            )}
-                                        </pre>
-                                    </div>
-                                )}
-                            </div>
-                        )}
-                    </div>
-                ))}
-
-                {/* Inter-container communication info */}
-                {job.TaskGroups[0].Tasks.length > 1 && (
-                    <div className="p-4 bg-blue-50 border-l-4 border-blue-400 text-blue-700 rounded mt-4">
-                        <h5 className="font-medium">Container Communication</h5>
-                        <p className="text-sm mt-1">
-                            Containers within this Task Group can communicate with each other via:
-                        </p>
-                        <ul className="text-sm mt-2 list-disc list-inside">
-                            <li>For direct communication: <code className="bg-blue-100 px-1 py-0.5 rounded">localhost:<em>port</em></code></li>
-                            <li>Through service discovery: <code className="bg-blue-100 px-1 py-0.5 rounded">[task-name].service.[namespace].consul</code></li>
-                            <li>Example: <code className="bg-blue-100 px-1 py-0.5 rounded">{job.TaskGroups[0].Tasks[1]?.Name || 'db'}.service.{job.Namespace}.consul</code></li>
-                        </ul>
-                    </div>
-                )}
-            </div>
-        );
-    };
 
     return (
         <ProtectedLayout>
@@ -576,37 +398,151 @@ export default function JobDetailPage() {
 
                 {/* Task Groups */}
                 {job.TaskGroups && job.TaskGroups.length > 0 && (
-                    <div className="bg-white shadow rounded-lg overflow-hidden">
-                        <div className="px-6 py-5 border-b border-gray-200">
-                            <h3 className="text-lg font-medium text-gray-900">Task Group: {job.TaskGroups[0].Name}</h3>
-                        </div>
-                        <div className="p-6">
-                            <div className="flex justify-between items-start mb-4">
-                                <div>
-                                    <span className="px-2 py-1 text-xs font-semibold rounded-full bg-indigo-100 text-indigo-800">
-                                        Count: {job.TaskGroups[0].Count}
-                                    </span>
+                    <div className="space-y-6">
+                        {job.TaskGroups.map((taskGroup: any, groupIndex: number) => (
+                            <div key={groupIndex} className="bg-white shadow rounded-lg overflow-hidden">
+                                <div className="px-6 py-5 border-b border-gray-200">
+                                    <h3 className="text-lg font-medium text-gray-900">
+                                        Task Group: {taskGroup.Name}
+                                        <span className="ml-2 px-2 py-1 text-xs font-semibold rounded-full bg-indigo-100 text-indigo-800">
+                                            Count: {taskGroup.Count}
+                                        </span>
+                                    </h3>
+                                </div>
+                                <div className="p-6">
+                                    {/* Network Configuration */}
+                                    {getNetworkConfig(taskGroup)}
+
+                                    {/* Health Checks */}
+                                    {getHealthChecks(taskGroup)}
+
+                                    {/* Task (Container) */}
+                                    <div className="mt-6">
+                                        <h4 className="text-lg font-medium text-gray-800">Container</h4>
+                                        <div className="border rounded-lg overflow-hidden bg-white mt-2">
+                                            {/* Task header */}
+                                            <div
+                                                className="p-4 flex justify-between items-center cursor-pointer bg-gray-50"
+                                                onClick={() => toggleGroupDetails(taskGroup.Name)}
+                                            >
+                                                <div className="flex items-center">
+                                                    <svg
+                                                        className={`h-5 w-5 text-gray-500 transition-transform ${expandedGroups[taskGroup.Name] ? 'transform rotate-90' : ''}`}
+                                                        xmlns="http://www.w3.org/2000/svg"
+                                                        viewBox="0 0 20 20"
+                                                        fill="currentColor"
+                                                    >
+                                                        <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                                                    </svg>
+                                                    <h5 className="text-md font-medium text-gray-900 ml-2">
+                                                        {taskGroup.Tasks[0].Name}
+                                                    </h5>
+                                                </div>
+                                                <div className="flex items-center space-x-2">
+                                                    <span className="text-sm text-gray-500">{taskGroup.Tasks[0].Driver}</span>
+                                                    <button
+                                                        className={`px-3 py-1 text-xs font-medium rounded-full ${
+                                                            selectedTaskGroup === groupIndex ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                                                        }`}
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            setSelectedTaskGroup(groupIndex);
+                                                        }}
+                                                    >
+                                                        View Logs
+                                                    </button>
+                                                </div>
+                                            </div>
+
+                                            {/* Task details (collapsible) */}
+                                            {expandedGroups[taskGroup.Name] && (
+                                                <div className="p-4 border-t">
+                                                    <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+                                                        {/* Basic Info */}
+                                                        <div className="bg-gray-50 p-4 rounded-md">
+                                                            <h6 className="text-sm font-medium text-gray-700 mb-2">Task Details</h6>
+                                                            <dl className="divide-y divide-gray-200">
+                                                                <div className="py-2 grid grid-cols-2">
+                                                                    <dt className="text-sm font-medium text-gray-500">Name</dt>
+                                                                    <dd className="text-sm text-gray-900">{taskGroup.Tasks[0].Name}</dd>
+                                                                </div>
+                                                                <div className="py-2 grid grid-cols-2">
+                                                                    <dt className="text-sm font-medium text-gray-500">Driver</dt>
+                                                                    <dd className="text-sm text-gray-900">{taskGroup.Tasks[0].Driver}</dd>
+                                                                </div>
+                                                                <div className="py-2 grid grid-cols-2">
+                                                                    <dt className="text-sm font-medium text-gray-500">Image</dt>
+                                                                    <dd className="text-sm text-gray-900 break-words">{taskGroup.Tasks[0].Config?.image || '-'}</dd>
+                                                                </div>
+                                                                {taskGroup.Tasks[0].Leader && (
+                                                                    <div className="py-2 grid grid-cols-2">
+                                                                        <dt className="text-sm font-medium text-gray-500">Leader</dt>
+                                                                        <dd className="text-sm text-gray-900">Yes</dd>
+                                                                    </div>
+                                                                )}
+                                                            </dl>
+                                                        </div>
+
+                                                        {/* Resources */}
+                                                        <div className="bg-gray-50 p-4 rounded-md">
+                                                            <h6 className="text-sm font-medium text-gray-700 mb-2">Resources</h6>
+                                                            <dl className="divide-y divide-gray-200">
+                                                                <div className="py-2 grid grid-cols-2">
+                                                                    <dt className="text-sm font-medium text-gray-500">CPU</dt>
+                                                                    <dd className="text-sm text-gray-900">{taskGroup.Tasks[0].Resources?.CPU || 0} MHz</dd>
+                                                                </div>
+                                                                <div className="py-2 grid grid-cols-2">
+                                                                    <dt className="text-sm font-medium text-gray-500">Memory</dt>
+                                                                    <dd className="text-sm text-gray-900">{taskGroup.Tasks[0].Resources?.MemoryMB || 0} MB</dd>
+                                                                </div>
+                                                                <div className="py-2 grid grid-cols-2">
+                                                                    <dt className="text-sm font-medium text-gray-500">Disk</dt>
+                                                                    <dd className="text-sm text-gray-900">{taskGroup.Tasks[0].Resources?.DiskMB || 0} MB</dd>
+                                                                </div>
+                                                            </dl>
+                                                        </div>
+
+                                                        {/* Environment Variables */}
+                                                        <div className="bg-gray-50 p-4 rounded-md">
+                                                            <h6 className="text-sm font-medium text-gray-700 mb-2">Environment Variables</h6>
+                                                            {taskGroup.Tasks[0].Env && Object.keys(taskGroup.Tasks[0].Env).length > 0 ? (
+                                                                <EnvironmentVariableDisplay envVars={taskGroup.Tasks[0].Env} />
+                                                            ) : (
+                                                                <p className="text-sm text-gray-500">No environment variables defined</p>
+                                                            )}
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Additional Config */}
+                                                    {taskGroup.Tasks[0].Config && Object.keys(taskGroup.Tasks[0].Config).filter(key => key !== 'image' && key !== 'auth').length > 0 && (
+                                                        <div className="mt-4 bg-gray-50 p-4 rounded-md">
+                                                            <h6 className="text-sm font-medium text-gray-700 mb-2">Additional Configuration</h6>
+                                                            <pre className="text-xs bg-gray-100 p-3 rounded overflow-auto max-h-40">
+                                                                {JSON.stringify(
+                                                                    Object.entries(taskGroup.Tasks[0].Config)
+                                                                        .filter(([key]) => key !== 'image' && key !== 'auth')
+                                                                        .reduce((obj, [key, value]) => ({ ...obj, [key]: value }), {}),
+                                                                    null, 2
+                                                                )}
+                                                            </pre>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )}
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
-
-                            {/* Network Configuration */}
-                            {getNetworkConfig(job.TaskGroups[0])}
-
-                            {/* Health Checks */}
-                            {getHealthChecks(job.TaskGroups[0])}
-
-                            {/* Tasks (Containers) */}
-                            {getTasksList()}
-                        </div>
+                        ))}
                     </div>
                 )}
 
                 {/* Logs */}
                 <div className="mt-6">
-                    {job.TaskGroups && job.TaskGroups.length > 0 && job.TaskGroups[0].Tasks && job.TaskGroups[0].Tasks.length > 0 && (
+                    {job.TaskGroups && job.TaskGroups.length > 0 && job.TaskGroups[selectedTaskGroup]?.Tasks && job.TaskGroups[selectedTaskGroup].Tasks.length > 0 && (
                         <JobLogs
                             jobId={job.ID}
-                            taskName={job.TaskGroups[0].Tasks[selectedTaskIndex]?.Name}
+                            taskName={job.TaskGroups[selectedTaskGroup].Tasks[0]?.Name}
                         />
                     )}
                 </div>

@@ -85,7 +85,6 @@ export interface NomadPort {
     value: number;
     to?: number;
     static?: boolean;
-    taskName?: string;
 }
 
 export interface NomadHealthCheck {
@@ -110,29 +109,27 @@ export interface DockerAuth {
     password: string;
 }
 
-// New interface for task-specific form data
-export interface TaskFormData {
+export interface TaskGroupFormData {
     name: string;
+    count: number;
     image: string;
     plugin: string;
     resources: NomadResource;
     envVars: NomadEnvVar[];
     usePrivateRegistry: boolean;
     dockerAuth?: DockerAuth;
+    enableNetwork: boolean;
+    networkMode: 'none' | 'host' | 'bridge';
+    ports: NomadPort[];
+    enableHealthCheck: boolean;
+    healthCheck?: NomadHealthCheck;
 }
 
 export interface NomadJobFormData {
     name: string;
     namespace: string;
-    // Tasks array to hold multiple containers
-    tasks: TaskFormData[];
-    ports: NomadPort[];
-    enablePorts: boolean;
-    networkMode: 'none' | 'host' | 'bridge';
+    taskGroups: TaskGroupFormData[];
     serviceProvider: 'nomad';
-    healthChecks: NomadHealthCheck[];
-    enableHealthCheck: boolean;
-    count: number;
     datacenters: string[];
 }
 

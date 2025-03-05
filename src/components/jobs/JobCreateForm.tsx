@@ -4,11 +4,7 @@
 import React, { useState } from 'react';
 import { useJobForm } from '@/hooks/useJobForm';
 import BasicJobInfoForm from './forms/BasicJobInfoForm';
-import ResourcesForm from './forms/ResourcesForm';
-import EnvironmentVariablesForm from './forms/EnvironmentVariablesForm';
-import DockerAuthForm from './forms/DockerAuthForm';
-import AdvancedSettingsForm from './forms/AdvancedSettingsForm';
-import TaskForm from './forms/TaskForm';
+import TaskGroupForm from './forms/TaskGroupForm';
 
 export const JobCreateForm: React.FC = () => {
     const [showAdvancedSettings, setShowAdvancedSettings] = useState(false);
@@ -22,20 +18,18 @@ export const JobCreateForm: React.FC = () => {
         success,
         namespaces,
         handleInputChange,
-        handleTaskInputChange,
+        handleGroupInputChange,
         handleSelectChange,
-        handleCheckboxChange,
-        handleTaskCheckboxChange,
+        handleGroupCheckboxChange,
         handleEnvVarChange,
         addEnvVar,
         removeEnvVar,
         handlePortChange,
-        handlePortTaskChange,
         addPort,
         removePort,
         handleHealthCheckChange,
-        addTask,
-        removeTask,
+        addTaskGroup,
+        removeTaskGroup,
         handleSubmit
     } = useJobForm();
 
@@ -61,7 +55,7 @@ export const JobCreateForm: React.FC = () => {
                     <BasicJobInfoForm
                         name={formData.name}
                         namespace={formData.namespace}
-                        count={formData.count}
+                        count={0} // Not used in the new form
                         datacenters={formData.datacenters}
                         namespaces={namespaces}
                         onChange={handleInputChange}
@@ -70,364 +64,43 @@ export const JobCreateForm: React.FC = () => {
                         isNameValid={isNameValid}
                     />
 
-                    {/* Tasks (Containers) */}
+                    {/* Task Groups (Containers) */}
                     <div className="mb-6 border-t pt-4">
                         <div className="flex justify-between items-center mb-4">
-                            <h3 className="text-lg font-medium text-gray-900">Containers</h3>
+                            <h3 className="text-lg font-medium text-gray-900">Task Groups</h3>
                             <button
                                 type="button"
-                                onClick={addTask}
+                                onClick={addTaskGroup}
                                 className="inline-flex items-center px-3 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                                 disabled={isLoading}
                             >
-                                Add Container
+                                Add Task Group
                             </button>
                         </div>
 
-                        {/* Network Mode Info */}
-                        {formData.tasks.length > 1 && (
-                            <div className="mb-4 p-3 bg-blue-50 border-l-4 border-blue-400 text-blue-700 rounded">
-                                <h4 className="font-medium">Multi-Container Setup</h4>
-                                <p className="text-sm mt-1">
-                                    Your job has multiple containers. For proper communication between them:
-                                </p>
-                                <ul className="text-sm mt-2 list-disc list-inside ml-2">
-                                    <li>Network settings are <strong>{formData.enablePorts ? 'enabled' : 'disabled'}</strong></li>
-                                    <li>Network mode is set to <strong>{formData.networkMode}</strong></li>
-                                </ul>
-                                {!formData.enablePorts && (
-                                    <div className="mt-2 text-red-600 font-semibold text-sm">
-                                        Warning: You must enable network settings for multi-container communication
-                                    </div>
-                                )}
-                                {formData.enablePorts && formData.networkMode === 'none' && (
-                                    <div className="mt-2 text-red-600 font-semibold text-sm">
-                                        Warning: 'None' network mode prevents service discovery between containers
-                                    </div>
-                                )}
-                            </div>
-                        )}
-
-                        {/* Task Info Block */}
                         <div className="space-y-6">
-                            {formData.tasks.map((task, index) => (
-                                <TaskForm
+                            {formData.taskGroups.map((group, index) => (
+                                <TaskGroupForm
                                     key={index}
-                                    taskIndex={index}
-                                    task={task}
+                                    groupIndex={index}
+                                    group={group}
                                     isFirst={index === 0}
-                                    onInputChange={(e) => handleTaskInputChange(index, e)}
-                                    onCheckboxChange={(e) => handleTaskCheckboxChange(index, e)}
+                                    onInputChange={(e) => handleGroupInputChange(index, e)}
+                                    onCheckboxChange={(e) => handleGroupCheckboxChange(index, e)}
                                     onEnvVarChange={(varIndex, field, value) => handleEnvVarChange(index, varIndex, field, value)}
                                     onAddEnvVar={() => addEnvVar(index)}
                                     onRemoveEnvVar={(varIndex) => removeEnvVar(index, varIndex)}
-                                    onRemoveTask={() => removeTask(index)}
-                                    groupName={formData.name}
+                                    onPortChange={(portIndex, field, value) => handlePortChange(index, portIndex, field, value)}
+                                    onAddPort={() => addPort(index)}
+                                    onRemovePort={(portIndex) => removePort(index, portIndex)}
+                                    onHealthCheckChange={(field, value) => handleHealthCheckChange(index, field, value)}
+                                    onRemoveGroup={() => removeTaskGroup(index)}
+                                    jobName={formData.name}
                                     namespace={formData.namespace}
                                     isLoading={isLoading}
                                 />
                             ))}
                         </div>
-
-                        {formData.tasks.length > 1 && (
-                            <div className="mt-4 p-4 bg-blue-50 border-l-4 border-blue-400 text-blue-700 rounded">
-                                <h4 className="font-medium">Container Communication</h4>
-                                <p className="text-sm mt-1">
-                                    Containers within the same Task Group can communicate with each other via localhost or through service discovery.
-                                </p>
-                                <ul className="text-sm mt-2 list-disc list-inside">
-                                    <li>For direct communication: <code className="bg-blue-100 px-1 py-0.5 rounded">localhost:<em>port</em></code></li>
-                                    <li>Through service discovery with Nomad: <code className="bg-blue-100 px-1 py-0.5 rounded">[task-name].service.[namespace].nomad</code></li>
-                                    <li>Example: <code className="bg-blue-100 px-1 py-0.5 rounded">{formData.tasks[1]?.name || 'db'}.service.{formData.namespace}.nomad</code></li>
-                                </ul>
-                                <div className="mt-2 font-semibold">
-                                    {formData.enablePorts && formData.networkMode === 'bridge' ? (
-                                        <div className="text-green-700">✓ Your current settings support service discovery</div>
-                                    ) : (
-                                        <div className="text-yellow-700">⚠️ Change network mode to 'bridge' for service discovery to work properly</div>
-                                    )}
-                                </div>
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Network and Ports Configuration */}
-                    <div className="mb-6 border-t pt-4">
-                        <div className="flex items-center mb-2">
-                            <input
-                                id="enablePorts"
-                                name="enablePorts"
-                                type="checkbox"
-                                checked={formData.enablePorts}
-                                onChange={handleCheckboxChange}
-                                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                                disabled={isLoading}
-                            />
-                            <label htmlFor="enablePorts" className="ml-2 block text-md font-medium text-gray-700">
-                                Enable Network & Port Configuration
-                            </label>
-                        </div>
-
-                        {formData.enablePorts && (
-                            <div className="border p-4 rounded-md bg-white">
-                                <div className="mb-4 p-3 bg-blue-50 border-l-4 border-blue-400 text-blue-700 rounded">
-                                    <h5 className="font-medium">Group Network Configuration</h5>
-                                    <p className="text-sm mt-1">
-                                        Network settings are applied to the entire task group. All containers in this group will share the same network mode.
-                                    </p>
-                                </div>
-
-                                {/* Network Mode Selection */}
-                                <div className="mb-4">
-                                    <label htmlFor="networkMode" className="block text-sm font-medium text-gray-700 mb-1">
-                                        Network Mode
-                                    </label>
-                                    <select
-                                        id="networkMode"
-                                        name="networkMode"
-                                        value={formData.networkMode}
-                                        onChange={handleSelectChange}
-                                        className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                        disabled={isLoading}
-                                    >
-                                        <option value="bridge">Bridge</option>
-                                        <option value="host">Host</option>
-                                        <option value="none">None</option>
-                                    </select>
-                                    <p className="mt-1 text-xs text-gray-500">
-                                        Select the container network mode. 'Bridge' is recommended for service discovery, 'Host' uses host network directly.
-                                    </p>
-
-                                    {formData.networkMode === 'none' && formData.tasks.length > 1 && (
-                                        <div className="mt-2 p-3 bg-red-50 border-l-4 border-red-400 text-red-700">
-                                            <p className="text-sm">
-                                                <strong>Warning:</strong> Using <code>none</code> mode will prevent containers from communicating by service name. For multi-container jobs, use <code>bridge</code> mode.
-                                            </p>
-                                        </div>
-                                    )}
-                                </div>
-
-                                {/* Ports Configuration */}
-                                <div className="mb-4">
-                                    <div className="flex justify-between items-center mb-2">
-                                        <h4 className="text-md font-medium text-gray-700">Ports</h4>
-                                        <button
-                                            type="button"
-                                            onClick={addPort}
-                                            className="inline-flex items-center px-2 py-1 border border-transparent text-xs font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                                            disabled={isLoading}
-                                        >
-                                            Add Port
-                                        </button>
-                                    </div>
-
-                                    {formData.ports.map((port, index) => (
-                                        <div key={index} className="flex flex-wrap items-end gap-2 mb-2 p-2 border rounded-md bg-white">
-                                            <div className="w-full md:w-auto">
-                                                <label className="block text-xs font-medium text-gray-500 mb-1">Container</label>
-                                                <select
-                                                    value={port.taskName || ''}
-                                                    onChange={(e) => handlePortTaskChange(index, e.target.value)}
-                                                    className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                                    disabled={isLoading}
-                                                >
-                                                    <option value="">Group-level port</option>
-                                                    {formData.tasks.map((task, taskIndex) => (
-                                                        <option key={taskIndex} value={task.name}>
-                                                            {task.name || `Container ${taskIndex + 1}`}
-                                                        </option>
-                                                    ))}
-                                                </select>
-                                            </div>
-
-                                            <div className="w-full md:w-auto">
-                                                <label className="block text-xs font-medium text-gray-500 mb-1">Label</label>
-                                                <input
-                                                    type="text"
-                                                    value={port.label}
-                                                    onChange={(e) => handlePortChange(index, 'label', e.target.value)}
-                                                    placeholder="http"
-                                                    className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                                    disabled={isLoading}
-                                                />
-                                            </div>
-
-                                            <div className="w-full md:w-auto">
-                                                <label className="block text-xs font-medium text-gray-500 mb-1">Port Type</label>
-                                                <select
-                                                    value={port.static ? 'true' : 'false'}
-                                                    onChange={(e) => handlePortChange(index, 'static', e.target.value)}
-                                                    className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                                    disabled={isLoading}
-                                                >
-                                                    <option value="false">Dynamic</option>
-                                                    <option value="true">Static</option>
-                                                </select>
-                                            </div>
-
-                                            {port.static && (
-                                                <div className="w-full md:w-auto">
-                                                    <label className="block text-xs font-medium text-gray-500 mb-1">Host Port</label>
-                                                    <input
-                                                        type="number"
-                                                        value={port.value}
-                                                        onChange={(e) => handlePortChange(index, 'value', e.target.value)}
-                                                        placeholder="8080"
-                                                        min="1"
-                                                        max="65535"
-                                                        className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                                        disabled={isLoading}
-                                                    />
-                                                </div>
-                                            )}
-
-                                            <div className="w-full md:w-auto">
-                                                <label className="block text-xs font-medium text-gray-500 mb-1">Container Port</label>
-                                                <input
-                                                    type="number"
-                                                    value={port.to}
-                                                    onChange={(e) => handlePortChange(index, 'to', e.target.value)}
-                                                    placeholder="8080"
-                                                    min="1"
-                                                    max="65535"
-                                                    className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                                    disabled={isLoading}
-                                                />
-                                            </div>
-
-                                            <button
-                                                type="button"
-                                                onClick={() => removePort(index)}
-                                                className="px-3 py-2 border border-transparent text-xs font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 h-10"
-                                                disabled={isLoading || formData.ports.length <= 1}
-                                            >
-                                                Remove
-                                            </button>
-                                        </div>
-                                    ))}
-                                </div>
-
-                                <div className="mt-4 p-3 bg-blue-50 border-l-4 border-blue-400 text-blue-700">
-                                    <h5 className="font-medium">Port Environment Variables</h5>
-                                    <p className="text-sm mt-1">
-                                        Nomad injects environment variables for each port at runtime:
-                                    </p>
-                                    <ul className="text-sm mt-2 list-disc list-inside">
-                                        <li><code className="bg-blue-100 px-1 py-0.5 rounded">NOMAD_PORT_<em>label</em></code> - Container port value</li>
-                                        <li><code className="bg-blue-100 px-1 py-0.5 rounded">NOMAD_HOST_PORT_<em>label</em></code> - Host port value</li>
-                                        <li><code className="bg-blue-100 px-1 py-0.5 rounded">NOMAD_ADDR_<em>label</em></code> - IP:port for a service</li>
-                                        <li><code className="bg-blue-100 px-1 py-0.5 rounded">NOMAD_HOST_ADDR_<em>label</em></code> - Host IP:port</li>
-                                    </ul>
-                                    <p className="text-sm mt-2">
-                                        Example: <code className="bg-blue-100 px-1 py-0.5 rounded">redis_url=$NOMAD_ADDR_redis</code>
-                                    </p>
-                                </div>
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Health Check Configuration */}
-                    <div className="mb-6 border-t pt-4">
-                        <div className="flex items-center mb-2">
-                            <input
-                                id="enableHealthCheck"
-                                name="enableHealthCheck"
-                                type="checkbox"
-                                checked={formData.enableHealthCheck}
-                                onChange={handleCheckboxChange}
-                                className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                                disabled={isLoading}
-                            />
-                            <label htmlFor="enableHealthCheck" className="ml-2 block text-md font-medium text-gray-700">
-                                Enable Health Check
-                            </label>
-                        </div>
-
-                        {formData.enableHealthCheck && (
-                            <div className="border p-4 rounded-md bg-white">
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                    {/* Health Check Type */}
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                                            Check Type
-                                        </label>
-                                        <select
-                                            value={formData.healthChecks[0].type}
-                                            onChange={(e) => handleHealthCheckChange('type', e.target.value)}
-                                            className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                            disabled={isLoading}
-                                        >
-                                            <option value="http">HTTP</option>
-                                            <option value="tcp">TCP</option>
-                                            <option value="script">Script</option>
-                                        </select>
-                                    </div>
-
-                                    {/* Path (for HTTP) */}
-                                    {formData.healthChecks[0].type === 'http' && (
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                                HTTP Path
-                                            </label>
-                                            <input
-                                                type="text"
-                                                value={formData.healthChecks[0].path || ''}
-                                                onChange={(e) => handleHealthCheckChange('path', e.target.value)}
-                                                placeholder="/health"
-                                                className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                                disabled={isLoading}
-                                            />
-                                        </div>
-                                    )}
-
-                                    {/* Command (for Script) */}
-                                    {formData.healthChecks[0].type === 'script' && (
-                                        <div>
-                                            <label className="block text-sm font-medium text-gray-700 mb-1">
-                                                Script Command
-                                            </label>
-                                            <input
-                                                type="text"
-                                                value={formData.healthChecks[0].command || ''}
-                                                onChange={(e) => handleHealthCheckChange('command', e.target.value)}
-                                                placeholder="/bin/check-health.sh"
-                                                className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                                disabled={isLoading}
-                                            />
-                                        </div>
-                                    )}
-
-                                    {/* Other health check fields */}
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                                            Check Interval (seconds)
-                                        </label>
-                                        <input
-                                            type="number"
-                                            value={formData.healthChecks[0].interval}
-                                            onChange={(e) => handleHealthCheckChange('interval', e.target.value)}
-                                            min="1"
-                                            className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                            disabled={isLoading}
-                                        />
-                                    </div>
-
-                                    <div>
-                                        <label className="block text-sm font-medium text-gray-700 mb-1">
-                                            Timeout (seconds)
-                                        </label>
-                                        <input
-                                            type="number"
-                                            value={formData.healthChecks[0].timeout}
-                                            onChange={(e) => handleHealthCheckChange('timeout', e.target.value)}
-                                            min="1"
-                                            className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                            disabled={isLoading}
-                                        />
-                                    </div>
-                                </div>
-                            </div>
-                        )}
                     </div>
 
                     {/* Advanced Settings Toggle */}
@@ -445,26 +118,6 @@ export const JobCreateForm: React.FC = () => {
                     {showAdvancedSettings && (
                         <div className="mb-6 border p-4 rounded-md bg-gray-50">
                             <h3 className="text-lg font-medium text-gray-900 mb-4">Advanced Settings</h3>
-
-                            {/* Task Count */}
-                            <div className="mb-4">
-                                <label htmlFor="count" className="block text-sm font-medium text-gray-700 mb-1">
-                                    Task Count (Replicas)
-                                </label>
-                                <input
-                                    id="count"
-                                    name="count"
-                                    type="number"
-                                    min="1"
-                                    value={formData.count}
-                                    onChange={handleInputChange}
-                                    className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                    disabled={isLoading}
-                                />
-                                <p className="mt-1 text-xs text-gray-500">
-                                    Number of instances of this job to run
-                                </p>
-                            </div>
 
                             {/* Datacenters */}
                             <div className="mb-4">

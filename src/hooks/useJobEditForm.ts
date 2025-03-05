@@ -3,10 +3,10 @@ import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { createNomadClient } from '@/lib/api/nomad';
-import { NomadJobFormData, NomadPort, NomadHealthCheck, NomadEnvVar, NomadJob, TaskFormData } from '@/types/nomad';
-import { updateJobSpec } from '@/lib/services/jobSpecService';
+import { NomadJobFormData, TaskGroupFormData, NomadPort, NomadHealthCheck, NomadEnvVar, NomadJob } from '@/types/nomad';
+import { updateJobSpec, convertJobToFormData } from '@/lib/services/jobSpecService';
 import { useToast } from '@/context/ToastContext';
-import { defaultTaskData } from '@/hooks/useJobForm';
+import { defaultTaskGroupData } from '@/hooks/useJobForm';
 
 export function useJobEditForm(jobId: string, namespace: string = 'default') {
     const router = useRouter();
@@ -82,132 +82,6 @@ export function useJobEditForm(jobId: string, namespace: string = 'default') {
         fetchJobData();
     }, [fetchJobData]);
 
-    // Convert Nomad job data to form data structure
-    const convertJobToFormData = (job: NomadJob): NomadJobFormData => {
-        if (!job || !job.TaskGroups || job.TaskGroups.length === 0) {
-            throw new Error("Invalid job data structure");
-        }
-
-        const taskGroup = job.TaskGroups[0];
-
-        // Extract tasks
-        const tasks: TaskFormData[] = taskGroup.Tasks.map(task => {
-            const config = task.Config || {};
-
-            // Extract environment variables
-            const envVars: NomadEnvVar[] = task.Env ?
-                Object.entries(task.Env).map(([key, value]) => ({ key, value: value as string })) :
-                [{ key: '', value: '' }];
-
-            // Extract Docker auth if present
-            const usePrivateRegistry = !!(config.auth && config.auth.username && config.auth.password);
-
-            return {
-                name: task.Name,
-                image: config.image || '',
-                plugin: task.Driver || 'podman',
-                resources: {
-                    CPU: task.Resources?.CPU || 100,
-                    MemoryMB: task.Resources?.MemoryMB || 256,
-                    DiskMB: task.Resources?.DiskMB || 500,
-                },
-                envVars: envVars.length > 0 ? envVars : [{ key: '', value: '' }],
-                usePrivateRegistry,
-                dockerAuth: usePrivateRegistry ? {
-                    username: config.auth.username,
-                    password: config.auth.password
-                } : {
-                    username: '',
-                    password: ''
-                }
-            };
-        });
-
-        // Extract network configuration
-        const networkConfig = taskGroup.Networks && taskGroup.Networks.length > 0 ? taskGroup.Networks[0] : null;
-        const hasDynamicPorts = !!(networkConfig && networkConfig.DynamicPorts && networkConfig.DynamicPorts.length > 0);
-        const hasReservedPorts = !!(networkConfig && networkConfig.ReservedPorts && networkConfig.ReservedPorts.length > 0);
-        const enablePorts = hasDynamicPorts || hasReservedPorts;
-
-        // Extract network mode and ensure it's a valid value for our type
-        let networkMode: 'none' | 'host' | 'bridge' = 'none';
-        if (networkConfig && networkConfig.Mode) {
-            if (networkConfig.Mode === 'host' || networkConfig.Mode === 'bridge') {
-                networkMode = networkConfig.Mode;
-            }
-        } else if (tasks.length > 1) {
-            networkMode = 'bridge';
-        }
-
-        // Extract ports
-        let ports: NomadPort[] = [];
-        if (networkConfig) {
-            // Add dynamic ports
-            if (networkConfig.DynamicPorts && networkConfig.DynamicPorts.length > 0) {
-                ports = [
-                    ...ports,
-                    ...networkConfig.DynamicPorts.map(port => ({
-                        label: port.Label,
-                        value: 0, // Dynamic ports don't have a specific value
-                        to: port.To || 0,
-                        static: false,
-                        taskName: 'TaskName' in port ? (port.TaskName as string) : undefined
-                    }))
-                ];
-            }
-
-            // Add reserved ports
-            if (networkConfig.ReservedPorts && networkConfig.ReservedPorts.length > 0) {
-                ports = [
-                    ...ports,
-                    ...networkConfig.ReservedPorts.map(port => ({
-                        label: port.Label,
-                        value: port.Value,
-                        to: port.To || port.Value,
-                        static: true,
-                        taskName: 'TaskName' in port ? (port.TaskName as string) : undefined
-                    }))
-                ];
-            }
-        }
-
-        // If no ports found, add a default one
-        if (ports.length === 0) {
-            ports = [{ label: 'http', value: 8080, to: 8080, static: false }];
-        }
-
-        // Extract health checks
-        const services = taskGroup.Services || [];
-        const service = services.length > 0 ? services[0] : null;
-        const healthCheck = service && service.Checks && service.Checks.length > 0 ? service.Checks[0] : null;
-
-        const healthCheckData: NomadHealthCheck = {
-            type: (healthCheck?.Type || 'http') as 'http' | 'tcp' | 'script',
-            path: healthCheck?.Type === 'http' ? healthCheck.Path : '/health',
-            command: healthCheck?.Type === 'script' ? healthCheck.Command : '',
-            interval: healthCheck ? Math.floor(healthCheck.Interval / 1000000000) : 30, // Convert from nanoseconds
-            timeout: healthCheck ? Math.floor(healthCheck.Timeout / 1000000000) : 5, // Convert from nanoseconds
-            initialDelay: healthCheck?.CheckRestart ? Math.floor(healthCheck.CheckRestart.Grace / 1000000000) : 5,
-            failuresBeforeUnhealthy: 3,
-            successesBeforeHealthy: 2
-        };
-
-        // Build form data
-        return {
-            name: job.Name,
-            namespace: job.Namespace || 'default',
-            tasks: tasks,
-            ports,
-            enablePorts: enablePorts || tasks.length > 1, // Always enable for multi-container
-            networkMode,
-            serviceProvider: 'nomad',
-            healthChecks: [healthCheckData],
-            enableHealthCheck: !!healthCheck,
-            count: taskGroup.Count || 1,
-            datacenters: job.Datacenters || ['dc1'],
-        };
-    };
-
     // Handle form input changes
     const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
         if (!formData) return;
@@ -229,201 +103,173 @@ export function useJobEditForm(jobId: string, namespace: string = 'default') {
         }
     };
 
-    // Handle task-specific input changes
-    const handleTaskInputChange = (taskIndex: number, e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    // Handle task group-specific input changes
+    const handleGroupInputChange = (groupIndex: number, e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
         if (!formData) return;
 
         const { name, value, type } = e.target;
         const newValue = type === 'number' ? Number(value) : value;
 
-        const updatedTasks = [...formData.tasks];
+        const updatedGroups = [...formData.taskGroups];
 
-        // Parse the task property path (e.g., "resources.CPU")
+        // Parse the property path (e.g., "resources.CPU")
         const parts = name.split('.');
 
         if (parts.length === 1) {
             // Simple property
-            updatedTasks[taskIndex] = {
-                ...updatedTasks[taskIndex],
+            updatedGroups[groupIndex] = {
+                ...updatedGroups[groupIndex],
                 [name]: newValue
             };
         } else if (parts.length === 2 && parts[0] === 'resources') {
             // Resource property (CPU, MemoryMB, DiskMB)
             const resourceField = parts[1];
-            updatedTasks[taskIndex] = {
-                ...updatedTasks[taskIndex],
+            updatedGroups[groupIndex] = {
+                ...updatedGroups[groupIndex],
                 resources: {
-                    ...updatedTasks[taskIndex].resources,
+                    ...updatedGroups[groupIndex].resources,
                     [resourceField]: parseInt(value, 10)
                 }
             };
         } else if (parts.length === 2 && parts[0] === 'dockerAuth') {
             // Docker auth property
             const authField = parts[1];
-            updatedTasks[taskIndex] = {
-                ...updatedTasks[taskIndex],
+            updatedGroups[groupIndex] = {
+                ...updatedGroups[groupIndex],
                 dockerAuth: {
-                    ...updatedTasks[taskIndex].dockerAuth!,
+                    ...updatedGroups[groupIndex].dockerAuth!,
                     [authField]: value
+                }
+            };
+        } else if (parts.length === 2 && parts[0] === 'healthCheck') {
+            // Health check property
+            const healthCheckField = parts[1];
+            updatedGroups[groupIndex] = {
+                ...updatedGroups[groupIndex],
+                healthCheck: {
+                    ...updatedGroups[groupIndex].healthCheck!,
+                    [healthCheckField]: type === 'number' ? parseInt(value, 10) : value
                 }
             };
         }
 
         setFormData({
             ...formData,
-            tasks: updatedTasks
+            taskGroups: updatedGroups
         });
     };
 
-    const handleSelectChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const handleSelectChange = (groupIndex: number, e: React.ChangeEvent<HTMLSelectElement>) => {
         if (!formData) return;
 
         const { name, value } = e.target;
+        const updatedGroups = [...formData.taskGroups];
+
+        updatedGroups[groupIndex] = {
+            ...updatedGroups[groupIndex],
+            [name]: value
+        };
+
         setFormData({
             ...formData,
-            [name]: value
+            taskGroups: updatedGroups
         });
     };
 
-    // Toggle checkbox
-    const handleCheckboxChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    // Toggle checkbox for a task group
+    const handleGroupCheckboxChange = (groupIndex: number, e: React.ChangeEvent<HTMLInputElement>) => {
         if (!formData) return;
 
         const { name, checked } = e.target;
+        const updatedGroups = [...formData.taskGroups];
 
-        // If we disable network settings, show a warning or prevent it since it will break service discovery
-        if (name === 'enablePorts' && !checked) {
-            if (formData.tasks.length > 1) {
-                // Show confirmation dialog if there are multiple tasks
-                const confirm = window.confirm(
-                    "Disabling network ports will prevent containers from communicating via service discovery. Are you sure you want to continue?"
-                );
-                if (!confirm) {
-                    return; // Don't change the setting if user cancels
-                }
-            }
-        }
-
-        // If we enable network settings, set defaults
-        if (name === 'enablePorts' && checked) {
-            setFormData({
-                ...formData,
-                [name]: checked,
-                networkMode: 'bridge',
-                serviceProvider: 'nomad'
-            });
-        } else {
-            setFormData({
-                ...formData,
-                [name]: checked
-            });
-        }
-    };
-
-    // Toggle task-specific checkbox
-    const handleTaskCheckboxChange = (taskIndex: number, e: React.ChangeEvent<HTMLInputElement>) => {
-        if (!formData) return;
-
-        const { name, checked } = e.target;
-
-        const updatedTasks = [...formData.tasks];
-        updatedTasks[taskIndex] = {
-            ...updatedTasks[taskIndex],
+        updatedGroups[groupIndex] = {
+            ...updatedGroups[groupIndex],
             [name]: checked
         };
 
         setFormData({
             ...formData,
-            tasks: updatedTasks
+            taskGroups: updatedGroups
         });
     };
 
-    // Add a new task to the form
-    const addTask = () => {
+    // Add a new task group to the form
+    const addTaskGroup = () => {
         if (!formData) return;
 
-        const newTask: TaskFormData = {
-            ...defaultTaskData,
-            name: `${formData.name ? formData.name + '-' : ''}task-${formData.tasks.length + 1}`
+        const newGroup: TaskGroupFormData = {
+            ...defaultTaskGroupData,
+            name: `${formData.name ? formData.name + '-' : ''}group-${formData.taskGroups.length + 1}`
         };
-
-        // If adding a task and network is not enabled, automatically enable it
-        if (!formData.enablePorts) {
-            setFormData({
-                ...formData,
-                tasks: [...formData.tasks, newTask],
-                enablePorts: true,
-                networkMode: 'bridge'
-            });
-        } else {
-            setFormData({
-                ...formData,
-                tasks: [...formData.tasks, newTask]
-            });
-        }
-    };
-
-    // Remove a task from the form
-    const removeTask = (taskIndex: number) => {
-        if (!formData || formData.tasks.length <= 1) {
-            // Don't remove the last task
-            return;
-        }
-
-        const updatedTasks = [...formData.tasks];
-        updatedTasks.splice(taskIndex, 1);
 
         setFormData({
             ...formData,
-            tasks: updatedTasks
+            taskGroups: [...formData.taskGroups, newGroup]
         });
     };
 
-    // Handle environment variable changes for a specific task
-    const handleEnvVarChange = (taskIndex: number, varIndex: number, field: 'key' | 'value', value: string) => {
+    // Remove a task group from the form
+    const removeTaskGroup = (groupIndex: number) => {
+        if (!formData || formData.taskGroups.length <= 1) {
+            // Don't remove the last task group
+            return;
+        }
+
+        const updatedGroups = [...formData.taskGroups];
+        updatedGroups.splice(groupIndex, 1);
+
+        setFormData({
+            ...formData,
+            taskGroups: updatedGroups
+        });
+    };
+
+    // Handle environment variable changes for a specific task group
+    const handleEnvVarChange = (groupIndex: number, varIndex: number, field: 'key' | 'value', value: string) => {
         if (!formData) return;
 
-        const updatedTasks = [...formData.tasks];
-        const updatedEnvVars = [...updatedTasks[taskIndex].envVars];
+        const updatedGroups = [...formData.taskGroups];
+        const updatedEnvVars = [...updatedGroups[groupIndex].envVars];
 
         updatedEnvVars[varIndex] = {
             ...updatedEnvVars[varIndex],
             [field]: value
         };
 
-        updatedTasks[taskIndex] = {
-            ...updatedTasks[taskIndex],
+        updatedGroups[groupIndex] = {
+            ...updatedGroups[groupIndex],
             envVars: updatedEnvVars
         };
 
         setFormData({
             ...formData,
-            tasks: updatedTasks
+            taskGroups: updatedGroups
         });
     };
 
-    // Add a new environment variable field to a specific task
-    const addEnvVar = (taskIndex: number) => {
+    // Add a new environment variable field to a specific task group
+    const addEnvVar = (groupIndex: number) => {
         if (!formData) return;
 
-        const updatedTasks = [...formData.tasks];
-        updatedTasks[taskIndex] = {
-            ...updatedTasks[taskIndex],
-            envVars: [...updatedTasks[taskIndex].envVars, { key: '', value: '' }]
+        const updatedGroups = [...formData.taskGroups];
+        updatedGroups[groupIndex] = {
+            ...updatedGroups[groupIndex],
+            envVars: [...updatedGroups[groupIndex].envVars, { key: '', value: '' }]
         };
 
         setFormData({
             ...formData,
-            tasks: updatedTasks
+            taskGroups: updatedGroups
         });
     };
 
-    // Remove an environment variable field from a specific task
-    const removeEnvVar = (taskIndex: number, varIndex: number) => {
+    // Remove an environment variable field from a specific task group
+    const removeEnvVar = (groupIndex: number, varIndex: number) => {
         if (!formData) return;
 
-        const updatedTasks = [...formData.tasks];
-        const updatedEnvVars = [...updatedTasks[taskIndex].envVars];
+        const updatedGroups = [...formData.taskGroups];
+        const updatedEnvVars = [...updatedGroups[groupIndex].envVars];
 
         if (updatedEnvVars.length <= 1) {
             updatedEnvVars[0] = { key: '', value: '' };
@@ -431,96 +277,127 @@ export function useJobEditForm(jobId: string, namespace: string = 'default') {
             updatedEnvVars.splice(varIndex, 1);
         }
 
-        updatedTasks[taskIndex] = {
-            ...updatedTasks[taskIndex],
+        updatedGroups[groupIndex] = {
+            ...updatedGroups[groupIndex],
             envVars: updatedEnvVars
         };
 
         setFormData({
             ...formData,
-            tasks: updatedTasks
+            taskGroups: updatedGroups
         });
     };
 
     // Handle port changes
-    const handlePortChange = (index: number, field: keyof NomadPort, value: string) => {
+    const handlePortChange = (groupIndex: number, portIndex: number, field: keyof NomadPort, value: string) => {
         if (!formData) return;
 
-        const updatedPorts = [...formData.ports];
+        const updatedGroups = [...formData.taskGroups];
+        const updatedPorts = [...updatedGroups[groupIndex].ports];
 
         if (field === 'static') {
             const isStatic = value === 'true';
-            updatedPorts[index] = {
-                ...updatedPorts[index],
+            updatedPorts[portIndex] = {
+                ...updatedPorts[portIndex],
                 [field]: isStatic
             };
 
             // If toggling from dynamic to static, set a default value
-            if (isStatic && !updatedPorts[index].value) {
-                updatedPorts[index].value = 8080 + index;
+            if (isStatic && !updatedPorts[portIndex].value) {
+                updatedPorts[portIndex].value = 8080 + portIndex;
             }
         } else if (field === 'label') {
-            updatedPorts[index] = {
-                ...updatedPorts[index],
+            updatedPorts[portIndex] = {
+                ...updatedPorts[portIndex],
                 [field]: value
             };
         } else {
-            updatedPorts[index] = {
-                ...updatedPorts[index],
+            updatedPorts[portIndex] = {
+                ...updatedPorts[portIndex],
                 [field]: parseInt(value, 10) || 0
             };
         }
 
+        updatedGroups[groupIndex] = {
+            ...updatedGroups[groupIndex],
+            ports: updatedPorts
+        };
+
         setFormData({
             ...formData,
-            ports: updatedPorts
+            taskGroups: updatedGroups
         });
     };
 
     // Add a new port field
-    const addPort = () => {
+    const addPort = (groupIndex: number) => {
         if (!formData) return;
+
+        const updatedGroups = [...formData.taskGroups];
+        updatedGroups[groupIndex] = {
+            ...updatedGroups[groupIndex],
+            ports: [...updatedGroups[groupIndex].ports, { label: '', value: 0, to: 8080, static: false }]
+        };
 
         setFormData({
             ...formData,
-            ports: [...formData.ports, { label: '', value: 0, to: 8080, static: false }]
+            taskGroups: updatedGroups
         });
     };
 
     // Remove a port field
-    const removePort = (index: number) => {
-        if (!formData || formData.ports.length <= 1) return;
+    const removePort = (groupIndex: number, portIndex: number) => {
+        if (!formData) return;
 
-        const updatedPorts = [...formData.ports];
-        updatedPorts.splice(index, 1);
+        const updatedGroups = [...formData.taskGroups];
+
+        if (updatedGroups[groupIndex].ports.length <= 1) return;
+
+        const updatedPorts = [...updatedGroups[groupIndex].ports];
+        updatedPorts.splice(portIndex, 1);
+
+        updatedGroups[groupIndex] = {
+            ...updatedGroups[groupIndex],
+            ports: updatedPorts
+        };
 
         setFormData({
             ...formData,
-            ports: updatedPorts
+            taskGroups: updatedGroups
         });
     };
 
     // Handle health check changes
-    const handleHealthCheckChange = (field: keyof NomadHealthCheck, value: string | number) => {
+    const handleHealthCheckChange = (groupIndex: number, field: keyof NomadHealthCheck, value: string | number) => {
         if (!formData) return;
 
-        const updatedHealthChecks = [...formData.healthChecks];
+        const updatedGroups = [...formData.taskGroups];
+
+        if (!updatedGroups[groupIndex].healthCheck) {
+            updatedGroups[groupIndex].healthCheck = { ...defaultTaskGroupData.healthCheck! };
+        }
 
         if (field === 'type') {
-            updatedHealthChecks[0] = {
-                ...updatedHealthChecks[0],
-                [field]: value as 'http' | 'tcp' | 'script'
+            updatedGroups[groupIndex] = {
+                ...updatedGroups[groupIndex],
+                healthCheck: {
+                    ...updatedGroups[groupIndex].healthCheck!,
+                    [field]: value as 'http' | 'tcp' | 'script'
+                }
             };
         } else {
-            updatedHealthChecks[0] = {
-                ...updatedHealthChecks[0],
-                [field]: typeof value === 'string' ? value : parseInt(String(value), 10) || 0
+            updatedGroups[groupIndex] = {
+                ...updatedGroups[groupIndex],
+                healthCheck: {
+                    ...updatedGroups[groupIndex].healthCheck!,
+                    [field]: typeof value === 'string' ? value : parseInt(String(value), 10) || 0
+                }
             };
         }
 
         setFormData({
             ...formData,
-            healthChecks: updatedHealthChecks
+            taskGroups: updatedGroups
         });
     };
 
@@ -536,41 +413,38 @@ export function useJobEditForm(jobId: string, namespace: string = 'default') {
                 throw new Error('Authentication required or form data missing');
             }
 
-            // Validate tasks
-            for (let i = 0; i < formData.tasks.length; i++) {
-                const task = formData.tasks[i];
+            // Validate task groups
+            for (let i = 0; i < formData.taskGroups.length; i++) {
+                const group = formData.taskGroups[i];
 
-                if (!task.name.trim()) {
-                    throw new Error(`Task ${i + 1} name is required`);
+                if (!group.name.trim()) {
+                    throw new Error(`Group ${i + 1} name is required`);
                 }
 
-                if (!task.image.trim()) {
-                    throw new Error(`Task ${i + 1} image is required`);
+                if (!group.image.trim()) {
+                    throw new Error(`Image for group ${i + 1} is required`);
                 }
 
-                if (task.usePrivateRegistry) {
-                    if (!task.dockerAuth?.username) {
-                        throw new Error(`Username is required for private registry in task ${i + 1}`);
+                if (group.usePrivateRegistry) {
+                    if (!group.dockerAuth?.username) {
+                        throw new Error(`Username is required for private registry in group ${i + 1}`);
                     }
-                    if (!task.dockerAuth?.password) {
-                        throw new Error(`Password is required for private registry in task ${i + 1}`);
+                    if (!group.dockerAuth?.password) {
+                        throw new Error(`Password is required for private registry in group ${i + 1}`);
                     }
                 }
-            }
 
-            // If we have multiple tasks, make sure networking is enabled
-            if (formData.tasks.length > 1 && !formData.enablePorts) {
-                throw new Error('Network configuration must be enabled when using multiple containers');
-            }
-
-            // If network is enabled but mode is "none", show warning for service discovery
-            if (formData.tasks.length > 1 && formData.enablePorts && formData.networkMode === 'none') {
-                const confirm = window.confirm(
-                    "Using 'none' network mode will prevent containers from communicating using service discovery. It's recommended to use 'bridge' mode for multi-container deployments. Continue anyway?"
-                );
-                if (!confirm) {
-                    setIsSaving(false);
-                    return;
+                // Validate ports if networking is enabled
+                if (group.enableNetwork && group.ports.length > 0) {
+                    for (let j = 0; j < group.ports.length; j++) {
+                        const port = group.ports[j];
+                        if (!port.label) {
+                            throw new Error(`Port label is required for port ${j + 1} in group ${i + 1}`);
+                        }
+                        if (port.static && (!port.value || port.value <= 0 || port.value > 65535)) {
+                            throw new Error(`Valid port value (1-65535) is required for static port ${j + 1} in group ${i + 1}`);
+                        }
+                    }
                 }
             }
 
@@ -580,7 +454,7 @@ export function useJobEditForm(jobId: string, namespace: string = 'default') {
 
             // Submit job to Nomad
             const client = createNomadClient(nomadAddr, token);
-            const response = await client.updateJob(jobSpec);
+            await client.updateJob(jobSpec);
 
             setSuccess(`Job "${formData.name}" updated successfully!`);
 
@@ -599,21 +473,6 @@ export function useJobEditForm(jobId: string, namespace: string = 'default') {
         }
     };
 
-    const handlePortTaskChange = (portIndex: number, taskName: string) => {
-        if (!formData) return;
-
-        const updatedPorts = [...formData.ports];
-        updatedPorts[portIndex] = {
-            ...updatedPorts[portIndex],
-            taskName: taskName || undefined
-        };
-
-        setFormData({
-            ...formData,
-            ports: updatedPorts
-        });
-    };
-
     return {
         formData,
         initialJob,
@@ -624,20 +483,18 @@ export function useJobEditForm(jobId: string, namespace: string = 'default') {
         success,
         namespaces,
         handleInputChange,
-        handleTaskInputChange,
+        handleGroupInputChange,
         handleSelectChange,
-        handleCheckboxChange,
-        handleTaskCheckboxChange,
+        handleGroupCheckboxChange,
         handleEnvVarChange,
         addEnvVar,
         removeEnvVar,
         handlePortChange,
-        handlePortTaskChange,
         addPort,
         removePort,
         handleHealthCheckChange,
-        addTask,
-        removeTask,
+        addTaskGroup,
+        removeTaskGroup,
         handleSubmit
     };
 }
