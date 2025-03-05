@@ -64,6 +64,13 @@ export function useJobEditForm(jobId: string, namespace: string = 'default') {
 
             // Convert job data to form data
             const formattedData = convertJobToFormData(jobData);
+
+            // Ensure each task group has an envVars array, even if empty
+            formattedData.taskGroups = formattedData.taskGroups.map(group => ({
+                ...group,
+                envVars: group.envVars || []
+            }));
+
             setFormData(formattedData);
             setError(null);
         } catch (err) {
@@ -230,7 +237,12 @@ export function useJobEditForm(jobId: string, namespace: string = 'default') {
         if (!formData) return;
 
         const updatedGroups = [...formData.taskGroups];
-        const updatedEnvVars = [...updatedGroups[groupIndex].envVars];
+        const updatedEnvVars = [...(updatedGroups[groupIndex].envVars || [])];
+
+        // Ensure the entry exists
+        if (!updatedEnvVars[varIndex]) {
+            updatedEnvVars[varIndex] = { key: '', value: '' };
+        }
 
         updatedEnvVars[varIndex] = {
             ...updatedEnvVars[varIndex],
@@ -253,9 +265,11 @@ export function useJobEditForm(jobId: string, namespace: string = 'default') {
         if (!formData) return;
 
         const updatedGroups = [...formData.taskGroups];
+        const currentEnvVars = updatedGroups[groupIndex].envVars || [];
+
         updatedGroups[groupIndex] = {
             ...updatedGroups[groupIndex],
-            envVars: [...updatedGroups[groupIndex].envVars, { key: '', value: '' }]
+            envVars: [...currentEnvVars, { key: '', value: '' }]
         };
 
         setFormData({
@@ -264,23 +278,37 @@ export function useJobEditForm(jobId: string, namespace: string = 'default') {
         });
     };
 
+    // Ensure there's always at least one empty env var
+    useEffect(() => {
+        if (formData) {  // Добавить эту проверку
+            formData.taskGroups.forEach((group, index) => {
+                if (!group.envVars || group.envVars.length === 0) {
+                    addEnvVar(index);
+                }
+            });
+        }
+    }, [formData]);
+
     // Remove an environment variable field from a specific task group
     const removeEnvVar = (groupIndex: number, varIndex: number) => {
         if (!formData) return;
 
         const updatedGroups = [...formData.taskGroups];
-        const updatedEnvVars = [...updatedGroups[groupIndex].envVars];
+        const updatedEnvVars = [...(updatedGroups[groupIndex].envVars || [])];
 
         if (updatedEnvVars.length <= 1) {
-            updatedEnvVars[0] = { key: '', value: '' };
+            // If it's the last one, empty the array instead of removing the entry
+            updatedGroups[groupIndex] = {
+                ...updatedGroups[groupIndex],
+                envVars: []
+            };
         } else {
             updatedEnvVars.splice(varIndex, 1);
+            updatedGroups[groupIndex] = {
+                ...updatedGroups[groupIndex],
+                envVars: updatedEnvVars
+            };
         }
-
-        updatedGroups[groupIndex] = {
-            ...updatedGroups[groupIndex],
-            envVars: updatedEnvVars
-        };
 
         setFormData({
             ...formData,
@@ -351,7 +379,14 @@ export function useJobEditForm(jobId: string, namespace: string = 'default') {
 
         const updatedGroups = [...formData.taskGroups];
 
-        if (updatedGroups[groupIndex].ports.length <= 1) return;
+        if (updatedGroups[groupIndex].ports.length <= 1) {
+            // If there's only one port, clear it but don't remove the array element
+            updatedGroups[groupIndex] = {
+                ...updatedGroups[groupIndex],
+                ports: [{ label: '', value: 0, to: 0, static: false }]
+            };
+            return;
+        }
 
         const updatedPorts = [...updatedGroups[groupIndex].ports];
         updatedPorts.splice(portIndex, 1);
@@ -432,6 +467,11 @@ export function useJobEditForm(jobId: string, namespace: string = 'default') {
                     if (!group.dockerAuth?.password) {
                         throw new Error(`Password is required for private registry in group ${i + 1}`);
                     }
+                }
+
+                // Filter out empty environment variables
+                if (group.envVars) {
+                    group.envVars = group.envVars.filter(ev => ev.key.trim() !== '' || ev.value.trim() !== '');
                 }
 
                 // Validate ports if networking is enabled

@@ -49,11 +49,15 @@ interface JobSpec {
 function createTaskConfig(groupData: TaskGroupFormData): TaskConfig {
     // Convert environment variables to the format expected by Nomad
     const env: Record<string, string> = {};
-    groupData.envVars.forEach((envVar) => {
-        if (envVar.key.trim() !== '') {
-            env[envVar.key] = envVar.value;
-        }
-    });
+
+    // Only process env vars that actually exist and have a key
+    if (groupData.envVars && groupData.envVars.length > 0) {
+        groupData.envVars.forEach((envVar) => {
+            if (envVar.key.trim() !== '') {
+                env[envVar.key] = envVar.value;
+            }
+        });
+    }
 
     // Base task configuration
     const taskConfig: any = {
@@ -100,6 +104,7 @@ function createJobSpec(formData: NomadJobFormData): JobSpec {
             };
 
             // Process ports configuration
+            // Only use ports with a label
             groupData.ports.forEach(port => {
                 if (port.label.trim() === '') return;
 
@@ -130,7 +135,10 @@ function createJobSpec(formData: NomadJobFormData): JobSpec {
         };
 
         if (network) {
-            taskGroup.Networks = [network];
+            // Only add network config if there are ports defined
+            if (network.DynamicPorts.length > 0 || network.ReservedPorts.length > 0) {
+                taskGroup.Networks = [network];
+            }
         }
 
         // Add health check service if enabled
@@ -141,7 +149,8 @@ function createJobSpec(formData: NomadJobFormData): JobSpec {
                 Name: groupData.name,
                 TaskName: groupData.name,
                 AddressMode: "auto",
-                PortLabel: groupData.ports.length > 0 ? groupData.ports[0].label : "http",
+                PortLabel: groupData.ports.length > 0 && groupData.ports[0].label ?
+                    groupData.ports[0].label : "http",
                 Provider: "nomad",
                 Checks: [{
                     Type: healthCheck.type,
@@ -235,9 +244,9 @@ function convertJobToFormData(job: any): NomadJobFormData {
         const config = task.Config || {};
 
         // Extract environment variables
-        const envVars = task.Env ?
+        const envVars: NomadEnvVar[] = task.Env ?
             Object.entries(task.Env).map(([key, value]) => ({ key, value: value as string })) :
-            [{ key: '', value: '' }];
+            [];
 
         // Extract Docker auth if present
         const usePrivateRegistry = !!(config.auth && config.auth.username && config.auth.password);
@@ -279,7 +288,7 @@ function convertJobToFormData(job: any): NomadJobFormData {
         }
 
         // If no ports found, add a default one
-        if (ports.length === 0) {
+        if (ports.length === 0 && enableNetwork) {
             ports = [{ label: 'http', value: 8080, to: 8080, static: false }];
         }
 
@@ -309,7 +318,7 @@ function convertJobToFormData(job: any): NomadJobFormData {
                 MemoryMB: task.Resources?.MemoryMB || 256,
                 DiskMB: task.Resources?.DiskMB || 500,
             },
-            envVars: envVars.length > 0 ? envVars : [{ key: '', value: '' }],
+            envVars: envVars,
             usePrivateRegistry,
             dockerAuth: usePrivateRegistry ? {
                 username: config.auth.username,

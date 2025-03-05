@@ -1,6 +1,7 @@
 // src/components/jobs/forms/TaskGroupForm.tsx
 import React, { useState } from 'react';
 import { NomadEnvVar, NomadPort, NomadHealthCheck } from '@/types/nomad';
+import { Eye, EyeOff, Trash, Plus, ChevronRight } from 'lucide-react';
 
 interface TaskGroupFormProps {
     groupIndex: number;
@@ -61,6 +62,16 @@ export const TaskGroupForm: React.FC<TaskGroupFormProps> = ({
                                                                 isLoading
                                                             }) => {
     const [isCollapsed, setIsCollapsed] = useState(false);
+    // Track which environment variables have visible values
+    const [visibleEnvValues, setVisibleEnvValues] = useState<Record<number, boolean>>({});
+
+    // Toggle visibility for a specific env var
+    const toggleEnvValueVisibility = (index: number) => {
+        setVisibleEnvValues(prev => ({
+            ...prev,
+            [index]: !prev[index]
+        }));
+    };
 
     return (
         <div className="border rounded-lg p-4 bg-gray-50 relative">
@@ -72,14 +83,9 @@ export const TaskGroupForm: React.FC<TaskGroupFormProps> = ({
                         onClick={() => setIsCollapsed(!isCollapsed)}
                         className="mr-2 text-gray-500 hover:text-gray-700 focus:outline-none"
                     >
-                        <svg
+                        <ChevronRight
                             className={`h-5 w-5 transition-transform ${isCollapsed ? '' : 'transform rotate-90'}`}
-                            fill="none"
-                            viewBox="0 0 24 24"
-                            stroke="currentColor"
-                        >
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                        </svg>
+                        />
                     </button>
                     <h4 className="text-lg font-medium text-gray-900">
                         {group.name || `Group ${groupIndex + 1}`}
@@ -94,9 +100,7 @@ export const TaskGroupForm: React.FC<TaskGroupFormProps> = ({
                         className="text-red-600 hover:text-red-800 focus:outline-none"
                         disabled={isLoading}
                     >
-                        <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                        </svg>
+                        <Trash className="h-5 w-5" />
                     </button>
                 )}
             </div>
@@ -201,20 +205,22 @@ export const TaskGroupForm: React.FC<TaskGroupFormProps> = ({
                         </div>
 
                         {/* Password */}
-                        <div className="mb-3">
+                        <div className="mb-3 relative">
                             <label htmlFor={`group-${groupIndex}-dockerAuth.password`} className="block text-sm font-medium text-gray-700 mb-1">
                                 Password
                             </label>
-                            <input
-                                id={`group-${groupIndex}-dockerAuth.password`}
-                                name="dockerAuth.password"
-                                type="password"
-                                value={group.dockerAuth?.password || ''}
-                                onChange={onInputChange}
-                                className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                disabled={isLoading}
-                                required
-                            />
+                            <div className="relative">
+                                <input
+                                    id={`group-${groupIndex}-dockerAuth.password`}
+                                    name="dockerAuth.password"
+                                    type="password"
+                                    value={group.dockerAuth?.password || ''}
+                                    onChange={onInputChange}
+                                    className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    disabled={isLoading}
+                                    required
+                                />
+                            </div>
                         </div>
                     </div>
                 )}
@@ -298,44 +304,60 @@ export const TaskGroupForm: React.FC<TaskGroupFormProps> = ({
                 <div className="mb-4">
                     <div className="flex justify-between items-center mb-2">
                         <h5 className="text-md font-medium text-gray-700">Environment Variables</h5>
-                        <button
-                            type="button"
-                            onClick={onAddEnvVar}
-                            className="inline-flex items-center px-2 py-1 border border-transparent text-xs font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                            disabled={isLoading}
-                        >
-                            Add Variable
-                        </button>
                     </div>
 
-                    {group.envVars.map((envVar, index) => (
-                        <div key={index} className="flex space-x-2 mb-2">
-                            <input
-                                type="text"
-                                value={envVar.key}
-                                onChange={(e) => onEnvVarChange(index, 'key', e.target.value)}
-                                placeholder="KEY"
-                                className="w-1/3 p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                disabled={isLoading}
-                            />
-                            <input
-                                type="text"
-                                value={envVar.value}
-                                onChange={(e) => onEnvVarChange(index, 'value', e.target.value)}
-                                placeholder="value"
-                                className="w-1/2 p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                disabled={isLoading}
-                            />
-                            <button
-                                type="button"
-                                onClick={() => onRemoveEnvVar(index)}
-                                className="inline-flex items-center px-3 py-2 border border-transparent text-xs font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-                                disabled={isLoading}
-                            >
-                                Remove
-                            </button>
-                        </div>
-                    ))}
+                    {group.envVars.length === 0 ? (
+                        <div className="text-sm text-gray-500 italic">No environment variables defined. Click "Add Variable" to add one.</div>
+                    ) : (
+                        group.envVars.map((envVar, index) => (
+                            <div key={index} className="flex space-x-2 mb-2 items-center">
+                                <input
+                                    type="text"
+                                    value={envVar.key}
+                                    onChange={(e) => onEnvVarChange(index, 'key', e.target.value)}
+                                    placeholder="KEY"
+                                    className="w-1/3 p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    disabled={isLoading}
+                                />
+                                <div className="relative w-1/2">
+                                    <input
+                                        type={visibleEnvValues[index] ? "text" : "password"}
+                                        value={envVar.value}
+                                        onChange={(e) => onEnvVarChange(index, 'value', e.target.value)}
+                                        placeholder="value"
+                                        className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        disabled={isLoading}
+                                    />
+                                    <button
+                                        type="button"
+                                        onClick={() => toggleEnvValueVisibility(index)}
+                                        className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none"
+                                        disabled={isLoading}
+                                    >
+                                        {visibleEnvValues[index] ? <EyeOff size={16} /> : <Eye size={16} />}
+                                    </button>
+                                </div>
+                                {group.envVars.length > 1 && (
+                                    <button
+                                        type="button"
+                                        onClick={() => onRemoveEnvVar(index)}
+                                        className="inline-flex items-center p-2 border border-transparent text-xs font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                                        disabled={isLoading}
+                                    >
+                                        <Trash size={16} />
+                                    </button>
+                                )}
+                                <button
+                                    type="button"
+                                    onClick={onAddEnvVar}
+                                    className="inline-flex items-center p-2 border border-transparent text-xs font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                                    disabled={isLoading}
+                                >
+                                    Add
+                                </button>
+                            </div>
+                        ))
+                    )}
                 </div>
 
                 {/* Network Configuration */}
@@ -385,47 +407,65 @@ export const TaskGroupForm: React.FC<TaskGroupFormProps> = ({
                                     <button
                                         type="button"
                                         onClick={onAddPort}
-                                        className="inline-flex items-center px-2 py-1 border border-transparent text-xs font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                                        className="inline-flex items-center px-3 py-1 border border-transparent text-xs font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                                         disabled={isLoading}
                                     >
-                                        Add Port
+                                        <Plus size={14} className="mr-1" /> Add Port
                                     </button>
                                 </div>
 
-                                {group.ports.map((port, index) => (
-                                    <div key={index} className="flex flex-wrap items-end gap-2 mb-2 p-2 border rounded-md bg-white">
-                                        <div className="w-full md:w-auto">
-                                            <label className="block text-xs font-medium text-gray-500 mb-1">Label</label>
-                                            <input
-                                                type="text"
-                                                value={port.label}
-                                                onChange={(e) => onPortChange(index, 'label', e.target.value)}
-                                                placeholder="http"
-                                                className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                                disabled={isLoading}
-                                            />
-                                        </div>
-
-                                        <div className="w-full md:w-auto">
-                                            <label className="block text-xs font-medium text-gray-500 mb-1">Port Type</label>
-                                            <select
-                                                value={port.static ? 'true' : 'false'}
-                                                onChange={(e) => onPortChange(index, 'static', e.target.value)}
-                                                className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                                disabled={isLoading}
-                                            >
-                                                <option value="false">Dynamic</option>
-                                                <option value="true">Static</option>
-                                            </select>
-                                        </div>
-
-                                        {port.static && (
+                                {group.ports.length === 0 ? (
+                                    <div className="text-sm text-gray-500 italic">No ports defined. Click "Add Port" to add one.</div>
+                                ) : (
+                                    group.ports.map((port, index) => (
+                                        <div key={index} className="flex flex-wrap items-end gap-2 mb-2 p-2 border rounded-md bg-white">
                                             <div className="w-full md:w-auto">
-                                                <label className="block text-xs font-medium text-gray-500 mb-1">Host Port</label>
+                                                <label className="block text-xs font-medium text-gray-500 mb-1">Label</label>
+                                                <input
+                                                    type="text"
+                                                    value={port.label}
+                                                    onChange={(e) => onPortChange(index, 'label', e.target.value)}
+                                                    placeholder="http"
+                                                    className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                    disabled={isLoading}
+                                                />
+                                            </div>
+
+                                            <div className="w-full md:w-auto">
+                                                <label className="block text-xs font-medium text-gray-500 mb-1">Port Type</label>
+                                                <select
+                                                    value={port.static ? 'true' : 'false'}
+                                                    onChange={(e) => onPortChange(index, 'static', e.target.value)}
+                                                    className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                    disabled={isLoading}
+                                                >
+                                                    <option value="false">Dynamic</option>
+                                                    <option value="true">Static</option>
+                                                </select>
+                                            </div>
+
+                                            {port.static && (
+                                                <div className="w-full md:w-auto">
+                                                    <label className="block text-xs font-medium text-gray-500 mb-1">Host Port</label>
+                                                    <input
+                                                        type="number"
+                                                        value={port.value}
+                                                        onChange={(e) => onPortChange(index, 'value', e.target.value)}
+                                                        placeholder="8080"
+                                                        min="1"
+                                                        max="65535"
+                                                        className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                        disabled={isLoading}
+                                                    />
+                                                </div>
+                                            )}
+
+                                            <div className="w-full md:w-auto">
+                                                <label className="block text-xs font-medium text-gray-500 mb-1">Container Port</label>
                                                 <input
                                                     type="number"
-                                                    value={port.value}
-                                                    onChange={(e) => onPortChange(index, 'value', e.target.value)}
+                                                    value={port.to}
+                                                    onChange={(e) => onPortChange(index, 'to', e.target.value)}
                                                     placeholder="8080"
                                                     min="1"
                                                     max="65535"
@@ -433,32 +473,20 @@ export const TaskGroupForm: React.FC<TaskGroupFormProps> = ({
                                                     disabled={isLoading}
                                                 />
                                             </div>
-                                        )}
 
-                                        <div className="w-full md:w-auto">
-                                            <label className="block text-xs font-medium text-gray-500 mb-1">Container Port</label>
-                                            <input
-                                                type="number"
-                                                value={port.to}
-                                                onChange={(e) => onPortChange(index, 'to', e.target.value)}
-                                                placeholder="8080"
-                                                min="1"
-                                                max="65535"
-                                                className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                                disabled={isLoading}
-                                            />
+                                            {group.ports.length > 1 && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => onRemovePort(index)}
+                                                    className="px-3 py-2 border border-transparent text-xs font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+                                                    disabled={isLoading}
+                                                >
+                                                    <Trash size={16} />
+                                                </button>
+                                            )}
                                         </div>
-
-                                        <button
-                                            type="button"
-                                            onClick={() => onRemovePort(index)}
-                                            className="px-3 py-2 border border-transparent text-xs font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 h-10"
-                                            disabled={isLoading || group.ports.length <= 1}
-                                        >
-                                            Remove
-                                        </button>
-                                    </div>
-                                ))}
+                                    ))
+                                )}
                             </div>
                         </div>
                     )}

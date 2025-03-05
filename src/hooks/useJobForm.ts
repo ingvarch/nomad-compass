@@ -18,7 +18,7 @@ export const defaultTaskGroupData: TaskGroupFormData = {
         MemoryMB: 256,
         DiskMB: 500,
     },
-    envVars: [{ key: '', value: '' }],
+    envVars: [],  // Empty array by default
     usePrivateRegistry: false,
     dockerAuth: {
         username: '',
@@ -226,7 +226,11 @@ export function useJobForm() {
     // Handle environment variable changes for a specific task group
     const handleEnvVarChange = (groupIndex: number, varIndex: number, field: 'key' | 'value', value: string) => {
         const updatedGroups = [...formData.taskGroups];
-        const updatedEnvVars = [...updatedGroups[groupIndex].envVars];
+        const updatedEnvVars = [...(updatedGroups[groupIndex].envVars || [])];
+
+        if (!updatedEnvVars[varIndex]) {
+            updatedEnvVars[varIndex] = { key: '', value: '' };
+        }
 
         updatedEnvVars[varIndex] = {
             ...updatedEnvVars[varIndex],
@@ -247,9 +251,11 @@ export function useJobForm() {
     // Add a new environment variable field to a specific task group
     const addEnvVar = (groupIndex: number) => {
         const updatedGroups = [...formData.taskGroups];
+        const currentEnvVars = updatedGroups[groupIndex].envVars || [];
+
         updatedGroups[groupIndex] = {
             ...updatedGroups[groupIndex],
-            envVars: [...updatedGroups[groupIndex].envVars, { key: '', value: '' }]
+            envVars: [...currentEnvVars, { key: '', value: '' }]
         };
 
         setFormData({
@@ -258,21 +264,33 @@ export function useJobForm() {
         });
     };
 
+    // Ensure there's always at least one empty env var
+    useEffect(() => {
+        formData.taskGroups.forEach((group, index) => {
+            if (!group.envVars || group.envVars.length === 0) {
+                addEnvVar(index);
+            }
+        });
+    }, [formData, addEnvVar]);
+
     // Remove an environment variable field from a specific task group
     const removeEnvVar = (groupIndex: number, varIndex: number) => {
         const updatedGroups = [...formData.taskGroups];
-        const updatedEnvVars = [...updatedGroups[groupIndex].envVars];
+        const updatedEnvVars = [...(updatedGroups[groupIndex].envVars || [])];
 
         if (updatedEnvVars.length <= 1) {
-            updatedEnvVars[0] = { key: '', value: '' };
+            // If it's the last one, empty the array instead of removing it
+            updatedGroups[groupIndex] = {
+                ...updatedGroups[groupIndex],
+                envVars: []
+            };
         } else {
             updatedEnvVars.splice(varIndex, 1);
+            updatedGroups[groupIndex] = {
+                ...updatedGroups[groupIndex],
+                envVars: updatedEnvVars
+            };
         }
-
-        updatedGroups[groupIndex] = {
-            ...updatedGroups[groupIndex],
-            envVars: updatedEnvVars
-        };
 
         setFormData({
             ...formData,
@@ -337,7 +355,14 @@ export function useJobForm() {
     const removePort = (groupIndex: number, portIndex: number) => {
         const updatedGroups = [...formData.taskGroups];
 
-        if (updatedGroups[groupIndex].ports.length <= 1) return;
+        if (updatedGroups[groupIndex].ports.length <= 1) {
+            // If only one port, clear it but don't remove the array element
+            updatedGroups[groupIndex] = {
+                ...updatedGroups[groupIndex],
+                ports: [{ label: '', value: 0, to: 0, static: false }]
+            };
+            return;
+        }
 
         const updatedPorts = [...updatedGroups[groupIndex].ports];
         updatedPorts.splice(portIndex, 1);
@@ -427,6 +452,11 @@ export function useJobForm() {
                     if (!group.dockerAuth?.password) {
                         throw new Error(`Password is required for private registry in group ${i + 1}`);
                     }
+                }
+
+                // Clean empty env vars
+                if (group.envVars) {
+                    group.envVars = group.envVars.filter(ev => ev.key.trim() !== '' || ev.value.trim() !== '');
                 }
 
                 // Validate ports if networking is enabled
