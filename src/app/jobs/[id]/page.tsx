@@ -459,7 +459,6 @@ export default function JobDetailPage() {
                                                     </h5>
                                                 </div>
                                                 <div className="flex items-center space-x-2">
-                                                    <span className="text-sm text-gray-500">{taskGroup.Tasks[0].Driver}</span>
                                                     <button
                                                         className={`px-3 py-1 text-xs font-medium rounded-full ${
                                                             selectedTaskGroup === groupIndex ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
