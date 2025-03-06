@@ -1,7 +1,7 @@
 // src/app/jobs/[id]/page.tsx
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, {useState, useEffect, useCallback, useRef} from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import ProtectedLayout from '@/components/layout/ProtectedLayout';
@@ -22,6 +22,8 @@ export default function JobDetailPage() {
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
     const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
+    const logsRef = useRef<HTMLDivElement>(null);
+    const [selectedGroupForLogs, setSelectedGroupForLogs] = useState<string | null>(null);
 
     const jobId = params.id as string;
     const namespace = searchParams.get('namespace') || 'default';
@@ -457,6 +459,18 @@ export default function JobDetailPage() {
                                                         {taskGroup.Tasks[0].Name}
                                                     </h5>
                                                 </div>
+                                                <div className="flex items-center space-x-2">
+                                                    <button
+                                                        className="px-3 py-1 text-xs font-medium rounded-full bg-blue-600 text-white hover:bg-blue-700"
+                                                        onClick={(e) => {
+                                                            e.stopPropagation();
+                                                            setSelectedGroupForLogs(taskGroup.Name);
+                                                            logsRef.current?.scrollIntoView({ behavior: 'smooth' });
+                                                        }}
+                                                    >
+                                                        View Logs
+                                                    </button>
+                                                </div>
                                             </div>
 
                                             {/* Task details (collapsible) */}
@@ -544,9 +558,12 @@ export default function JobDetailPage() {
                 )}
 
                 {/* Logs */}
-                <div className="mt-6">
-                    {job.TaskGroups && job.TaskGroups.length > 0 && (
-                        <JobLogs jobId={job.ID} />
+                <div ref={logsRef} className="mt-6">
+                    {job.ID && (
+                        <JobLogs
+                            jobId={job.ID}
+                            initialTaskGroup={selectedGroupForLogs}
+                        />
                     )}
                 </div>
 

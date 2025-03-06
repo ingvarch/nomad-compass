@@ -9,10 +9,10 @@ interface JobLogsProps {
     jobId: string;
     allocId?: string;
     taskName?: string;
+    initialTaskGroup?: string | null;
 }
 
-export const JobLogs: React.FC<JobLogsProps> = ({ jobId, allocId, taskName }) => {
-    const { token, nomadAddr } = useAuth();
+export const JobLogs: React.FC<JobLogsProps> = ({ jobId, allocId, taskName, initialTaskGroup }) => {    const { token, nomadAddr } = useAuth();
     const [logs, setLogs] = useState<string>('');
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -28,6 +28,13 @@ export const JobLogs: React.FC<JobLogsProps> = ({ jobId, allocId, taskName }) =>
     const [refreshInterval, setRefreshInterval] = useState<number>(5); // seconds
     const refreshTimerRef = useRef<NodeJS.Timeout | null>(null);
     const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
+
+
+    useEffect(() => {
+        if (initialTaskGroup) {
+            setSelectedTaskGroup(initialTaskGroup);
+        }
+    }, [initialTaskGroup]);
 
     // Fetch job data to get task groups
     useEffect(() => {
