@@ -20,6 +20,8 @@ export const JobLogs: React.FC<JobLogsProps> = ({ jobId, allocId, taskName }) =>
     const [selectedAlloc, setSelectedAlloc] = useState<string | null>(null);
     const [selectedTask, setSelectedTask] = useState<string | null>(null);
     const [logType, setLogType] = useState<'stdout' | 'stderr'>('stdout');
+    const [taskGroups, setTaskGroups] = useState<any[]>([]);
+    const [selectedTaskGroup, setSelectedTaskGroup] = useState<string | null>(null);
 
     // Auto-refresh state
     const [autoRefresh, setAutoRefresh] = useState<boolean>(false);
@@ -27,7 +29,38 @@ export const JobLogs: React.FC<JobLogsProps> = ({ jobId, allocId, taskName }) =>
     const refreshTimerRef = useRef<NodeJS.Timeout | null>(null);
     const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
 
-    // Fetch job allocations
+    // Fetch job data to get task groups
+    useEffect(() => {
+        const fetchJobData = async () => {
+            if (!token || !nomadAddr) {
+                setError('Authentication required');
+                setIsLoading(false);
+                return;
+            }
+
+            try {
+                const client = createNomadClient(nomadAddr, token);
+                const namespace = new URLSearchParams(window.location.search).get('namespace') || 'default';
+                const jobData = await client.getJob(jobId, namespace);
+
+                // Set task groups from job data
+                if (jobData && jobData.TaskGroups) {
+                    setTaskGroups(jobData.TaskGroups);
+                    // Set the first task group as selected by default if none is selected
+                    if (!selectedTaskGroup && jobData.TaskGroups.length > 0) {
+                        setSelectedTaskGroup(jobData.TaskGroups[0].Name);
+                    }
+                }
+            } catch (err) {
+                console.error('Failed to fetch job data:', err);
+                setError('Failed to load job data. Please try again.');
+            }
+        };
+
+        fetchJobData();
+    }, [jobId, token, nomadAddr, selectedTaskGroup]);
+
+    // Fetch job allocations based on selected task group
     useEffect(() => {
         const fetchAllocations = async () => {
             if (!token || !nomadAddr) {
@@ -38,13 +71,18 @@ export const JobLogs: React.FC<JobLogsProps> = ({ jobId, allocId, taskName }) =>
 
             try {
                 const client = createNomadClient(nomadAddr, token);
-
                 const namespace = new URLSearchParams(window.location.search).get('namespace') || 'default';
-
                 const allocs = await client.getJobAllocations(jobId, namespace);
 
                 // Filter running allocations
-                const runningAllocs = allocs.filter((alloc: any) => alloc.ClientStatus === 'running');
+                const runningAllocs = allocs.filter((alloc: any) => {
+                    // If a task group is selected, only show allocations for that group
+                    if (selectedTaskGroup) {
+                        return alloc.ClientStatus === 'running' && alloc.TaskGroup === selectedTaskGroup;
+                    }
+                    return alloc.ClientStatus === 'running';
+                });
+
                 setAllocations(runningAllocs);
 
                 if (runningAllocs.length > 0) {
@@ -59,6 +97,10 @@ export const JobLogs: React.FC<JobLogsProps> = ({ jobId, allocId, taskName }) =>
                     if (taskNames.length > 0) {
                         setSelectedTask(taskName || taskNames[0]);
                     }
+                } else {
+                    setSelectedAlloc(null);
+                    setSelectedTask(null);
+                    setLogs('No running allocations for this task group');
                 }
 
                 setIsLoading(false);
@@ -69,8 +111,11 @@ export const JobLogs: React.FC<JobLogsProps> = ({ jobId, allocId, taskName }) =>
             }
         };
 
-        fetchAllocations();
-    }, [jobId, token, nomadAddr, allocId, taskName]);
+        if (selectedTaskGroup) {
+            setIsLoading(true);
+            fetchAllocations();
+        }
+    }, [jobId, token, nomadAddr, allocId, taskName, selectedTaskGroup]);
 
     // Fetch logs
     const fetchLogs = useCallback(async () => {
@@ -140,12 +185,21 @@ export const JobLogs: React.FC<JobLogsProps> = ({ jobId, allocId, taskName }) =>
         setRefreshInterval(Number(e.target.value));
     };
 
+    // Handle task group change
+    const handleTaskGroupChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+        const newTaskGroup = e.target.value;
+        setSelectedTaskGroup(newTaskGroup);
+        // Reset allocation and task when changing task group
+        setSelectedAlloc(null);
+        setSelectedTask(null);
+    };
+
     // Manual refresh
     const handleManualRefresh = () => {
         fetchLogs();
     };
 
-    if (error && !allocations.length) {
+    if (error && !allocations.length && !selectedTaskGroup) {
         return (
             <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
                 <strong className="font-bold">Error: </strong>
@@ -154,29 +208,10 @@ export const JobLogs: React.FC<JobLogsProps> = ({ jobId, allocId, taskName }) =>
         );
     }
 
-    if (isLoading && !allocations.length) {
+    if (isLoading && !allocations.length && !taskGroups.length) {
         return (
             <div className="flex justify-center items-center h-24">
                 <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
-            </div>
-        );
-    }
-
-    if (!allocations.length) {
-        return (
-            <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4">
-                <div className="flex">
-                    <div className="flex-shrink-0">
-                        <svg className="h-5 w-5 text-yellow-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                            <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                        </svg>
-                    </div>
-                    <div className="ml-3">
-                        <p className="text-sm text-yellow-700">
-                            No running allocations found for this job.
-                        </p>
-                    </div>
-                </div>
             </div>
         );
     }
@@ -187,6 +222,22 @@ export const JobLogs: React.FC<JobLogsProps> = ({ jobId, allocId, taskName }) =>
                 <h3 className="text-lg font-medium text-gray-900">Job Logs</h3>
 
                 <div className="flex flex-wrap gap-2 mt-2 sm:mt-0">
+                    {/* Task Group Selector */}
+                    {taskGroups.length > 0 && (
+                        <select
+                            value={selectedTaskGroup || ''}
+                            onChange={handleTaskGroupChange}
+                            className="block w-full sm:w-auto pl-3 pr-10 py-1 text-sm border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 rounded-md"
+                        >
+                            <option value="">Select Task Group</option>
+                            {taskGroups.map((group) => (
+                                <option key={group.Name} value={group.Name}>
+                                    {group.Name}
+                                </option>
+                            ))}
+                        </select>
+                    )}
+
                     {/* Allocation Selector */}
                     {allocations.length > 1 && (
                         <select
@@ -264,7 +315,7 @@ export const JobLogs: React.FC<JobLogsProps> = ({ jobId, allocId, taskName }) =>
                         <button
                             onClick={handleManualRefresh}
                             className="inline-flex items-center px-2 py-1 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                            disabled={isLoading}
+                            disabled={isLoading || !selectedAlloc || !selectedTask}
                             title="Refresh logs"
                         >
                             <RefreshCw size={16} className={isLoading ? 'animate-spin' : ''} />
@@ -283,6 +334,40 @@ export const JobLogs: React.FC<JobLogsProps> = ({ jobId, allocId, taskName }) =>
                 {error && (
                     <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
                         <span className="block sm:inline">{error}</span>
+                    </div>
+                )}
+
+                {!selectedTaskGroup && (
+                    <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4">
+                        <div className="flex">
+                            <div className="flex-shrink-0">
+                                <svg className="h-5 w-5 text-yellow-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                                </svg>
+                            </div>
+                            <div className="ml-3">
+                                <p className="text-sm text-yellow-700">
+                                    Please select a task group to view logs.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {selectedTaskGroup && allocations.length === 0 && (
+                    <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4">
+                        <div className="flex">
+                            <div className="flex-shrink-0">
+                                <svg className="h-5 w-5 text-yellow-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                                </svg>
+                            </div>
+                            <div className="ml-3">
+                                <p className="text-sm text-yellow-700">
+                                    No running allocations found for the selected task group.
+                                </p>
+                            </div>
+                        </div>
                     </div>
                 )}
 

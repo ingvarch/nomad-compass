@@ -21,7 +21,6 @@ export default function JobDetailPage() {
     const [job, setJob] = useState<any>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [selectedTaskGroup, setSelectedTaskGroup] = useState<number>(0);
     const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
 
     const jobId = params.id as string;
@@ -458,19 +457,6 @@ export default function JobDetailPage() {
                                                         {taskGroup.Tasks[0].Name}
                                                     </h5>
                                                 </div>
-                                                <div className="flex items-center space-x-2">
-                                                    <button
-                                                        className={`px-3 py-1 text-xs font-medium rounded-full ${
-                                                            selectedTaskGroup === groupIndex ? 'bg-blue-600 text-white' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-                                                        }`}
-                                                        onClick={(e) => {
-                                                            e.stopPropagation();
-                                                            setSelectedTaskGroup(groupIndex);
-                                                        }}
-                                                    >
-                                                        View Logs
-                                                    </button>
-                                                </div>
                                             </div>
 
                                             {/* Task details (collapsible) */}
@@ -559,11 +545,8 @@ export default function JobDetailPage() {
 
                 {/* Logs */}
                 <div className="mt-6">
-                    {job.TaskGroups && job.TaskGroups.length > 0 && job.TaskGroups[selectedTaskGroup]?.Tasks && job.TaskGroups[selectedTaskGroup].Tasks.length > 0 && (
-                        <JobLogs
-                            jobId={job.ID}
-                            taskName={job.TaskGroups[selectedTaskGroup].Tasks[0]?.Name}
-                        />
+                    {job.TaskGroups && job.TaskGroups.length > 0 && (
+                        <JobLogs jobId={job.ID} />
                     )}
                 </div>
 
