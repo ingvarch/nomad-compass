@@ -31,7 +31,8 @@ export const JobLogs: React.FC<JobLogsProps> = ({ jobId, allocId, taskName, init
 
 
     useEffect(() => {
-        if (initialTaskGroup) {
+        if (initialTaskGroup && initialTaskGroup !== selectedTaskGroup) {
+            setError(null);
             setSelectedTaskGroup(initialTaskGroup);
         }
     }, [initialTaskGroup]);
@@ -110,6 +111,7 @@ export const JobLogs: React.FC<JobLogsProps> = ({ jobId, allocId, taskName, init
                     setLogs('No running allocations for this task group');
                 }
 
+                setError(null);
                 setIsLoading(false);
             } catch (err) {
                 console.error('Failed to fetch allocations:', err);
@@ -119,8 +121,16 @@ export const JobLogs: React.FC<JobLogsProps> = ({ jobId, allocId, taskName, init
         };
 
         if (selectedTaskGroup) {
+            setLogs('');
+            setSelectedAlloc(null);
+            setSelectedTask(null);
+
             setIsLoading(true);
-            fetchAllocations();
+            const timer = setTimeout(() => {
+                fetchAllocations();
+            }, 300);
+
+            return () => clearTimeout(timer);
         }
     }, [jobId, token, nomadAddr, allocId, taskName, selectedTaskGroup]);
 
