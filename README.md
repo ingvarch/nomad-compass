@@ -1,36 +1,95 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Nomad Compass
+ 
+Nomad Compass provides a clean, user-friendly interface to manage your Nomad jobs, services, and resources.
+
+## Features
+
+- **Job Management**: Create, edit, monitor, and delete jobs
+- **Container Configuration**: Configure Docker/Podman containers with ease
+- **Environment Variables**: Manage environment variables
+- **Network Configuration**: Configure service networking and port mappings
+- **Service Health Checks**: Set up and monitor service health checks
+- **Log Viewing**: View and filter logs for running containers
+- **Multi-Namespace Support**: Work with multiple Nomad namespaces
 
 ## Getting Started
 
-First, run the development server:
+### Prerequisites
+
+- Node.js 20
+- A running Nomad cluster
+- Nomad ACL token
+
+### Installation
+
+1. Clone the repository:
+
+```bash
+git clone https://github.com/yourusername/nomad-compass.git
+cd nomad-compass
+```
+
+2. Install dependencies:
+
+```bash
+npm install
+```
+
+3. Create a `.env` file in the root directory (optional):
+
+```
+NOMAD_ADDR=http://your-nomad-server:4646
+```
+
+4. Start the development server:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+5. Open [http://localhost:3000](http://localhost:3000) in your browser.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Usage
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+### Authentication
 
-## Learn More
+On first access, you'll be prompted to enter your Nomad server address and token.
 
-To learn more about Next.js, take a look at the following resources:
+### Managing Jobs
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+1. **View Jobs**: The jobs page shows all jobs across namespaces or within a selected namespace
+2. **Job Details**: Click on a job to view details, configurations, and task groups
+3. **Create Jobs**: Use the "Create Job" button to launch the job creation wizard
+4. **Edit Jobs**: Modify job configurations through the edit interface
+5. **Manage Tasks**: Configure resources, environment variables, and networking per task
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### Viewing Logs
 
-## Deploy on Vercel
+Job detail pages include a logs section that allows:
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+- Selecting specific allocations
+- Switching between stdout and stderr
+- Auto-refreshing logs
+- Manual refresh
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+## Deployment
+
+### Docker
+
+The project includes a Dockerfile for containerized deployment:
+
+```bash
+# Build the Docker image
+docker build -t nomad-compass .
+
+# Run the container
+docker run -p 3000:3000 -e NOMAD_ADDR=http://your-nomad-server:4646 nomad-compass
+```
+
+### Environment Variables
+
+- `NOMAD_ADDR`: Address of your Nomad server, defaults to `http://localhost:4646`
+
+## Contributing
+
+Contributions are welcome! Please feel free to submit a Pull Request.
