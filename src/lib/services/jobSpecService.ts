@@ -243,9 +243,11 @@ function convertJobToFormData(job: any): NomadJobFormData {
         const task = group.Tasks[0];
         const config = task.Config || {};
 
-        // Extract environment variables
+        // Extract environment variables (sorted alphabetically by key)
         const envVars: NomadEnvVar[] = task.Env ?
-            Object.entries(task.Env).map(([key, value]) => ({ key, value: value as string })) :
+            Object.entries(task.Env)
+                .map(([key, value]) => ({ key, value: value as string }))
+                .sort((a, b) => a.key.localeCompare(b.key)) :
             [];
 
         // Extract Docker auth if present
