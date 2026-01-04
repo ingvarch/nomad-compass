@@ -25,14 +25,14 @@ export const ProtectedLayout: React.FC<ProtectedLayoutProps> = ({ children }) =>
     // Don't render anything while checking authentication
     if (!isAuthenticated) {
         return (
-            <div className="flex justify-center items-center min-h-screen">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+            <div className="flex justify-center items-center min-h-screen bg-gray-50 dark:bg-monokai-bg">
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 dark:border-monokai-blue"></div>
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-gray-50">
+        <div className="min-h-screen bg-gray-50 dark:bg-monokai-bg">
             <DashboardNav />
             <main className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
                 {children}

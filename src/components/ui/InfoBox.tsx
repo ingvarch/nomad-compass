@@ -16,17 +16,17 @@ export const InfoBox: React.FC<InfoBoxProps> = ({
   className = ''
 }) => {
   const typeStyles = {
-    info: 'bg-blue-50 border-blue-400 text-blue-700',
-    warning: 'bg-yellow-50 border-yellow-400 text-yellow-700',
-    error: 'bg-red-50 border-red-400 text-red-700',
-    success: 'bg-green-50 border-green-400 text-green-700'
+    info: 'bg-blue-50 border-blue-400 text-blue-700 dark:bg-monokai-surface dark:border-monokai-blue dark:text-monokai-blue',
+    warning: 'bg-yellow-50 border-yellow-400 text-yellow-700 dark:bg-monokai-surface dark:border-monokai-yellow dark:text-monokai-yellow',
+    error: 'bg-red-50 border-red-400 text-red-700 dark:bg-monokai-surface dark:border-monokai-red dark:text-monokai-red',
+    success: 'bg-green-50 border-green-400 text-green-700 dark:bg-monokai-surface dark:border-monokai-green dark:text-monokai-green'
   };
 
   const codeStyles = {
-    info: 'bg-blue-100',
-    warning: 'bg-yellow-100',
-    error: 'bg-red-100',
-    success: 'bg-green-100'
+    info: 'bg-blue-100 dark:bg-monokai-bg',
+    warning: 'bg-yellow-100 dark:bg-monokai-bg',
+    error: 'bg-red-100 dark:bg-monokai-bg',
+    success: 'bg-green-100 dark:bg-monokai-bg'
   };
 
   return (

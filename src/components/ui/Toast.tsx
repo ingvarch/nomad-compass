@@ -15,34 +15,34 @@ const Toast: React.FC<{
             case 'success':
                 return {
                     icon: <CheckCircle className="h-5 w-5" />,
-                    bgColor: 'bg-green-50',
-                    borderColor: 'border-green-400',
-                    textColor: 'text-green-800',
-                    iconColor: 'text-green-500'
+                    bgColor: 'bg-green-50 dark:bg-monokai-surface',
+                    borderColor: 'border-green-400 dark:border-monokai-green',
+                    textColor: 'text-green-800 dark:text-monokai-green',
+                    iconColor: 'text-green-500 dark:text-monokai-green'
                 };
             case 'error':
                 return {
                     icon: <AlertCircle className="h-5 w-5" />,
-                    bgColor: 'bg-red-50',
-                    borderColor: 'border-red-400',
-                    textColor: 'text-red-800',
-                    iconColor: 'text-red-500'
+                    bgColor: 'bg-red-50 dark:bg-monokai-surface',
+                    borderColor: 'border-red-400 dark:border-monokai-red',
+                    textColor: 'text-red-800 dark:text-monokai-red',
+                    iconColor: 'text-red-500 dark:text-monokai-red'
                 };
             case 'warning':
                 return {
                     icon: <AlertTriangle className="h-5 w-5" />,
-                    bgColor: 'bg-yellow-50',
-                    borderColor: 'border-yellow-400',
-                    textColor: 'text-yellow-800',
-                    iconColor: 'text-yellow-500'
+                    bgColor: 'bg-yellow-50 dark:bg-monokai-surface',
+                    borderColor: 'border-yellow-400 dark:border-monokai-yellow',
+                    textColor: 'text-yellow-800 dark:text-monokai-yellow',
+                    iconColor: 'text-yellow-500 dark:text-monokai-yellow'
                 };
             default:
                 return {
                     icon: <Info className="h-5 w-5" />,
-                    bgColor: 'bg-blue-50',
-                    borderColor: 'border-blue-400',
-                    textColor: 'text-blue-800',
-                    iconColor: 'text-blue-500'
+                    bgColor: 'bg-blue-50 dark:bg-monokai-surface',
+                    borderColor: 'border-blue-400 dark:border-monokai-blue',
+                    textColor: 'text-blue-800 dark:text-monokai-blue',
+                    iconColor: 'text-blue-500 dark:text-monokai-blue'
                 };
         }
     };
@@ -68,7 +68,7 @@ const Toast: React.FC<{
                 <div className="flex-grow">{toast.message}</div>
                 <button
                     onClick={handleClose}
-                    className="ml-4 text-gray-400 hover:text-gray-600 focus:outline-none"
+                    className="ml-4 text-gray-400 hover:text-gray-600 dark:text-monokai-muted dark:hover:text-monokai-text focus:outline-none"
                     aria-label="Close"
                 >
                     <X className="h-4 w-4" />

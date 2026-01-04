@@ -25,22 +25,22 @@ export const ToggleableSection: React.FC<ToggleableSectionProps> = ({
   const [isCollapsed, setIsCollapsed] = useState(!defaultExpanded);
 
   return (
-    <div className={`border rounded-lg p-4 bg-gray-50 relative ${className}`}>
+    <div className={`border rounded-lg p-4 bg-gray-50 dark:bg-monokai-bg dark:border-monokai-muted relative ${className}`}>
       {/* Header with collapse/expand button */}
       <div className="flex justify-between items-center mb-4">
         <div className="flex items-center">
           <button
             type="button"
             onClick={() => setIsCollapsed(!isCollapsed)}
-            className="mr-2 text-gray-500 hover:text-gray-700 focus:outline-none"
+            className="mr-2 text-gray-500 hover:text-gray-700 dark:text-monokai-muted dark:hover:text-monokai-text focus:outline-none"
           >
             <ChevronRight
               className={`h-5 w-5 transition-transform ${isCollapsed ? '' : 'transform rotate-90'}`}
             />
           </button>
-          <h4 className="text-lg font-medium text-gray-900">
+          <h4 className="text-lg font-medium text-gray-900 dark:text-monokai-text">
             {title}
-            {isPrimary && <span className="ml-2 text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">Primary</span>}
+            {isPrimary && <span className="ml-2 text-xs bg-blue-100 text-blue-800 dark:bg-monokai-surface dark:text-monokai-blue px-2 py-1 rounded">Primary</span>}
           </h4>
         </div>
 
@@ -48,7 +48,7 @@ export const ToggleableSection: React.FC<ToggleableSectionProps> = ({
           <button
             type="button"
             onClick={onRemove}
-            className="text-red-600 hover:text-red-800 focus:outline-none"
+            className="text-red-600 hover:text-red-800 dark:text-monokai-red dark:hover:text-red-400 focus:outline-none"
             disabled={isLoading}
           >
             <Trash className="h-5 w-5" />

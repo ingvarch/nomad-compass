@@ -8,6 +8,12 @@
   --background-end-rgb: 255, 255, 255;
 }
 
+.dark {
+  --foreground-rgb: 248, 248, 242;
+  --background-start-rgb: 39, 40, 34;
+  --background-end-rgb: 39, 40, 34;
+}
+
 body {
   color: rgb(var(--foreground-rgb));
   background: linear-gradient(
@@ -18,4 +24,6 @@ body {
     rgb(var(--background-start-rgb));
 }
 
-/* Add custom styles here */
+.dark body {
+  background: #272822;
+}

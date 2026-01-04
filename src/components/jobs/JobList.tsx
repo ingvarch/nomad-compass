@@ -52,18 +52,18 @@ export const JobList: React.FC = () => {
   // Function to get status color
   const getStatusColor = (status: string, stop: boolean): string => {
     if (stop) {
-      return 'text-gray-600 bg-gray-100';
+      return 'text-gray-600 bg-gray-100 dark:text-monokai-muted dark:bg-monokai-surface';
     }
 
     switch (status.toLowerCase()) {
       case 'running':
-        return 'text-green-600 bg-green-100';
+        return 'text-green-600 bg-green-100 dark:text-monokai-green dark:bg-monokai-surface';
       case 'pending':
-        return 'text-yellow-600 bg-yellow-100';
+        return 'text-yellow-600 bg-yellow-100 dark:text-monokai-yellow dark:bg-monokai-surface';
       case 'dead':
-        return 'text-red-600 bg-red-100';
+        return 'text-red-600 bg-red-100 dark:text-monokai-red dark:bg-monokai-surface';
       default:
-        return 'text-gray-600 bg-gray-100';
+        return 'text-gray-600 bg-gray-100 dark:text-monokai-muted dark:bg-monokai-surface';
     }
   };
 
@@ -76,7 +76,7 @@ export const JobList: React.FC = () => {
   if (isLoading) {
     return (
         <div className="flex justify-center items-center h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 dark:border-monokai-blue"></div>
         </div>
     );
   }
@@ -84,7 +84,7 @@ export const JobList: React.FC = () => {
   // Render error state
   if (error) {
     return (
-        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+        <div className="bg-red-100 border border-red-400 text-red-700 dark:bg-monokai-surface dark:border-monokai-red dark:text-monokai-red px-4 py-3 rounded relative" role="alert">
           <strong className="font-bold">Error: </strong>
           <span className="block sm:inline">{error}</span>
         </div>
@@ -95,14 +95,14 @@ export const JobList: React.FC = () => {
       <div>
         {/* Namespace Filter */}
         <div className="mb-4 flex items-center space-x-4">
-          <label htmlFor="namespace-select" className="text-sm font-medium text-gray-700">
+          <label htmlFor="namespace-select" className="text-sm font-medium text-gray-700 dark:text-monokai-text">
             Namespace:
           </label>
           <select
               id="namespace-select"
               value={selectedNamespace}
               onChange={handleNamespaceChange}
-              className="block w-auto pl-3 pr-10 py-2 text-sm border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 rounded-md"
+              className="block w-auto pl-3 pr-10 py-2 text-sm border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 rounded-md dark:bg-monokai-surface dark:border-monokai-muted dark:text-monokai-text dark:focus:ring-monokai-blue dark:focus:border-monokai-blue"
           >
             {namespaces.map((ns) => (
                 <option key={ns.Name} value={ns.Name}>
@@ -114,63 +114,63 @@ export const JobList: React.FC = () => {
 
         {/* Job List Table */}
         {jobs.length === 0 ? (
-            <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4">
+            <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 dark:bg-monokai-surface dark:border-monokai-yellow">
               <div className="flex">
                 <div className="flex-shrink-0">
-                  <svg className="h-5 w-5 text-yellow-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                  <svg className="h-5 w-5 text-yellow-400 dark:text-monokai-yellow" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                     <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
                   </svg>
                 </div>
                 <div className="ml-3">
-                  <p className="text-sm text-yellow-700">
+                  <p className="text-sm text-yellow-700 dark:text-monokai-yellow">
                     No jobs found {selectedNamespace !== '*' ? `in ${selectedNamespace} namespace` : ''}
                   </p>
                 </div>
               </div>
             </div>
         ) : (
-            <div className="bg-white shadow rounded-lg overflow-hidden">
+            <div className="bg-white dark:bg-monokai-surface shadow rounded-lg overflow-hidden">
               <div className="overflow-x-auto">
-                <table className="min-w-full bg-white">
-                  <thead className="bg-gray-100 border-b">
+                <table className="min-w-full bg-white dark:bg-monokai-surface">
+                  <thead className="bg-gray-100 dark:bg-monokai-bg border-b dark:border-monokai-muted">
                   <tr>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-monokai-muted uppercase tracking-wider">
                       Name / ID
                     </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-monokai-muted uppercase tracking-wider">
                       Namespace
                     </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-monokai-muted uppercase tracking-wider">
                       Status
                     </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-monokai-muted uppercase tracking-wider">
                       Type
                     </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-monokai-muted uppercase tracking-wider">
                       Node Pool
                     </th>
                   </tr>
                   </thead>
-                  <tbody className="divide-y divide-gray-200">
+                  <tbody className="divide-y divide-gray-200 dark:divide-monokai-muted">
                   {jobs.map((job) => (
-                      <tr key={job.ID} className="hover:bg-gray-50">
+                      <tr key={job.ID} className="hover:bg-gray-50 dark:hover:bg-monokai-bg">
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex items-center">
                             <div className="ml-4">
-                              <div className="text-sm font-medium text-gray-900">
+                              <div className="text-sm font-medium text-gray-900 dark:text-monokai-text">
                                 <Link
                                     href={`/jobs/${job.ID}?namespace=${job.Namespace || 'default'}`}
-                                    className="text-blue-600 hover:text-blue-800">
+                                    className="text-blue-600 hover:text-blue-800 dark:text-monokai-blue dark:hover:text-monokai-blue">
                                   {job.Name}
                                 </Link>
                               </div>
-                              <div className="text-xs text-gray-500">{job.ID}</div>
+                              <div className="text-xs text-gray-500 dark:text-monokai-muted">{job.ID}</div>
                             </div>
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-900">
-                        <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
+                          <div className="text-sm text-gray-900 dark:text-monokai-text">
+                        <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800 dark:bg-monokai-bg dark:text-monokai-blue">
                           {job.Namespace || 'default'}
                         </span>
                           </div>
@@ -181,10 +181,10 @@ export const JobList: React.FC = () => {
                       </span>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-900">{job.Type}</div>
+                          <div className="text-sm text-gray-900 dark:text-monokai-text">{job.Type}</div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-900">default</div>
+                          <div className="text-sm text-gray-900 dark:text-monokai-text">default</div>
                         </td>
                       </tr>
                   ))}

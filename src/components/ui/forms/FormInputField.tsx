@@ -37,8 +37,8 @@ export const FormInputField: React.FC<FormInputFieldProps> = ({
   errorMessage,
   options = []
 }) => {
-  const baseInputClasses = `w-full p-2 border ${isInvalid ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500`;
-  const checkboxClasses = 'h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded';
+  const baseInputClasses = `w-full p-2 border ${isInvalid ? 'border-red-500 dark:border-monokai-red' : 'border-gray-300 dark:border-monokai-muted'} rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-monokai-blue bg-white dark:bg-monokai-surface text-gray-900 dark:text-monokai-text`;
+  const checkboxClasses = 'h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded dark:border-monokai-muted dark:bg-monokai-surface';
 
   if (type === 'checkbox') {
     return (
@@ -53,10 +53,10 @@ export const FormInputField: React.FC<FormInputFieldProps> = ({
           disabled={disabled}
           required={required}
         />
-        <label htmlFor={id} className="ml-2 block text-sm font-medium text-gray-700">
+        <label htmlFor={id} className="ml-2 block text-sm font-medium text-gray-700 dark:text-monokai-text">
           {label}
         </label>
-        {helpText && <p className="mt-1 text-xs text-gray-500">{helpText}</p>}
+        {helpText && <p className="mt-1 text-xs text-gray-500 dark:text-monokai-muted">{helpText}</p>}
       </div>
     );
   }
@@ -64,7 +64,7 @@ export const FormInputField: React.FC<FormInputFieldProps> = ({
   if (type === 'select') {
     return (
       <div className={`mb-4 ${className}`}>
-        <label htmlFor={id} className="block text-sm font-medium text-gray-700 mb-1">
+        <label htmlFor={id} className="block text-sm font-medium text-gray-700 dark:text-monokai-text mb-1">
           {label}
         </label>
         <select
@@ -82,9 +82,9 @@ export const FormInputField: React.FC<FormInputFieldProps> = ({
             </option>
           ))}
         </select>
-        {helpText && <p className="mt-1 text-xs text-gray-500">{helpText}</p>}
+        {helpText && <p className="mt-1 text-xs text-gray-500 dark:text-monokai-muted">{helpText}</p>}
         {isInvalid && errorMessage && (
-          <p className="mt-1 text-sm text-red-600">{errorMessage}</p>
+          <p className="mt-1 text-sm text-red-600 dark:text-monokai-red">{errorMessage}</p>
         )}
       </div>
     );
@@ -92,7 +92,7 @@ export const FormInputField: React.FC<FormInputFieldProps> = ({
 
   return (
     <div className={`mb-4 ${className}`}>
-      <label htmlFor={id} className="block text-sm font-medium text-gray-700 mb-1">
+      <label htmlFor={id} className="block text-sm font-medium text-gray-700 dark:text-monokai-text mb-1">
         {label}
       </label>
       <input
@@ -108,9 +108,9 @@ export const FormInputField: React.FC<FormInputFieldProps> = ({
         min={min}
         max={max}
       />
-      {helpText && <p className="mt-1 text-xs text-gray-500">{helpText}</p>}
+      {helpText && <p className="mt-1 text-xs text-gray-500 dark:text-monokai-muted">{helpText}</p>}
       {isInvalid && errorMessage && (
-        <p className="mt-1 text-sm text-red-600">{errorMessage}</p>
+        <p className="mt-1 text-sm text-red-600 dark:text-monokai-red">{errorMessage}</p>
       )}
     </div>
   );

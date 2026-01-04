@@ -1,5 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
+    output: 'standalone',
     // CORS proxy
     async rewrites() {
         return [

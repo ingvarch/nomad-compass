@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { createNomadClient } from '@/lib/api/nomad';
+import { ThemeToggle } from '@/components/ui/ThemeToggle';
 
 export const LoginForm: React.FC = () => {
   const [token, setToken] = useState('');
@@ -79,22 +80,25 @@ export const LoginForm: React.FC = () => {
   };
 
   return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50">
-        <div className="max-w-md w-full p-6 bg-white rounded-lg shadow-md">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-monokai-bg relative">
+        <div className="absolute top-4 right-4">
+          <ThemeToggle />
+        </div>
+        <div className="max-w-md w-full p-6 bg-white dark:bg-monokai-surface rounded-lg shadow-md">
           <div className="text-center mb-8">
-            <h1 className="text-2xl font-bold text-gray-900">Nomad Compass</h1>
-            <p className="text-gray-600">Sign in to manage your Nomad cluster</p>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-monokai-text">Nomad Compass</h1>
+            <p className="text-gray-600 dark:text-monokai-muted">Sign in to manage your Nomad cluster</p>
           </div>
 
           {error && (
-              <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-md text-sm">
+              <div className="mb-4 p-3 bg-red-100 text-red-700 dark:bg-monokai-bg dark:text-monokai-red rounded-md text-sm">
                 {error}
               </div>
           )}
 
           <form onSubmit={handleSubmit}>
             <div className="mb-6">
-              <label htmlFor="token" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="token" className="block text-sm font-medium text-gray-700 dark:text-monokai-text mb-1">
                 Nomad Token
               </label>
               <input
@@ -103,13 +107,13 @@ export const LoginForm: React.FC = () => {
                   value={token}
                   onChange={(e) => setToken(e.target.value)}
                   placeholder="Enter your Nomad token"
-                  className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full p-2 border border-gray-300 dark:border-monokai-muted rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-monokai-blue bg-white dark:bg-monokai-bg text-gray-900 dark:text-monokai-text"
                   disabled={isLoading}
               />
             </div>
             <button
                 type="submit"
-                className="w-full py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors disabled:opacity-50"
+                className="w-full py-2 px-4 bg-blue-600 hover:bg-blue-700 dark:bg-monokai-blue dark:hover:bg-blue-500 text-white font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 dark:focus:ring-offset-monokai-surface transition-colors disabled:opacity-50"
                 disabled={isLoading}
             >
               {isLoading ? 'Connecting...' : 'Connect to Nomad'}
