@@ -1,54 +1,14 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
 interface AuthContextType {
-  token: string | null;
-  nomadAddr: string | null;
   isAuthenticated: boolean;
-  login: (token: string, nomadAddr: string) => void;
-  logout: () => void;
+  isLoading: boolean;
+  login: (token: string) => Promise<{ success: boolean; error?: string }>;
+  logout: () => Promise<void>;
+  checkAuth: () => Promise<boolean>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
-
-// Helper function to get cookie value
-const getCookie = (name: string): string | null => {
-  const value = `; ${document.cookie}`;
-  const parts = value.split(`; ${name}=`);
-  if (parts.length === 2) return parts.pop()?.split(';').shift() || null;
-  return null;
-};
-
-// Helper function to set cookie
-const setCookie = (name: string, value: string, days: number = 7): void => {
-  const expires = new Date();
-  expires.setTime(expires.getTime() + days * 24 * 60 * 60 * 1000);
-  document.cookie = `${name}=${value};expires=${expires.toUTCString()};path=/;SameSite=Strict;`;
-};
-
-// Helper function to delete cookie
-const deleteCookie = (name: string): void => {
-  document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/;`;
-};
-
-const validateToken = async (token: string | null): Promise<boolean> => {
-  if (!token) return false;
-
-  try {
-    // Use API proxy to validate token instead of direct request
-    // This ensures CSRF protection and prevents SSRF
-    const response = await fetch('/api/nomad/v1/agent/self', {
-      headers: {
-        'X-Nomad-Token': token,
-        'Content-Type': 'application/json',
-      },
-    });
-
-    return response.ok;
-  } catch (error) {
-    console.error('Token validation error:', error);
-    return false;
-  }
-};
 
 export const useAuth = (): AuthContextType => {
   const context = useContext(AuthContext);
@@ -63,50 +23,86 @@ interface AuthProviderProps {
 }
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-  const [token, setToken] = useState<string | null>(null);
-  const [nomadAddr, setNomadAddr] = useState<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
 
-  // Load token and nomadAddr from cookies on initial render
+  // Check authentication status on initial render
   useEffect(() => {
-    const cookieToken = getCookie('nomad-token');
-    const storedNomadAddr = localStorage.getItem('nomad-addr'); // Keep nomadAddr in localStorage as it's not sensitive
-
-    if (cookieToken && storedNomadAddr) {
-      setToken(cookieToken);
-      setNomadAddr(storedNomadAddr);
-      setIsAuthenticated(true);
-    }
+    checkAuth().finally(() => setIsLoading(false));
   }, []);
 
-  const login = (newToken: string, newNomadAddr: string) => {
-    // Store token in cookie for better security
-    setCookie('nomad-token', newToken);
-    // Store nomadAddr in localStorage as it's not sensitive
-    localStorage.setItem('nomad-addr', newNomadAddr);
-    setToken(newToken);
-    setNomadAddr(newNomadAddr);
-    setIsAuthenticated(true);
+  /**
+   * Check if user is authenticated by calling server endpoint
+   * Server validates the httpOnly cookie token against Nomad
+   */
+  const checkAuth = async (): Promise<boolean> => {
+    try {
+      const response = await fetch('/api/auth/validate', {
+        credentials: 'include',
+      });
+      const data = await response.json();
+      setIsAuthenticated(data.authenticated);
+      return data.authenticated;
+    } catch (error) {
+      console.error('Auth check error:', error);
+      setIsAuthenticated(false);
+      return false;
+    }
   };
 
-  const logout = () => {
-    // Remove token from cookie
-    deleteCookie('nomad-token');
-    // Remove nomadAddr from localStorage
-    localStorage.removeItem('nomad-addr');
-    setToken(null);
-    setNomadAddr(null);
-    setIsAuthenticated(false);
+  /**
+   * Login by sending token to server
+   * Server validates and sets httpOnly cookie
+   */
+  const login = async (token: string): Promise<{ success: boolean; error?: string }> => {
+    try {
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({ token }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        setIsAuthenticated(true);
+        return { success: true };
+      }
+
+      return { success: false, error: data.error || 'Login failed' };
+    } catch (error) {
+      console.error('Login error:', error);
+      return { success: false, error: 'Network error during login' };
+    }
+  };
+
+  /**
+   * Logout by calling server endpoint to clear cookies
+   */
+  const logout = async (): Promise<void> => {
+    try {
+      await fetch('/api/auth/logout', {
+        method: 'POST',
+        credentials: 'include',
+      });
+    } catch (error) {
+      console.error('Logout error:', error);
+    } finally {
+      setIsAuthenticated(false);
+    }
   };
 
   return (
     <AuthContext.Provider
       value={{
-        token,
-        nomadAddr,
         isAuthenticated,
+        isLoading,
         login,
         logout,
+        checkAuth,
       }}
     >
       {children}

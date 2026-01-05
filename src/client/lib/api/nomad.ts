@@ -3,15 +3,15 @@ import { NomadJobsResponse, ApiError, NomadNamespace } from '../../types/nomad';
 
 /**
  * NomadClient - A client for interacting with Nomad API
+ * Token is now handled via httpOnly cookie for security
  */
 export class NomadClient {
   private baseUrl: string;
-  private token: string;
 
-  constructor(nomadAddr: string, token: string) {
+  constructor() {
     // Always use proxy endpoint (SPA architecture)
+    // Token is sent automatically via httpOnly cookie
     this.baseUrl = '/api/nomad';
-    this.token = token;
   }
 
   /**
@@ -27,6 +27,7 @@ export class NomadClient {
 
   /**
    * Generic request method for Nomad API
+   * Token is sent via httpOnly cookie, only CSRF token needs to be added
    */
   private async request<T>(
       endpoint: string,
@@ -53,9 +54,8 @@ export class NomadClient {
     // Extract headers from fetchOptions
     const { headers: optHeaders, ...restFetchOptions } = fetchOptions;
 
-    // Add Nomad token header and CSRF token if needed
+    // Set up headers - no X-Nomad-Token needed (sent via httpOnly cookie)
     const headers: Record<string, string> = {
-      'X-Nomad-Token': this.token,
       'Content-Type': 'application/json',
       ...(optHeaders as Record<string, string> | undefined),
     };
@@ -74,6 +74,7 @@ export class NomadClient {
       const response = await fetch(url, {
         ...restFetchOptions,
         headers,
+        credentials: 'include', // Include cookies in request
       });
 
       // Check if the request was successful
@@ -249,7 +250,8 @@ export class NomadClient {
 
 /**
  * Create a new Nomad API client instance
+ * Token is handled via httpOnly cookie, no parameters needed
  */
-export function createNomadClient(nomadAddr: string, token: string): NomadClient {
-  return new NomadClient(nomadAddr, token);
+export function createNomadClient(): NomadClient {
+  return new NomadClient();
 }

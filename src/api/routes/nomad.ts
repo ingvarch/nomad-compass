@@ -1,4 +1,5 @@
 import { Hono } from 'hono'
+import { getCookie } from 'hono/cookie'
 import type { Env } from '../types'
 
 // Valid Nomad API paths regex - only allow legitimate Nomad API endpoints
@@ -10,11 +11,13 @@ export const nomadRoutes = new Hono<{ Bindings: Env }>()
  * Single catch-all proxy to Nomad API.
  * Replaces 6 dead route files with one simple handler.
  * Includes SSRF protection by validating paths and target URLs.
+ * Token is read from httpOnly cookie for security.
  */
 nomadRoutes.all('/*', async (c) => {
   const nomadPath = c.req.path.replace('/api/nomad', '')
   const url = new URL(c.req.url)
-  const token = c.req.header('X-Nomad-Token') || ''
+  // Read token from httpOnly cookie (set by /api/auth/login)
+  const token = getCookie(c, 'nomad-token') || ''
 
   // Validate the requested path to prevent SSRF
   if (!VALID_NOMAD_PATHS.test(nomadPath)) {

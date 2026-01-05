@@ -11,7 +11,7 @@ export default function JobDetailPage() {
   const { id } = useParams<{ id: string }>();
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { token, nomadAddr } = useAuth();
+  const { isAuthenticated } = useAuth();
   const { addToast } = useToast();
   const [job, setJob] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -24,7 +24,7 @@ export default function JobDetailPage() {
   const namespace = searchParams.get('namespace') || 'default';
 
   const fetchJobDetail = useCallback(async () => {
-    if (!token || !nomadAddr) {
+    if (!isAuthenticated) {
       setError('Authentication required');
       setIsLoading(false);
       return;
@@ -32,7 +32,7 @@ export default function JobDetailPage() {
 
     setIsLoading(true);
     try {
-      const client = createNomadClient(nomadAddr, token);
+      const client = createNomadClient();
       const jobDetail = await client.getJob(jobId, namespace);
       setJob(jobDetail);
 
@@ -53,7 +53,7 @@ export default function JobDetailPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [token, nomadAddr, jobId, namespace, addToast]);
+  }, [isAuthenticated, jobId, namespace, addToast]);
 
   useEffect(() => {
     fetchJobDetail();

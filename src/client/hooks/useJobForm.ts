@@ -59,7 +59,7 @@ interface UseJobFormOptions {
 
 export function useJobForm({ mode, jobId, namespace = 'default' }: UseJobFormOptions) {
   const navigate = useNavigate();
-  const { token, nomadAddr } = useAuth();
+  const { isAuthenticated } = useAuth();
   const { addToast } = useToast();
 
   const [isLoading, setIsLoading] = useState(mode === 'edit');
@@ -76,12 +76,12 @@ export function useJobForm({ mode, jobId, namespace = 'default' }: UseJobFormOpt
 
   // Fetch available namespaces
   useEffect(() => {
-    if (!token || !nomadAddr) {
+    if (!isAuthenticated) {
       setIsLoadingNamespaces(false);
       return;
     }
 
-    const client = createNomadClient(nomadAddr, token);
+    const client = createNomadClient();
     client
       .getNamespaces()
       .then((response) => {
@@ -92,18 +92,18 @@ export function useJobForm({ mode, jobId, namespace = 'default' }: UseJobFormOpt
       })
       .catch(() => setNamespaces(['default']))
       .finally(() => setIsLoadingNamespaces(false));
-  }, [token, nomadAddr]);
+  }, [isAuthenticated]);
 
   // Fetch job data (edit mode only)
   const fetchJobData = useCallback(async () => {
-    if (mode !== 'edit' || !token || !nomadAddr || !jobId) {
+    if (mode !== 'edit' || !isAuthenticated || !jobId) {
       setIsLoading(false);
       return;
     }
 
     setIsLoading(true);
     try {
-      const client = createNomadClient(nomadAddr, token);
+      const client = createNomadClient();
       const jobData = await client.getJob(jobId, namespace);
       setInitialJob(jobData);
 
@@ -123,7 +123,7 @@ export function useJobForm({ mode, jobId, namespace = 'default' }: UseJobFormOpt
     } finally {
       setIsLoading(false);
     }
-  }, [mode, token, nomadAddr, jobId, namespace, addToast]);
+  }, [mode, isAuthenticated, jobId, namespace, addToast]);
 
   useEffect(() => {
     if (mode === 'edit') {
@@ -402,7 +402,7 @@ export function useJobForm({ mode, jobId, namespace = 'default' }: UseJobFormOpt
       return;
     }
 
-    if (!token || !nomadAddr || !formData) {
+    if (!isAuthenticated || !formData) {
       setError('Authentication required');
       return;
     }
@@ -410,7 +410,7 @@ export function useJobForm({ mode, jobId, namespace = 'default' }: UseJobFormOpt
     setIsSaving(true);
     try {
       const cleanedData = cleanFormData(formData);
-      const client = createNomadClient(nomadAddr, token);
+      const client = createNomadClient();
 
       if (mode === 'create') {
         const jobSpec = createJobSpec(cleanedData);

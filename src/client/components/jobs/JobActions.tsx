@@ -14,7 +14,7 @@ interface JobActionsProps {
 export const JobActions: React.FC<JobActionsProps> = ({ jobId, jobStatus, onStatusChange }) => {
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
-    const { token, nomadAddr } = useAuth();
+    const { isAuthenticated } = useAuth();
     const { addToast } = useToast();
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
@@ -45,11 +45,11 @@ export const JobActions: React.FC<JobActionsProps> = ({ jobId, jobStatus, onStat
         setConfirmingAction(null);
 
         try {
-            if (!token || !nomadAddr) {
+            if (!isAuthenticated) {
                 throw new Error('Authentication required');
             }
 
-            const client = createNomadClient(nomadAddr, token);
+            const client = createNomadClient();
             const currentNamespace = searchParams.get('namespace') || 'default';
 
             // Get the job specification
@@ -95,11 +95,11 @@ export const JobActions: React.FC<JobActionsProps> = ({ jobId, jobStatus, onStat
         setConfirmingAction(null);
 
         try {
-            if (!token || !nomadAddr) {
+            if (!isAuthenticated) {
                 throw new Error('Authentication required');
             }
 
-            const client = createNomadClient(nomadAddr, token);
+            const client = createNomadClient();
             const currentNamespace = searchParams.get('namespace') || 'default';
             await client.stopJob(jobId, currentNamespace);
 
@@ -128,11 +128,11 @@ export const JobActions: React.FC<JobActionsProps> = ({ jobId, jobStatus, onStat
         setConfirmingAction(null);
 
         try {
-            if (!token || !nomadAddr) {
+            if (!isAuthenticated) {
                 throw new Error('Authentication required');
             }
 
-            const client = createNomadClient(nomadAddr, token);
+            const client = createNomadClient();
             const currentNamespace = searchParams.get('namespace') || 'default';
             await client.deleteJob(jobId, currentNamespace);
 

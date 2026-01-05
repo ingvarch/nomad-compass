@@ -37,5 +37,14 @@ export const securityHeaders = createMiddleware<{ Bindings: Env }>(
         "object-src 'none'; " +
         "base-uri 'self';"
     )
+
+    // Referrer-Policy - only send referrer to same origin
+    c.res.headers.set('Referrer-Policy', 'same-origin')
+
+    // Permissions-Policy - disable unnecessary browser features
+    c.res.headers.set(
+      'Permissions-Policy',
+      'geolocation=(), microphone=(), camera=(), payment=(), usb=(), magnetometer=(), gyroscope=(), accelerometer=()'
+    )
   }
 )
