@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { ThemeToggle } from '../ui/ThemeToggle';
+import { UserMenu } from '../ui/UserMenu';
 
 export const DashboardNav: React.FC = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
@@ -54,22 +55,7 @@ export const DashboardNav: React.FC = () => {
             </div>
           </div>
           <div className="hidden sm:ml-6 sm:flex sm:items-center">
-            <div className="ml-3 relative">
-              <div className="flex items-center space-x-3">
-                {nomadAddr && (
-                  <span className="text-sm text-gray-500 dark:text-monokai-muted hidden md:inline-block">
-                    {nomadAddr}
-                  </span>
-                )}
-                <ThemeToggle />
-                <button
-                  onClick={logout}
-                  className="inline-flex items-center px-3 py-1.5 border border-transparent text-xs font-medium rounded-md text-white bg-red-600 hover:bg-red-700 dark:bg-monokai-red dark:hover:bg-red-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 dark:focus:ring-offset-monokai-bg"
-                >
-                  Sign Out
-                </button>
-              </div>
-            </div>
+            <UserMenu nomadAddr={nomadAddr} onLogout={logout} />
           </div>
           <div className="-mr-2 flex items-center sm:hidden">
             <ThemeToggle className="mr-2" />
