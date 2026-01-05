@@ -127,9 +127,16 @@ export interface NomadJobFormData {
     datacenters: string[];
 }
 
+export interface NomadNamespaceCapabilities {
+    EnabledTaskDrivers?: string[];
+    DisabledTaskDrivers?: string[];
+}
+
 export interface NomadNamespace {
     Name: string;
     Description?: string;
+    Meta?: Record<string, string>;
+    Capabilities?: NomadNamespaceCapabilities;
     CreateIndex?: number;
     ModifyIndex?: number;
 }
@@ -207,6 +214,8 @@ export interface NomadAgentMembers {
 export interface NomadAllocationTaskState {
     State: 'pending' | 'running' | 'dead';
     Failed: boolean;
+    Restarts: number;
+    LastRestart?: string;
     StartedAt?: string;
     FinishedAt?: string;
     Events?: NomadTaskEvent[];
@@ -259,6 +268,14 @@ export interface NomadAllocation {
             Cpu: { CpuShares: number };
             Memory: { MemoryMB: number };
         }>;
+        Shared?: {
+            DiskMB: number;
+        };
+    };
+    DeploymentStatus?: {
+        Healthy: boolean;
+        Canary: boolean;
+        Timestamp: string;
     };
     CreateTime: number;
     ModifyTime: number;
