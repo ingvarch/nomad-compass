@@ -19,8 +19,18 @@ interface JobSummaryProps {
 
 const NANOSECONDS_TO_MILLISECONDS = 1_000_000;
 
+const dateFormatter = new Intl.DateTimeFormat('en-GB', {
+  day: '2-digit',
+  month: 'short',
+  year: 'numeric',
+  hour: '2-digit',
+  minute: '2-digit',
+  second: '2-digit',
+  hour12: false,
+});
+
 const formatDate = (nanoseconds: number): string => {
-  return new Date(nanoseconds / NANOSECONDS_TO_MILLISECONDS).toLocaleString();
+  return dateFormatter.format(new Date(nanoseconds / NANOSECONDS_TO_MILLISECONDS));
 };
 
 export const JobSummary: React.FC<JobSummaryProps> = ({ job, allocations, createTime }) => {
