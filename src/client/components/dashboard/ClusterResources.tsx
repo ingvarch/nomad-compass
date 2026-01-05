@@ -1,9 +1,15 @@
+import { useMemo } from 'react';
 import { NomadNode, NomadAllocation } from '../../types/nomad';
 
 interface ClusterResourcesProps {
   nodes: NomadNode[];
   allocations: NomadAllocation[];
   loading?: boolean;
+}
+
+interface NamespaceUsage {
+  cpu: number;
+  memory: number;
 }
 
 interface ResourceBarProps {
@@ -56,14 +62,18 @@ function ResourceBar({ label, used, total, unit, color }: ResourceBarProps) {
 function calculateClusterResources(nodes: NomadNode[], allocations: NomadAllocation[]) {
   let totalCpu = 0;
   let totalMemory = 0;
+  let totalDisk = 0;
   let usedCpu = 0;
   let usedMemory = 0;
+  let usedDisk = 0;
+  const byNamespace = new Map<string, NamespaceUsage>();
 
   // Calculate total resources from ready nodes
   nodes.forEach((node) => {
     if (node.Status === 'ready' && node.NodeResources) {
       totalCpu += node.NodeResources.Cpu?.CpuShares || 0;
       totalMemory += node.NodeResources.Memory?.MemoryMB || 0;
+      totalDisk += node.NodeResources.Disk?.DiskMB || 0;
     }
   });
 
@@ -71,19 +81,55 @@ function calculateClusterResources(nodes: NomadNode[], allocations: NomadAllocat
   allocations
     .filter((alloc) => alloc.ClientStatus === 'running')
     .forEach((alloc) => {
+      let allocCpu = 0;
+      let allocMemory = 0;
+
       // Sum resources from all tasks in the allocation
       if (alloc.AllocatedResources?.Tasks) {
         Object.values(alloc.AllocatedResources.Tasks).forEach((task) => {
-          usedCpu += task.Cpu?.CpuShares || 0;
-          usedMemory += task.Memory?.MemoryMB || 0;
+          allocCpu += task.Cpu?.CpuShares || 0;
+          allocMemory += task.Memory?.MemoryMB || 0;
         });
       }
+
+      usedCpu += allocCpu;
+      usedMemory += allocMemory;
+      usedDisk += alloc.AllocatedResources?.Shared?.DiskMB || 0;
+
+      // Track by namespace
+      const ns = alloc.Namespace;
+      const existing = byNamespace.get(ns) || { cpu: 0, memory: 0 };
+      byNamespace.set(ns, {
+        cpu: existing.cpu + allocCpu,
+        memory: existing.memory + allocMemory,
+      });
     });
 
-  return { totalCpu, usedCpu, totalMemory, usedMemory };
+  return { totalCpu, usedCpu, totalMemory, usedMemory, totalDisk, usedDisk, byNamespace };
+}
+
+function formatValue(value: number, unit: 'MHz' | 'MB'): string {
+  if (unit === 'MB' && value >= 1024) {
+    return `${(value / 1024).toFixed(1)} GB`;
+  }
+  if (unit === 'MHz' && value >= 1000) {
+    return `${(value / 1000).toFixed(1)} GHz`;
+  }
+  return `${value} ${unit}`;
 }
 
 export function ClusterResources({ nodes, allocations, loading }: ClusterResourcesProps) {
+  const resources = useMemo(
+    () => calculateClusterResources(nodes, allocations),
+    [nodes, allocations]
+  );
+
+  const topNamespaces = useMemo(() => {
+    return Array.from(resources.byNamespace.entries())
+      .sort((a, b) => b[1].cpu - a[1].cpu)
+      .slice(0, 3);
+  }, [resources.byNamespace]);
+
   if (loading) {
     return (
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 animate-pulse">
@@ -97,12 +143,15 @@ export function ClusterResources({ nodes, allocations, loading }: ClusterResourc
             <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-full mb-2" />
             <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded-full" />
           </div>
+          <div>
+            <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-full mb-2" />
+            <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded-full" />
+          </div>
         </div>
       </div>
     );
   }
 
-  const resources = calculateClusterResources(nodes, allocations);
   const readyNodes = nodes.filter((n) => n.Status === 'ready').length;
 
   return (
@@ -126,7 +175,32 @@ export function ClusterResources({ nodes, allocations, loading }: ClusterResourc
           unit="MB"
           color="bg-purple-500"
         />
+        <ResourceBar
+          label="Disk"
+          used={resources.usedDisk}
+          total={resources.totalDisk}
+          unit="MB"
+          color="bg-green-500"
+        />
       </div>
+
+      {topNamespaces.length > 0 && (
+        <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+          <h4 className="text-xs font-medium text-gray-500 dark:text-gray-400 mb-2">
+            Top Namespaces
+          </h4>
+          <div className="space-y-1">
+            {topNamespaces.map(([ns, usage]) => (
+              <div key={ns} className="flex justify-between text-xs">
+                <span className="text-gray-600 dark:text-gray-400 truncate max-w-[60%]">{ns}</span>
+                <span className="text-gray-500 dark:text-gray-400">
+                  {formatValue(usage.cpu, 'MHz')} / {formatValue(usage.memory, 'MB')}
+                </span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

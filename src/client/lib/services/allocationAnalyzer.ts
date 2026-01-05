@@ -1,4 +1,4 @@
-import type { NomadAllocation, NomadNode } from '../../types/nomad';
+import type { NomadAllocation } from '../../types/nomad';
 
 // Types for analysis results
 export interface AllocationIssue {
@@ -12,12 +12,6 @@ export interface ProblematicAllocation {
   allocation: NomadAllocation;
   issues: AllocationIssue[];
   severity: 'warning' | 'critical';
-}
-
-export interface ResourceSummary {
-  allocated: { cpu: number; memory: number; disk: number };
-  total: { cpu: number; memory: number; disk: number };
-  byNamespace: Map<string, { cpu: number; memory: number }>;
 }
 
 export interface RecentEvent {
@@ -135,55 +129,6 @@ function deduplicateIssues(issues: AllocationIssue[]): AllocationIssue[] {
   }
 
   return Array.from(seen.values());
-}
-
-/**
- * Calculate resource summary from allocations and nodes
- */
-export function calculateResourceSummary(
-  allocations: NomadAllocation[],
-  nodes: NomadNode[]
-): ResourceSummary {
-  const allocated = { cpu: 0, memory: 0, disk: 0 };
-  const byNamespace = new Map<string, { cpu: number; memory: number }>();
-
-  for (const alloc of allocations) {
-    if (alloc.ClientStatus !== 'running') continue;
-
-    let allocCpu = 0;
-    let allocMemory = 0;
-
-    if (alloc.AllocatedResources?.Tasks) {
-      for (const task of Object.values(alloc.AllocatedResources.Tasks)) {
-        allocCpu += task.Cpu?.CpuShares || 0;
-        allocMemory += task.Memory?.MemoryMB || 0;
-      }
-    }
-
-    allocated.cpu += allocCpu;
-    allocated.memory += allocMemory;
-    allocated.disk += alloc.AllocatedResources?.Shared?.DiskMB || 0;
-
-    // Track by namespace
-    const ns = alloc.Namespace;
-    const existing = byNamespace.get(ns) || { cpu: 0, memory: 0 };
-    byNamespace.set(ns, {
-      cpu: existing.cpu + allocCpu,
-      memory: existing.memory + allocMemory,
-    });
-  }
-
-  // Calculate total available resources from nodes
-  const total = { cpu: 0, memory: 0, disk: 0 };
-  for (const node of nodes) {
-    if (node.Status === 'ready' && node.NodeResources) {
-      total.cpu += node.NodeResources.Cpu?.CpuShares || 0;
-      total.memory += node.NodeResources.Memory?.MemoryMB || 0;
-      total.disk += node.NodeResources.Disk?.DiskMB || 0;
-    }
-  }
-
-  return { allocated, total, byNamespace };
 }
 
 /**
