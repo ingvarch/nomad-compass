@@ -15,16 +15,17 @@ A modern, lightweight web UI for managing HashiCorp Nomad clusters. Built with H
 
 ## Tech Stack
 
+- **Runtime**: [Bun](https://bun.sh/) - Fast JavaScript runtime, package manager, and bundler
 - **API**: [Hono](https://hono.dev/) - Lightweight, ultrafast web framework
 - **Frontend**: React 19 + React Router 7 + Tailwind CSS
-- **Build**: Vite (frontend) + tsup (Node.js backend)
-- **Deploy**: Cloudflare Workers or Docker (Node.js)
+- **Build**: Vite (frontend) + Bun bundler (backend)
+- **Deploy**: Cloudflare Workers or Docker (Bun)
 
 ## Getting Started
 
 ### Prerequisites
 
-- Node.js 22+ or pnpm 10+
+- [Bun](https://bun.sh/) 1.0+
 - A running Nomad cluster
 - Nomad ACL token
 
@@ -40,13 +41,13 @@ cd nomad-compass
 2. Install dependencies:
 
 ```bash
-pnpm install
+bun install
 ```
 
 3. Start the development server:
 
 ```bash
-pnpm run dev
+bun run dev
 ```
 
 4. Open [http://localhost:5173](http://localhost:5173) in your browser.
@@ -89,7 +90,7 @@ Recommended for global edge performance. Your app runs on Cloudflare's network c
 
 **Prerequisites:**
 - Cloudflare account
-- Wrangler CLI (`pnpm add -g wrangler`)
+- Wrangler CLI (`bun add -g wrangler`)
 
 **Setup:**
 
@@ -102,7 +103,7 @@ wrangler secret put NOMAD_ADDR
 # Enter: https://your-nomad-server.example.com
 
 # Deploy
-pnpm run deploy:cf
+bun run deploy:cf
 ```
 
 Your app will be available at `https://nomad-compass.<your-subdomain>.workers.dev`
@@ -124,7 +125,7 @@ For self-hosted, on-premise, or air-gapped environments.
 
 ```bash
 # Build the image
-pnpm run docker:build
+bun run docker:build
 # or directly with Docker
 docker build -t nomad-compass .
 
@@ -180,7 +181,7 @@ Two development modes are available, matching the two deployment targets:
 Uses Wrangler to emulate the Cloudflare Workers environment locally.
 
 ```bash
-pnpm run dev          # Vite (frontend) + Wrangler (API)
+bun run dev          # Vite (frontend) + Wrangler (API)
 ```
 
 Configure your Nomad server in `.dev.vars`:
@@ -189,33 +190,33 @@ Configure your Nomad server in `.dev.vars`:
 echo 'NOMAD_ADDR=http://localhost:4646' > .dev.vars
 ```
 
-### Node.js Development
+### Bun Development
 
-Uses the Node.js backend directly, useful for Docker deployment testing.
+Uses the Bun backend directly, useful for Docker deployment testing.
 
 ```bash
-pnpm run dev:node     # Vite (frontend) + Node.js API server
+bun run dev:bun      # Vite (frontend) + Bun API server
 ```
 
 Set your Nomad server via environment variable:
 
 ```bash
-NOMAD_ADDR=http://localhost:4646 pnpm run dev:node
+NOMAD_ADDR=http://localhost:4646 bun run dev:bun
 ```
 
 ### Other Commands
 
 ```bash
-pnpm run dev:vite     # Vite only (no backend)
-pnpm run dev:worker   # Wrangler only (no frontend dev)
-pnpm run dev:api      # Node.js API only
+bun run dev:vite     # Vite only (no backend)
+bun run dev:worker   # Wrangler only (no frontend dev)
+bun run dev:api      # Bun API only
 
-pnpm run build        # Build frontend
-pnpm run build:node   # Build Node.js server
-pnpm run build:all    # Build both
+bun run build        # Build frontend
+bun run build:bun    # Build Bun server
+bun run build:all    # Build both
 
-pnpm run lint         # Run ESLint
-pnpm run typecheck    # Run TypeScript type checking
+bun run lint         # Run ESLint
+bun run typecheck    # Run TypeScript type checking
 ```
 
 ### Project Structure
@@ -233,8 +234,8 @@ src/
 │   ├── lib/          # Utilities and API client
 │   └── context/      # React contexts
 ├── entry.cloudflare.ts  # Cloudflare Workers entry
-├── entry.node.ts        # Node.js production entry
-└── entry.node.dev.ts    # Node.js dev entry (API only)
+├── entry.bun.ts         # Bun production entry
+└── entry.bun.dev.ts     # Bun dev entry (API only)
 ```
 
 ## Contributing
