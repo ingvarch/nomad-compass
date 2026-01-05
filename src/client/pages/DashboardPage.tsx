@@ -1,58 +1,97 @@
-// src/client/pages/DashboardPage.tsx
-import { Link } from 'react-router-dom';
+import { useState, useEffect, useCallback } from 'react';
+import { createNomadClient } from '../lib/api/nomad';
+import { NomadJob, NomadNode, NomadNamespace, NomadAgentSelf, NomadAgentMembers } from '../types/nomad';
+import { ClusterHealth, StatCounters, ClusterResources, QuickActions } from '../components/dashboard';
+
+interface DashboardData {
+  jobs: NomadJob[];
+  nodes: NomadNode[];
+  namespaces: NomadNamespace[];
+  agentSelf: NomadAgentSelf | null;
+  agentMembers: NomadAgentMembers | null;
+}
 
 export default function DashboardPage() {
+  const [data, setData] = useState<DashboardData>({
+    jobs: [],
+    nodes: [],
+    namespaces: [],
+    agentSelf: null,
+    agentMembers: null,
+  });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [currentNamespace, setCurrentNamespace] = useState<string>('*');
+
+  const fetchData = useCallback(async () => {
+    const client = createNomadClient();
+
+    try {
+      const [jobsResponse, nodes, namespaces, agentSelf, agentMembers] = await Promise.all([
+        client.getJobs(currentNamespace),
+        client.getNodes(),
+        client.getNamespaces(),
+        client.getAgentSelf().catch(() => null),
+        client.getAgentMembers().catch(() => null),
+      ]);
+
+      setData({
+        jobs: jobsResponse.Jobs || [],
+        nodes,
+        namespaces,
+        agentSelf,
+        agentMembers,
+      });
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to fetch cluster data');
+    } finally {
+      setLoading(false);
+    }
+  }, [currentNamespace]);
+
+  useEffect(() => {
+    fetchData();
+  }, [fetchData]);
+
+  const handleNamespaceChange = (namespace: string) => {
+    setCurrentNamespace(namespace);
+    setLoading(true);
+  };
+
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">
-          Nomad Cluster Dashboard
-        </h1>
+        <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">Nomad Cluster Dashboard</h1>
         <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
           Manage and monitor your Nomad cluster resources
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {/* Job Management Card */}
-        <div className="bg-white dark:bg-gray-800 overflow-hidden shadow rounded-lg">
-          <div className="p-5">
-            <div className="flex items-center">
-              <div className="flex-shrink-0 bg-blue-500 rounded-md p-3">
-                <svg
-                  className="h-6 w-6 text-white"
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"
-                  />
-                </svg>
-              </div>
-              <div className="ml-5">
-                <h3 className="text-lg font-medium text-gray-900 dark:text-white">
-                  Job Management
-                </h3>
-                <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
-                  View and manage jobs running in your Nomad cluster
-                </p>
-              </div>
-            </div>
-            <div className="mt-4">
-              <Link
-                to="/jobs"
-                className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-              >
-                View Jobs
-              </Link>
-            </div>
-          </div>
+      {error && (
+        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
+          <p className="text-red-800 dark:text-red-200">{error}</p>
         </div>
+      )}
+
+      <ClusterHealth
+        agentSelf={data.agentSelf}
+        agentMembers={data.agentMembers}
+        nodes={data.nodes}
+        jobs={data.jobs}
+        loading={loading}
+      />
+
+      <StatCounters jobs={data.jobs} nodes={data.nodes} namespaces={data.namespaces} loading={loading} />
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <ClusterResources nodes={data.nodes} loading={loading} />
+        <QuickActions
+          namespaces={data.namespaces}
+          currentNamespace={currentNamespace}
+          onNamespaceChange={handleNamespaceChange}
+          loading={loading}
+        />
       </div>
     </div>
   );

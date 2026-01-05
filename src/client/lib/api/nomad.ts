@@ -1,5 +1,12 @@
 // src/lib/api/nomad.ts
-import { NomadJobsResponse, ApiError, NomadNamespace } from '../../types/nomad';
+import {
+  NomadJobsResponse,
+  ApiError,
+  NomadNamespace,
+  NomadNode,
+  NomadAgentSelf,
+  NomadAgentMembers,
+} from '../../types/nomad';
 
 /**
  * NomadClient - A client for interacting with Nomad API
@@ -239,6 +246,27 @@ export class NomadClient {
       // Return default namespace if API fails
       return [{ Name: 'default' }];
     }
+  }
+
+  /**
+   * Get all nodes in the cluster
+   */
+  async getNodes(): Promise<NomadNode[]> {
+    return this.request<NomadNode[]>('/v1/nodes');
+  }
+
+  /**
+   * Get agent self information (version, region, etc.)
+   */
+  async getAgentSelf(): Promise<NomadAgentSelf> {
+    return this.request<NomadAgentSelf>('/v1/agent/self');
+  }
+
+  /**
+   * Get cluster members (servers)
+   */
+  async getAgentMembers(): Promise<NomadAgentMembers> {
+    return this.request<NomadAgentMembers>('/v1/agent/members');
   }
 
   /**
