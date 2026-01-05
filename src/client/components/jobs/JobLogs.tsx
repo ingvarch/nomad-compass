@@ -36,7 +36,7 @@ export const JobLogs: React.FC<JobLogsProps> = ({ jobId, allocId, taskName, init
             setError(null);
             setSelectedTaskGroup(initialTaskGroup);
         }
-    }, [initialTaskGroup]);
+    }, [initialTaskGroup, selectedTaskGroup]);
 
     // Fetch job data to get task groups
     useEffect(() => {
