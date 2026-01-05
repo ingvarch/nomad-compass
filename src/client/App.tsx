@@ -16,6 +16,7 @@ import FailedAllocationsPage from './pages/FailedAllocationsPage';
 import NodesPage from './pages/NodesPage';
 import AllocationsPage from './pages/AllocationsPage';
 import NamespacesPage from './pages/NamespacesPage';
+import TopologyPage from './pages/TopologyPage';
 
 const router = createBrowserRouter([
   {
@@ -64,6 +65,10 @@ const router = createBrowserRouter([
       {
         path: '/namespaces',
         element: <NamespacesPage />,
+      },
+      {
+        path: '/topology',
+        element: <TopologyPage />,
       },
     ],
   },

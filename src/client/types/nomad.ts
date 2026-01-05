@@ -207,6 +207,8 @@ export interface NomadAgentMembers {
 export interface NomadAllocationTaskState {
     State: 'pending' | 'running' | 'dead';
     Failed: boolean;
+    Restarts: number;
+    LastRestart?: string;
     StartedAt?: string;
     FinishedAt?: string;
     Events?: NomadTaskEvent[];
@@ -259,6 +261,14 @@ export interface NomadAllocation {
             Cpu: { CpuShares: number };
             Memory: { MemoryMB: number };
         }>;
+        Shared?: {
+            DiskMB: number;
+        };
+    };
+    DeploymentStatus?: {
+        Healthy: boolean;
+        Canary: boolean;
+        Timestamp: string;
     };
     CreateTime: number;
     ModifyTime: number;

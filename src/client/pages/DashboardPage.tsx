@@ -1,7 +1,20 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { createNomadClient } from '../lib/api/nomad';
 import { NomadJob, NomadNode, NomadNamespace, NomadAgentSelf, NomadAgentMembers, NomadAllocation } from '../types/nomad';
-import { ClusterHealth, StatCounters, ClusterResources, QuickActions } from '../components/dashboard';
+import {
+  ClusterHealth,
+  StatCounters,
+  ClusterResources,
+  QuickActions,
+  StabilityAlerts,
+  ResourceSummary,
+  RecentActivity,
+} from '../components/dashboard';
+import {
+  analyzeAllocations,
+  calculateResourceSummary,
+  extractRecentEvents,
+} from '../lib/services/allocationAnalyzer';
 
 interface DashboardData {
   jobs: NomadJob[];
@@ -71,6 +84,22 @@ export default function DashboardPage() {
     setLoading(true);
   };
 
+  // Memoized derived data for new dashboard sections
+  const problematicAllocations = useMemo(
+    () => analyzeAllocations(data.allocations),
+    [data.allocations]
+  );
+
+  const resourceSummary = useMemo(
+    () => calculateResourceSummary(data.allocations, data.nodes),
+    [data.allocations, data.nodes]
+  );
+
+  const recentEvents = useMemo(
+    () => extractRecentEvents(data.allocations, 10),
+    [data.allocations]
+  );
+
   return (
     <div className="space-y-6">
       <div>
@@ -110,6 +139,15 @@ export default function DashboardPage() {
           onNamespaceChange={handleNamespaceChange}
           loading={loading}
         />
+      </div>
+
+      {/* Stability Alerts */}
+      <StabilityAlerts problems={problematicAllocations} loading={loading} />
+
+      {/* Resource Summary and Recent Activity */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <ResourceSummary data={resourceSummary} loading={loading} />
+        <RecentActivity events={recentEvents} loading={loading} />
       </div>
     </div>
   );
