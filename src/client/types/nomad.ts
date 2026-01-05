@@ -202,3 +202,60 @@ export interface NomadAgentMembers {
     ServerDC: string;
     Members: NomadAgentMember[];
 }
+
+// Allocation types for allocation management
+export interface NomadAllocationTaskState {
+    State: 'pending' | 'running' | 'dead';
+    Failed: boolean;
+    StartedAt?: string;
+    FinishedAt?: string;
+    Events?: NomadTaskEvent[];
+}
+
+export interface NomadTaskEvent {
+    Type: string;
+    Time: number;
+    Message: string;
+    DisplayMessage?: string;
+    Details?: Record<string, string>;
+    FailsTask?: boolean;
+    RestartReason?: string;
+    SetupError?: string;
+    DriverError?: string;
+    ExitCode?: number;
+    Signal?: number;
+    KillReason?: string;
+    KillTimeout?: number;
+    KillError?: string;
+    DownloadError?: string;
+    ValidationError?: string;
+    DiskLimit?: number;
+    DiskSize?: number;
+    FailedSibling?: string;
+    VaultError?: string;
+    TaskSignalReason?: string;
+    TaskSignal?: string;
+    DriverMessage?: string;
+}
+
+export interface NomadAllocation {
+    ID: string;
+    EvalID: string;
+    Name: string;
+    Namespace: string;
+    NodeID: string;
+    NodeName: string;
+    JobID: string;
+    JobType: string;
+    JobVersion: number;
+    TaskGroup: string;
+    ClientStatus: 'pending' | 'running' | 'complete' | 'failed' | 'lost' | 'unknown';
+    ClientDescription?: string;
+    DesiredStatus: 'run' | 'stop' | 'evict';
+    DesiredDescription?: string;
+    TaskStates?: Record<string, NomadAllocationTaskState>;
+    CreateTime: number;
+    ModifyTime: number;
+    CreateIndex: number;
+    ModifyIndex: number;
+}

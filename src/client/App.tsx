@@ -12,6 +12,7 @@ import JobsPage from './pages/JobsPage';
 import JobDetailPage from './pages/JobDetailPage';
 import JobCreatePage from './pages/JobCreatePage';
 import JobEditPage from './pages/JobEditPage';
+import FailedAllocationsPage from './pages/FailedAllocationsPage';
 
 const router = createBrowserRouter([
   {
@@ -44,6 +45,10 @@ const router = createBrowserRouter([
       {
         path: '/jobs/:id/edit',
         element: <JobEditPage />,
+      },
+      {
+        path: '/allocations/failed',
+        element: <FailedAllocationsPage />,
       },
     ],
   },
