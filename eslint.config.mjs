@@ -1,15 +1,13 @@
 import { defineConfig, globalIgnores } from "eslint/config";
-import nextPlugin from "@next/eslint-plugin-next";
 import tseslint from "typescript-eslint";
 import reactPlugin from "eslint-plugin-react";
 import reactHooksPlugin from "eslint-plugin-react-hooks";
 
 export default defineConfig([
-  globalIgnores([".next/**", "node_modules/**", "out/**", "build/**"]),
+  globalIgnores(["dist/**", "dist-node/**", "node_modules/**", ".wrangler/**"]),
   {
     files: ["**/*.{js,jsx,ts,tsx}"],
     plugins: {
-      "@next/next": nextPlugin,
       "@typescript-eslint": tseslint.plugin,
       react: reactPlugin,
       "react-hooks": reactHooksPlugin,
@@ -22,11 +20,15 @@ export default defineConfig([
         },
       },
     },
+    settings: {
+      react: {
+        version: "detect",
+      },
+    },
     rules: {
-      ...nextPlugin.configs.recommended.rules,
-      ...nextPlugin.configs["core-web-vitals"].rules,
       "react-hooks/rules-of-hooks": "error",
       "react-hooks/exhaustive-deps": "warn",
+      "react/react-in-jsx-scope": "off", // Not needed with React 17+
     },
   },
 ]);

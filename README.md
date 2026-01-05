@@ -131,12 +131,42 @@ services:
 
 ## Development
 
-### Commands
+Two development modes are available, matching the two deployment targets:
+
+### Cloudflare Workers Development
+
+Uses Wrangler to emulate the Cloudflare Workers environment locally.
 
 ```bash
-pnpm run dev          # Start dev servers (Vite + Wrangler)
-pnpm run dev:vite     # Start Vite dev server only
-pnpm run dev:worker   # Start Wrangler dev server only
+pnpm run dev          # Vite (frontend) + Wrangler (API)
+```
+
+Configure your Nomad server in `.dev.vars`:
+
+```bash
+echo 'NOMAD_ADDR=http://localhost:4646' > .dev.vars
+```
+
+### Node.js Development
+
+Uses the Node.js backend directly, useful for Docker deployment testing.
+
+```bash
+pnpm run dev:node     # Vite (frontend) + Node.js API server
+```
+
+Set your Nomad server via environment variable:
+
+```bash
+NOMAD_ADDR=http://localhost:4646 pnpm run dev:node
+```
+
+### Other Commands
+
+```bash
+pnpm run dev:vite     # Vite only (no backend)
+pnpm run dev:worker   # Wrangler only (no frontend dev)
+pnpm run dev:api      # Node.js API only
 
 pnpm run build        # Build frontend
 pnpm run build:node   # Build Node.js server
@@ -161,7 +191,8 @@ src/
 │   ├── lib/          # Utilities and API client
 │   └── context/      # React contexts
 ├── entry.cloudflare.ts  # Cloudflare Workers entry
-└── entry.node.ts        # Node.js entry
+├── entry.node.ts        # Node.js production entry
+└── entry.node.dev.ts    # Node.js dev entry (API only)
 ```
 
 ## Contributing

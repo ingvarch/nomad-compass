@@ -5,8 +5,10 @@
   "type": "module",
   "scripts": {
     "dev": "concurrently \"vite\" \"wrangler dev\"",
+    "dev:node": "concurrently \"VITE_BACKEND=node vite\" \"npx tsx src/entry.node.dev.ts\"",
     "dev:vite": "vite",
     "dev:worker": "wrangler dev",
+    "dev:api": "npx tsx src/entry.node.dev.ts",
     "build": "vite build",
     "build:node": "tsup",
     "build:all": "pnpm run build && pnpm run build:node",
@@ -38,6 +40,7 @@
     "postcss": "^8.5.6",
     "tailwindcss": "^3.4.17",
     "tsup": "^8.5.1",
+    "tsx": "^4.21.0",
     "typescript": "^5.9",
     "typescript-eslint": "^8.51.0",
     "vite": "^7.3.0",
