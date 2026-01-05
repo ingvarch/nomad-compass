@@ -1,1 +1,0 @@
-{"version":3,"sources":["../../../../../nomad-compass/src/app/jobs/layout.tsx"],"sourcesContent":["export default function JobsLayout({\n    children,\n}: {\n    children: React.ReactNode;\n}) {\n    return <>{children}</>;\n}\n"],"names":[],"mappings":"wDAAe,SAAS,EAAW,UAC/B,CAAQ,CAGX,EACG,MAAO,CAAA,EAAA,EAAA,GAAA,EAAA,EAAA,QAAA,CAAA,UAAG,GACd"}

@@ -1,3 +1,0 @@
-{
-  "/api/nomad/v1/job/[id]/allocations/route": "app/api/nomad/v1/job/[id]/allocations/route.js"
-}
