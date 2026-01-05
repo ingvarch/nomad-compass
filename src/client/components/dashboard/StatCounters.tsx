@@ -11,12 +11,13 @@ interface StatCountersProps {
 
 interface CounterCardProps {
   title: string;
+  titleLink?: string;
   icon: React.ReactNode;
   stats: { label: string; value: number; color: string; link?: string }[];
   loading?: boolean;
 }
 
-function CounterCard({ title, icon, stats, loading }: CounterCardProps) {
+function CounterCard({ title, titleLink, icon, stats, loading }: CounterCardProps) {
   if (loading) {
     return (
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 animate-pulse">
@@ -36,9 +37,26 @@ function CounterCard({ title, icon, stats, loading }: CounterCardProps) {
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
-      <div className="flex items-center gap-3 mb-3">
+      <div className="flex items-center gap-3 pb-3 mb-3 border-b border-gray-100 dark:border-gray-700">
         <div className="text-gray-500 dark:text-gray-400">{icon}</div>
-        <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">{title}</h3>
+        {titleLink ? (
+          <Link
+            to={titleLink}
+            className="inline-flex items-center gap-1 text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors group"
+          >
+            {title}
+            <svg
+              className="w-4 h-4 text-gray-400 dark:text-gray-500 group-hover:text-blue-500 dark:group-hover:text-blue-400 transition-colors"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </Link>
+        ) : (
+          <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">{title}</h3>
+        )}
         <span className="ml-auto text-2xl font-bold text-gray-900 dark:text-white">{total}</span>
       </div>
       <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
@@ -147,7 +165,7 @@ function AllocationCounterCard({ running, pending, activeFailed, historicalFaile
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
-      <div className="flex items-center gap-3 mb-3">
+      <div className="flex items-center gap-3 pb-3 mb-3 border-b border-gray-100 dark:border-gray-700">
         <div className="text-gray-500 dark:text-gray-400">
           <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path
@@ -158,21 +176,38 @@ function AllocationCounterCard({ running, pending, activeFailed, historicalFaile
             />
           </svg>
         </div>
-        <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">Allocations</h3>
+        <Link
+          to="/allocations"
+          className="inline-flex items-center gap-1 text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors group"
+        >
+          Allocations
+          <svg
+            className="w-4 h-4 text-gray-400 dark:text-gray-500 group-hover:text-blue-500 dark:group-hover:text-blue-400 transition-colors"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+          </svg>
+        </Link>
         <span className="ml-auto text-2xl font-bold text-gray-900 dark:text-white">{total}</span>
       </div>
       <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
         <div className="flex items-center gap-1.5">
           <span className="w-2 h-2 rounded-full bg-green-500" />
-          <span className="text-gray-600 dark:text-gray-300">{running} Running</span>
+          <Link to="/allocations?status=running" className="hover:underline text-gray-600 dark:text-gray-300">
+            {running} Running
+          </Link>
         </div>
         <div className="flex items-center gap-1.5">
           <span className="w-2 h-2 rounded-full bg-yellow-500" />
-          <span className="text-gray-600 dark:text-gray-300">{pending} Pending</span>
+          <Link to="/allocations?status=pending" className="hover:underline text-gray-600 dark:text-gray-300">
+            {pending} Pending
+          </Link>
         </div>
         <div className="flex items-center gap-1.5">
           <span className="w-2 h-2 rounded-full bg-red-500" />
-          <Link to="/allocations/failed" className="hover:underline text-gray-600 dark:text-gray-300">
+          <Link to="/allocations?status=failed" className="hover:underline text-gray-600 dark:text-gray-300">
             {activeFailed} Failed
             {historicalFailed > 0 && (
               <span className="text-gray-400 dark:text-gray-500 ml-1">
@@ -198,6 +233,7 @@ export function StatCounters({ jobs, nodes, namespaces, activeFailedAllocations,
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
       <CounterCard
         title="Jobs"
+        titleLink="/jobs"
         loading={loading}
         icon={
           <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -218,6 +254,7 @@ export function StatCounters({ jobs, nodes, namespaces, activeFailedAllocations,
 
       <CounterCard
         title="Nodes"
+        titleLink="/nodes"
         loading={loading}
         icon={
           <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -230,9 +267,9 @@ export function StatCounters({ jobs, nodes, namespaces, activeFailedAllocations,
           </svg>
         }
         stats={[
-          { label: 'Ready', value: nodeStats.ready, color: 'bg-green-500' },
-          { label: 'Down', value: nodeStats.down, color: 'bg-red-500' },
-          { label: 'Draining', value: nodeStats.draining, color: 'bg-yellow-500' },
+          { label: 'Ready', value: nodeStats.ready, color: 'bg-green-500', link: '/nodes?status=ready' },
+          { label: 'Down', value: nodeStats.down, color: 'bg-red-500', link: '/nodes?status=down' },
+          { label: 'Draining', value: nodeStats.draining, color: 'bg-yellow-500', link: '/nodes?status=draining' },
         ]}
       />
 
@@ -246,6 +283,7 @@ export function StatCounters({ jobs, nodes, namespaces, activeFailedAllocations,
 
       <CounterCard
         title="Namespaces"
+        titleLink="/namespaces"
         loading={loading}
         icon={
           <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
