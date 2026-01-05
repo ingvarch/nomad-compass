@@ -1,0 +1,4 @@
+# Local development variables for Wrangler
+# Copy this file to .dev.vars and fill in your values
+
+NOMAD_ADDR=http://localhost:4646
