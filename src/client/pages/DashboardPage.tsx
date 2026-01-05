@@ -9,6 +9,7 @@ interface DashboardData {
   namespaces: NomadNamespace[];
   agentSelf: NomadAgentSelf | null;
   agentMembers: NomadAgentMembers | null;
+  allocations: NomadAllocation[];
   activeFailedAllocations: number;
 }
 
@@ -19,6 +20,7 @@ export default function DashboardPage() {
     namespaces: [],
     agentSelf: null,
     agentMembers: null,
+    allocations: [],
     activeFailedAllocations: 0,
   });
   const [loading, setLoading] = useState(true);
@@ -49,6 +51,7 @@ export default function DashboardPage() {
         namespaces,
         agentSelf,
         agentMembers,
+        allocations,
         activeFailedAllocations,
       });
       setError(null);
@@ -100,7 +103,7 @@ export default function DashboardPage() {
       />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <ClusterResources nodes={data.nodes} loading={loading} />
+        <ClusterResources nodes={data.nodes} allocations={data.allocations} loading={loading} />
         <QuickActions
           namespaces={data.namespaces}
           currentNamespace={currentNamespace}

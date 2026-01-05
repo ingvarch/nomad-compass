@@ -280,7 +280,9 @@ export class NomadClient {
     namespace?: string;
     prefix?: string;
   }): Promise<NomadAllocation[]> {
-    const queryParams: Record<string, string> = {};
+    const queryParams: Record<string, string> = {
+      resources: 'true', // Include AllocatedResources in response
+    };
     if (params?.namespace) {
       queryParams.namespace = params.namespace;
     } else {

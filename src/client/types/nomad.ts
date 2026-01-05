@@ -254,6 +254,12 @@ export interface NomadAllocation {
     DesiredStatus: 'run' | 'stop' | 'evict';
     DesiredDescription?: string;
     TaskStates?: Record<string, NomadAllocationTaskState>;
+    AllocatedResources?: {
+        Tasks: Record<string, {
+            Cpu: { CpuShares: number };
+            Memory: { MemoryMB: number };
+        }>;
+    };
     CreateTime: number;
     ModifyTime: number;
     CreateIndex: number;
