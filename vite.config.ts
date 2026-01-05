@@ -2,13 +2,13 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import path from 'path'
 
-// Backend target: 'cf' for Cloudflare Workers (wrangler), 'node' for Node.js
+// Backend target: 'cf' for Cloudflare Workers (wrangler), 'bun' for Bun server
 // Set via VITE_BACKEND env var or defaults to 'cf'
 const backend = process.env.VITE_BACKEND || 'cf'
 
 const backendPorts = {
   cf: 8787,    // wrangler dev
-  node: 3000,  // node.js server
+  bun: 3000,   // bun server
 }
 
 export default defineConfig({
