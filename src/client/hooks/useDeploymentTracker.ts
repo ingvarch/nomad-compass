@@ -49,6 +49,7 @@ export function useDeploymentTracker(options: UseDeploymentTrackerOptions = {}) 
     allocId: string | null;
     currentStep: DeploymentStep;
     isComplete: boolean;
+    maxProgress: number;
   } | null>(null);
 
   const cleanup = useCallback(() => {
@@ -75,6 +76,16 @@ export function useDeploymentTracker(options: UseDeploymentTrackerOptions = {}) 
           const { step, ...rest } = updates;
           if (Object.keys(rest).length === 0) return prev;
           return { ...prev, ...rest };
+        }
+      }
+
+      // Never decrease progress - track max progress
+      if (updates.progress !== undefined && dataRef.current) {
+        if (updates.progress > dataRef.current.maxProgress) {
+          dataRef.current.maxProgress = updates.progress;
+        } else {
+          // Use the max progress instead of going backwards
+          updates = { ...updates, progress: dataRef.current.maxProgress };
         }
       }
 
@@ -236,6 +247,7 @@ export function useDeploymentTracker(options: UseDeploymentTrackerOptions = {}) 
       allocId: null,
       currentStep: 'submitting',
       isComplete: false,
+      maxProgress: STEP_PROGRESS.submitting,
     };
     startTimeRef.current = Date.now();
 

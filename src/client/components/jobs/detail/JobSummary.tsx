@@ -1,5 +1,6 @@
 import React from 'react';
 import StatusBadge from './StatusBadge';
+import type { NomadAllocation } from '../../../types/nomad';
 
 interface JobSummaryProps {
   job: {
@@ -13,13 +14,14 @@ interface JobSummaryProps {
     Namespace?: string;
     Version?: number;
   };
+  allocations?: NomadAllocation[];
 }
 
 const formatDate = (timestamp: number): string => {
   return new Date(timestamp * 1000).toLocaleString();
 };
 
-export const JobSummary: React.FC<JobSummaryProps> = ({ job }) => {
+export const JobSummary: React.FC<JobSummaryProps> = ({ job, allocations }) => {
   return (
     <div className="bg-white dark:bg-gray-800 shadow rounded-lg overflow-hidden">
       <div className="px-6 py-5 border-b border-gray-200 dark:border-gray-700">
@@ -35,7 +37,7 @@ export const JobSummary: React.FC<JobSummaryProps> = ({ job }) => {
                 Status
               </dt>
               <dd className="mt-1 text-sm text-gray-900 dark:text-white sm:mt-0 sm:col-span-2">
-                <StatusBadge status={job.Status} isStopped={job.Stop} />
+                <StatusBadge status={job.Status} isStopped={job.Stop} allocations={allocations} />
               </dd>
             </div>
             <div className="px-4 py-3 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">

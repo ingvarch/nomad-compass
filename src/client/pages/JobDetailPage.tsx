@@ -6,6 +6,7 @@ import { useToast } from '../context/ToastContext';
 import { JobHeader, JobSummary, TaskGroupCard } from '../components/jobs/detail';
 import JobLogs from '../components/jobs/JobLogs';
 import JobActions from '../components/jobs/JobActions';
+import type { NomadAllocation } from '../types/nomad';
 
 export default function JobDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -14,6 +15,7 @@ export default function JobDetailPage() {
   const { isAuthenticated } = useAuth();
   const { addToast } = useToast();
   const [job, setJob] = useState<any>(null);
+  const [allocations, setAllocations] = useState<NomadAllocation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
@@ -33,8 +35,13 @@ export default function JobDetailPage() {
     setIsLoading(true);
     try {
       const client = createNomadClient();
-      const jobDetail = await client.getJob(jobId, namespace);
+      // Fetch job and allocations in parallel
+      const [jobDetail, jobAllocations] = await Promise.all([
+        client.getJob(jobId, namespace),
+        client.getJobAllocations(jobId, namespace),
+      ]);
       setJob(jobDetail);
+      setAllocations(jobAllocations || []);
 
       if (jobDetail.TaskGroups && jobDetail.TaskGroups.length > 0) {
         const initialExpandedState: Record<string, boolean> = {};
@@ -134,7 +141,7 @@ export default function JobDetailPage() {
         namespace={job.Namespace || 'default'}
       />
 
-      <JobSummary job={job} />
+      <JobSummary job={job} allocations={allocations} />
 
       {/* Task Groups */}
       {job.TaskGroups?.length > 0 && (

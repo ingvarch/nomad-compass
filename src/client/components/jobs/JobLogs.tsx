@@ -20,6 +20,8 @@ export const JobLogs: React.FC<JobLogsProps> = ({ jobId, allocId, taskName, init
     const [logType, setLogType] = useState<'stdout' | 'stderr'>('stdout');
     const [taskGroups, setTaskGroups] = useState<any[]>([]);
     const [selectedTaskGroup, setSelectedTaskGroup] = useState<string | null>(null);
+    const [statusFilter, setStatusFilter] = useState<'all' | 'running' | 'failed' | 'complete'>('all');
+    const [allAllocations, setAllAllocations] = useState<any[]>([]);
 
     // Auto-refresh state
     const [autoRefresh, setAutoRefresh] = useState<boolean>(false);
@@ -67,7 +69,7 @@ export const JobLogs: React.FC<JobLogsProps> = ({ jobId, allocId, taskName, init
         fetchJobData();
     }, [jobId, isAuthenticated, selectedTaskGroup]);
 
-    // Fetch job allocations based on selected task group
+    // Fetch job allocations based on selected task group and status filter
     useEffect(() => {
         const fetchAllocations = async () => {
             if (!isAuthenticated) {
@@ -81,20 +83,34 @@ export const JobLogs: React.FC<JobLogsProps> = ({ jobId, allocId, taskName, init
                 const namespace = new URLSearchParams(window.location.search).get('namespace') || 'default';
                 const allocs = await client.getJobAllocations(jobId, namespace);
 
-                // Filter running allocations
-                const runningAllocs = allocs.filter((alloc: any) => {
-                    // If a task group is selected, only show allocations for that group
+                // Filter by task group first
+                const groupFilteredAllocs = allocs.filter((alloc: any) => {
                     if (selectedTaskGroup) {
-                        return alloc.ClientStatus === 'running' && alloc.TaskGroup === selectedTaskGroup;
+                        return alloc.TaskGroup === selectedTaskGroup;
                     }
-                    return alloc.ClientStatus === 'running';
+                    return true;
                 });
 
-                setAllocations(runningAllocs);
+                // Store all allocations for this task group (for status filter options)
+                setAllAllocations(groupFilteredAllocs);
 
-                if (runningAllocs.length > 0) {
-                    // Either use provided allocId or the first running allocation
-                    const firstAlloc = allocId || runningAllocs[0].ID;
+                // Apply status filter
+                const filteredAllocs = groupFilteredAllocs.filter((alloc: any) => {
+                    if (statusFilter === 'all') return true;
+                    if (statusFilter === 'failed') {
+                        return alloc.ClientStatus === 'failed' || alloc.ClientStatus === 'lost';
+                    }
+                    return alloc.ClientStatus === statusFilter;
+                });
+
+                // Sort by ModifyTime descending (most recent first)
+                filteredAllocs.sort((a: any, b: any) => b.ModifyTime - a.ModifyTime);
+
+                setAllocations(filteredAllocs);
+
+                if (filteredAllocs.length > 0) {
+                    // Either use provided allocId or the first allocation
+                    const firstAlloc = allocId || filteredAllocs[0].ID;
                     setSelectedAlloc(firstAlloc);
 
                     // Get tasks for this allocation
@@ -107,7 +123,7 @@ export const JobLogs: React.FC<JobLogsProps> = ({ jobId, allocId, taskName, init
                 } else {
                     setSelectedAlloc(null);
                     setSelectedTask(null);
-                    setLogs('No running allocations for this task group');
+                    setLogs('');
                 }
 
                 setError(null);
@@ -131,7 +147,7 @@ export const JobLogs: React.FC<JobLogsProps> = ({ jobId, allocId, taskName, init
 
             return () => clearTimeout(timer);
         }
-    }, [jobId, isAuthenticated, allocId, taskName, selectedTaskGroup]);
+    }, [jobId, isAuthenticated, allocId, taskName, selectedTaskGroup, statusFilter]);
 
     // Fetch logs
     const fetchLogs = useCallback(async () => {
@@ -205,9 +221,11 @@ export const JobLogs: React.FC<JobLogsProps> = ({ jobId, allocId, taskName, init
     const handleTaskGroupChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
         const newTaskGroup = e.target.value;
         setSelectedTaskGroup(newTaskGroup);
-        // Reset allocation and task when changing task group
+        // Reset allocation, task and status filter when changing task group
         setSelectedAlloc(null);
         setSelectedTask(null);
+        setStatusFilter('all');
+        setAllAllocations([]);
     };
 
     // Manual refresh
@@ -246,9 +264,9 @@ export const JobLogs: React.FC<JobLogsProps> = ({ jobId, allocId, taskName, init
     }
 
     return (
-        <div className="bg-white shadow rounded-lg overflow-hidden">
-            <div className="px-6 py-4 border-b border-gray-200 flex flex-wrap justify-between items-center">
-                <h3 className="text-lg font-medium text-gray-900">Job Logs</h3>
+        <div className="bg-white dark:bg-gray-800 shadow rounded-lg overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex flex-wrap justify-between items-center">
+                <h3 className="text-lg font-medium text-gray-900 dark:text-white">Job Logs</h3>
 
                 <div className="flex flex-wrap gap-2 mt-2 sm:mt-0">
                     {/* Task Group Selector */}
@@ -256,7 +274,7 @@ export const JobLogs: React.FC<JobLogsProps> = ({ jobId, allocId, taskName, init
                         <select
                             value={selectedTaskGroup || ''}
                             onChange={handleTaskGroupChange}
-                            className="block w-full sm:w-auto pl-3 pr-10 py-1 text-sm border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 rounded-md"
+                            className="block w-full sm:w-auto pl-3 pr-10 py-1 text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500 rounded-md"
                         >
                             <option value="">Select Task Group</option>
                             {taskGroups.map((group) => (
@@ -264,6 +282,20 @@ export const JobLogs: React.FC<JobLogsProps> = ({ jobId, allocId, taskName, init
                                     {group.Name}
                                 </option>
                             ))}
+                        </select>
+                    )}
+
+                    {/* Status Filter */}
+                    {selectedTaskGroup && (
+                        <select
+                            value={statusFilter}
+                            onChange={(e) => setStatusFilter(e.target.value as 'all' | 'running' | 'failed' | 'complete')}
+                            className="block w-full sm:w-auto pl-3 pr-10 py-1 text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500 rounded-md"
+                        >
+                            <option value="all">All Status</option>
+                            <option value="running">Running</option>
+                            <option value="failed">Failed/Lost</option>
+                            <option value="complete">Complete</option>
                         </select>
                     )}
 
@@ -395,7 +427,7 @@ export const JobLogs: React.FC<JobLogsProps> = ({ jobId, allocId, taskName, init
                 )}
 
                 {selectedTaskGroup && allocations.length === 0 && (
-                    <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4">
+                    <div className="bg-yellow-50 dark:bg-yellow-900/20 border-l-4 border-yellow-400 dark:border-yellow-600 p-4">
                         <div className="flex">
                             <div className="flex-shrink-0">
                                 <svg className="h-5 w-5 text-yellow-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
@@ -403,15 +435,60 @@ export const JobLogs: React.FC<JobLogsProps> = ({ jobId, allocId, taskName, init
                                 </svg>
                             </div>
                             <div className="ml-3">
-                                <p className="text-sm text-yellow-700">
-                                    No running allocations found for the selected task group.
+                                <p className="text-sm text-yellow-700 dark:text-yellow-300">
+                                    {allAllocations.length === 0
+                                        ? 'No allocations found for this task group.'
+                                        : statusFilter === 'running'
+                                            ? `No running allocations. ${allAllocations.filter(a => a.ClientStatus === 'failed' || a.ClientStatus === 'lost').length > 0 ? 'Try selecting "Failed/Lost" to view failed allocation logs.' : ''}`
+                                            : statusFilter === 'failed'
+                                                ? 'No failed allocations found.'
+                                                : `No allocations match the selected filter.`
+                                    }
                                 </p>
                             </div>
                         </div>
                     </div>
                 )}
 
-                <div className="mb-2 flex justify-between items-center text-xs text-gray-500">
+                {/* Failed allocation banner */}
+                {selectedAlloc && allocations.find(a => a.ID === selectedAlloc)?.ClientStatus === 'failed' && (
+                    <div className="mb-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-md p-3">
+                        <div className="flex">
+                            <svg className="h-5 w-5 text-red-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
+                            </svg>
+                            <div className="ml-3">
+                                <p className="text-sm font-medium text-red-800 dark:text-red-200">
+                                    Viewing logs from a failed allocation
+                                </p>
+                                <p className="text-xs text-red-600 dark:text-red-300 mt-1">
+                                    {allocations.find(a => a.ID === selectedAlloc)?.ClientDescription || 'Allocation failed'}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                {/* Lost allocation banner */}
+                {selectedAlloc && allocations.find(a => a.ID === selectedAlloc)?.ClientStatus === 'lost' && (
+                    <div className="mb-3 bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 rounded-md p-3">
+                        <div className="flex">
+                            <svg className="h-5 w-5 text-orange-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+                                <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                            </svg>
+                            <div className="ml-3">
+                                <p className="text-sm font-medium text-orange-800 dark:text-orange-200">
+                                    Viewing logs from a lost allocation
+                                </p>
+                                <p className="text-xs text-orange-600 dark:text-orange-300 mt-1">
+                                    The node running this allocation became unavailable
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                )}
+
+                <div className="mb-2 flex justify-between items-center text-xs text-gray-500 dark:text-gray-400">
                     {lastRefreshed && (
                         <span>Last updated: {lastRefreshed.toLocaleTimeString()}</span>
                     )}
@@ -420,7 +497,15 @@ export const JobLogs: React.FC<JobLogsProps> = ({ jobId, allocId, taskName, init
                     )}
                 </div>
 
-                <pre className={`bg-gray-800 text-white p-4 rounded-md overflow-auto max-h-96 text-sm font-mono ${isLoading ? 'opacity-50' : ''}`}>
+                <pre className={`p-4 rounded-md overflow-auto max-h-96 text-sm font-mono ${
+                    isLoading ? 'opacity-50' : ''
+                } ${
+                    selectedAlloc && allocations.find(a => a.ID === selectedAlloc)?.ClientStatus === 'failed'
+                        ? 'bg-red-950 text-red-100 border-2 border-red-500'
+                        : selectedAlloc && allocations.find(a => a.ID === selectedAlloc)?.ClientStatus === 'lost'
+                            ? 'bg-orange-950 text-orange-100 border-2 border-orange-500'
+                            : 'bg-gray-800 text-white'
+                }`}>
                     {formatLogs(logs) || 'No logs available'}
                 </pre>
             </div>
