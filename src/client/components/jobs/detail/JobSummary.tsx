@@ -9,19 +9,21 @@ interface JobSummaryProps {
     Type: string;
     Priority: number;
     Datacenters?: string[];
-    CreateTime?: number;
-    ModifyTime?: number;
+    SubmitTime?: number;
     Namespace?: string;
     Version?: number;
   };
   allocations?: NomadAllocation[];
+  createTime?: number | null;
 }
 
-const formatDate = (timestamp: number): string => {
-  return new Date(timestamp * 1000).toLocaleString();
+const NANOSECONDS_TO_MILLISECONDS = 1_000_000;
+
+const formatDate = (nanoseconds: number): string => {
+  return new Date(nanoseconds / NANOSECONDS_TO_MILLISECONDS).toLocaleString();
 };
 
-export const JobSummary: React.FC<JobSummaryProps> = ({ job, allocations }) => {
+export const JobSummary: React.FC<JobSummaryProps> = ({ job, allocations, createTime }) => {
   return (
     <div className="bg-white dark:bg-gray-800 shadow rounded-lg overflow-hidden">
       <div className="px-6 py-5 border-b border-gray-200 dark:border-gray-700">
@@ -73,7 +75,7 @@ export const JobSummary: React.FC<JobSummaryProps> = ({ job, allocations }) => {
                 Created
               </dt>
               <dd className="mt-1 text-sm text-gray-900 dark:text-white sm:mt-0 sm:col-span-2">
-                {job.CreateTime ? formatDate(job.CreateTime) : 'Unknown'}
+                {createTime ? formatDate(createTime) : 'Unknown'}
               </dd>
             </div>
             <div className="px-4 py-3 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
@@ -81,7 +83,7 @@ export const JobSummary: React.FC<JobSummaryProps> = ({ job, allocations }) => {
                 Modified
               </dt>
               <dd className="mt-1 text-sm text-gray-900 dark:text-white sm:mt-0 sm:col-span-2">
-                {job.ModifyTime ? formatDate(job.ModifyTime) : 'Unknown'}
+                {job.SubmitTime ? formatDate(job.SubmitTime) : 'Unknown'}
               </dd>
             </div>
             <div className="bg-gray-50 dark:bg-gray-700 px-4 py-3 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6 rounded-md">
@@ -99,7 +101,7 @@ export const JobSummary: React.FC<JobSummaryProps> = ({ job, allocations }) => {
                 Version
               </dt>
               <dd className="mt-1 text-sm text-gray-900 dark:text-white sm:mt-0 sm:col-span-2">
-                {job.Version || 'Unknown'}
+                {job.Version ?? 'Unknown'}
               </dd>
             </div>
           </dl>

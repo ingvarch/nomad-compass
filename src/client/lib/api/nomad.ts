@@ -166,6 +166,15 @@ export class NomadClient {
   }
 
   /**
+   * Get job versions history
+   */
+  async getJobVersions(id: string, namespace: string = 'default'): Promise<{ Versions: any[] }> {
+    return this.request<{ Versions: any[] }>(`/v1/job/${id}/versions`, {
+      params: { namespace }
+    });
+  }
+
+  /**
    * Create a new job or update an existing job
    *
    * Nomad API uses the same endpoint for both create and update operations.

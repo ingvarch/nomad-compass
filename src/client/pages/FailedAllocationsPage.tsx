@@ -343,7 +343,7 @@ export default function FailedAllocationsPage() {
                     </span>
                   ))}
                   <span className="text-gray-400 dark:text-gray-500">
-                    Last updated: {formatTimestamp(job.ModifyTime)}
+                    Last updated: {formatTimestamp(job.SubmitTime)}
                   </span>
                 </div>
               </div>

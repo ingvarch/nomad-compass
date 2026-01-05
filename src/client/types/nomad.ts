@@ -20,14 +20,13 @@ export interface NomadJob {
             Unknown: number;
         }>;
     };
-    CreateTime: number;
-    ModifyTime: number;
+    SubmitTime: number;
+    Version: number;
     TaskGroups?: NomadTaskGroup[];
     Datacenters?: string[];
     Meta?: Record<string, string>;
     Constraints?: any[];
     Priority?: number;
-    Version?: number;
 }
 
 export interface NomadTaskGroup {
