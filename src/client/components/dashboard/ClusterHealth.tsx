@@ -1,4 +1,4 @@
-import { NomadAgentSelf, NomadAgentMembers, NomadNode, NomadJob } from '../../types/nomad';
+import { NomadAgentSelf, NomadAgentMembers, NomadNode } from '../../types/nomad';
 
 type HealthStatus = 'healthy' | 'degraded' | 'critical';
 
@@ -6,34 +6,25 @@ interface ClusterHealthProps {
   agentSelf: NomadAgentSelf | null;
   agentMembers: NomadAgentMembers | null;
   nodes: NomadNode[];
-  jobs: NomadJob[];
+  activeFailedAllocations: number;
   loading?: boolean;
 }
 
-function getHealthStatus(nodes: NomadNode[], jobs: NomadJob[]): HealthStatus {
+function getHealthStatus(nodes: NomadNode[], activeFailedAllocations: number): HealthStatus {
   const downNodes = nodes.filter((n) => n.Status === 'down');
   const drainingNodes = nodes.filter((n) => n.Drain);
 
-  // Calculate failed allocations from job summaries
-  let totalAllocations = 0;
-  let failedAllocations = 0;
-  jobs.forEach((job) => {
-    if (job.JobSummary?.Summary) {
-      Object.values(job.JobSummary.Summary).forEach((summary) => {
-        totalAllocations += summary.Running + summary.Failed + summary.Complete + summary.Lost;
-        failedAllocations += summary.Failed;
-      });
-    }
-  });
-
-  const failedPercentage = totalAllocations > 0 ? (failedAllocations / totalAllocations) * 100 : 0;
-
-  if (downNodes.length > 0 || failedPercentage > 10) {
+  // Critical: down nodes or high percentage of active failures
+  if (downNodes.length > 0) {
     return 'critical';
   }
-  if (drainingNodes.length > 0 || failedAllocations > 0) {
+
+  // Degraded: draining nodes or any ACTIVE failed allocations
+  // (not historical counters from JobSummary)
+  if (drainingNodes.length > 0 || activeFailedAllocations > 0) {
     return 'degraded';
   }
+
   return 'healthy';
 }
 
@@ -64,7 +55,7 @@ const statusConfig: Record<HealthStatus, { color: string; bgColor: string; text:
   },
 };
 
-export function ClusterHealth({ agentSelf, agentMembers, nodes, jobs, loading }: ClusterHealthProps) {
+export function ClusterHealth({ agentSelf, agentMembers, nodes, activeFailedAllocations, loading }: ClusterHealthProps) {
   if (loading) {
     return (
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 animate-pulse">
@@ -79,7 +70,7 @@ export function ClusterHealth({ agentSelf, agentMembers, nodes, jobs, loading }:
     );
   }
 
-  const status = getHealthStatus(nodes, jobs);
+  const status = getHealthStatus(nodes, activeFailedAllocations);
   const config = statusConfig[status];
   const leader = getLeaderName(agentMembers);
   const version = agentSelf?.config?.Version?.Version;

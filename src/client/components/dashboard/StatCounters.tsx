@@ -5,17 +5,19 @@ interface StatCountersProps {
   jobs: NomadJob[];
   nodes: NomadNode[];
   namespaces: NomadNamespace[];
+  activeFailedAllocations: number;
   loading?: boolean;
 }
 
 interface CounterCardProps {
   title: string;
+  titleLink?: string;
   icon: React.ReactNode;
   stats: { label: string; value: number; color: string; link?: string }[];
   loading?: boolean;
 }
 
-function CounterCard({ title, icon, stats, loading }: CounterCardProps) {
+function CounterCard({ title, titleLink, icon, stats, loading }: CounterCardProps) {
   if (loading) {
     return (
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 animate-pulse">
@@ -35,9 +37,26 @@ function CounterCard({ title, icon, stats, loading }: CounterCardProps) {
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
-      <div className="flex items-center gap-3 mb-3">
+      <div className="flex items-center gap-3 pb-3 mb-3 border-b border-gray-100 dark:border-gray-700">
         <div className="text-gray-500 dark:text-gray-400">{icon}</div>
-        <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">{title}</h3>
+        {titleLink ? (
+          <Link
+            to={titleLink}
+            className="inline-flex items-center gap-1 text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors group"
+          >
+            {title}
+            <svg
+              className="w-4 h-4 text-gray-400 dark:text-gray-500 group-hover:text-blue-500 dark:group-hover:text-blue-400 transition-colors"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+          </Link>
+        ) : (
+          <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">{title}</h3>
+        )}
         <span className="ml-auto text-2xl font-bold text-gray-900 dark:text-white">{total}</span>
       </div>
       <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
@@ -118,15 +137,103 @@ function calculateAllocationStats(jobs: NomadJob[]) {
   return { running, pending, failed };
 }
 
-export function StatCounters({ jobs, nodes, namespaces, loading }: StatCountersProps) {
+interface AllocationCounterCardProps {
+  running: number;
+  pending: number;
+  activeFailed: number;
+  historicalFailed: number;
+  loading?: boolean;
+}
+
+function AllocationCounterCard({ running, pending, activeFailed, historicalFailed, loading }: AllocationCounterCardProps) {
+  if (loading) {
+    return (
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 animate-pulse">
+        <div className="flex items-center gap-3 mb-3">
+          <div className="w-8 h-8 bg-gray-200 dark:bg-gray-700 rounded" />
+          <div className="h-5 bg-gray-200 dark:bg-gray-700 rounded w-20" />
+        </div>
+        <div className="space-y-2">
+          <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-full" />
+          <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4" />
+        </div>
+      </div>
+    );
+  }
+
+  const total = running + pending + activeFailed;
+
+  return (
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
+      <div className="flex items-center gap-3 pb-3 mb-3 border-b border-gray-100 dark:border-gray-700">
+        <div className="text-gray-500 dark:text-gray-400">
+          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z"
+            />
+          </svg>
+        </div>
+        <Link
+          to="/allocations"
+          className="inline-flex items-center gap-1 text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors group"
+        >
+          Allocations
+          <svg
+            className="w-4 h-4 text-gray-400 dark:text-gray-500 group-hover:text-blue-500 dark:group-hover:text-blue-400 transition-colors"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+          </svg>
+        </Link>
+        <span className="ml-auto text-2xl font-bold text-gray-900 dark:text-white">{total}</span>
+      </div>
+      <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
+        <div className="flex items-center gap-1.5">
+          <span className="w-2 h-2 rounded-full bg-green-500" />
+          <Link to="/allocations?status=running" className="hover:underline text-gray-600 dark:text-gray-300">
+            {running} Running
+          </Link>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <span className="w-2 h-2 rounded-full bg-yellow-500" />
+          <Link to="/allocations?status=pending" className="hover:underline text-gray-600 dark:text-gray-300">
+            {pending} Pending
+          </Link>
+        </div>
+        <div className="flex items-center gap-1.5">
+          <span className="w-2 h-2 rounded-full bg-red-500" />
+          <Link to="/allocations?status=failed" className="hover:underline text-gray-600 dark:text-gray-300">
+            {activeFailed} Failed
+            {historicalFailed > 0 && (
+              <span className="text-gray-400 dark:text-gray-500 ml-1">
+                ({historicalFailed})
+              </span>
+            )}
+          </Link>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+export function StatCounters({ jobs, nodes, namespaces, activeFailedAllocations, loading }: StatCountersProps) {
   const jobStats = calculateJobStats(jobs);
   const nodeStats = calculateNodeStats(nodes);
   const allocStats = calculateAllocationStats(jobs);
+
+  // Historical failures from JobSummary (for info only)
+  const historicalFailed = allocStats.failed;
 
   return (
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
       <CounterCard
         title="Jobs"
+        titleLink="/jobs"
         loading={loading}
         icon={
           <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -147,6 +254,7 @@ export function StatCounters({ jobs, nodes, namespaces, loading }: StatCountersP
 
       <CounterCard
         title="Nodes"
+        titleLink="/nodes"
         loading={loading}
         icon={
           <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -159,34 +267,23 @@ export function StatCounters({ jobs, nodes, namespaces, loading }: StatCountersP
           </svg>
         }
         stats={[
-          { label: 'Ready', value: nodeStats.ready, color: 'bg-green-500' },
-          { label: 'Down', value: nodeStats.down, color: 'bg-red-500' },
-          { label: 'Draining', value: nodeStats.draining, color: 'bg-yellow-500' },
+          { label: 'Ready', value: nodeStats.ready, color: 'bg-green-500', link: '/nodes?status=ready' },
+          { label: 'Down', value: nodeStats.down, color: 'bg-red-500', link: '/nodes?status=down' },
+          { label: 'Draining', value: nodeStats.draining, color: 'bg-yellow-500', link: '/nodes?status=draining' },
         ]}
       />
 
-      <CounterCard
-        title="Allocations"
+      <AllocationCounterCard
         loading={loading}
-        icon={
-          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z"
-            />
-          </svg>
-        }
-        stats={[
-          { label: 'Running', value: allocStats.running, color: 'bg-green-500' },
-          { label: 'Pending', value: allocStats.pending, color: 'bg-yellow-500' },
-          { label: 'Failed', value: allocStats.failed, color: 'bg-red-500' },
-        ]}
+        running={allocStats.running}
+        pending={allocStats.pending}
+        activeFailed={activeFailedAllocations}
+        historicalFailed={historicalFailed}
       />
 
       <CounterCard
         title="Namespaces"
+        titleLink="/namespaces"
         loading={loading}
         icon={
           <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">

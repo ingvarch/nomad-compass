@@ -6,6 +6,7 @@ import {
   NomadNode,
   NomadAgentSelf,
   NomadAgentMembers,
+  NomadAllocation,
 } from '../../types/nomad';
 
 /**
@@ -250,9 +251,12 @@ export class NomadClient {
 
   /**
    * Get all nodes in the cluster
+   * Uses resources=true to include NodeResources for cluster resource calculations
    */
   async getNodes(): Promise<NomadNode[]> {
-    return this.request<NomadNode[]>('/v1/nodes');
+    return this.request<NomadNode[]>('/v1/nodes', {
+      params: { resources: 'true' },
+    });
   }
 
   /**
@@ -267,6 +271,39 @@ export class NomadClient {
    */
   async getAgentMembers(): Promise<NomadAgentMembers> {
     return this.request<NomadAgentMembers>('/v1/agent/members');
+  }
+
+  /**
+   * Get all allocations with optional filters
+   */
+  async getAllocations(params?: {
+    namespace?: string;
+    prefix?: string;
+  }): Promise<NomadAllocation[]> {
+    const queryParams: Record<string, string> = {
+      resources: 'true', // Include AllocatedResources in response
+    };
+    if (params?.namespace) {
+      queryParams.namespace = params.namespace;
+    } else {
+      queryParams.namespace = '*';
+    }
+    if (params?.prefix) {
+      queryParams.prefix = params.prefix;
+    }
+    return this.request<NomadAllocation[]>('/v1/allocations', {
+      params: queryParams,
+    });
+  }
+
+  /**
+   * Trigger garbage collection on the cluster
+   * This cleans up old allocations, evaluations, and deployments
+   */
+  async garbageCollect(): Promise<void> {
+    await this.request<void>('/v1/system/gc', {
+      method: 'PUT',
+    });
   }
 
   /**

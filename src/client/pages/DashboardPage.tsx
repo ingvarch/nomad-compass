@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { createNomadClient } from '../lib/api/nomad';
-import { NomadJob, NomadNode, NomadNamespace, NomadAgentSelf, NomadAgentMembers } from '../types/nomad';
+import { NomadJob, NomadNode, NomadNamespace, NomadAgentSelf, NomadAgentMembers, NomadAllocation } from '../types/nomad';
 import { ClusterHealth, StatCounters, ClusterResources, QuickActions } from '../components/dashboard';
 
 interface DashboardData {
@@ -9,6 +9,8 @@ interface DashboardData {
   namespaces: NomadNamespace[];
   agentSelf: NomadAgentSelf | null;
   agentMembers: NomadAgentMembers | null;
+  allocations: NomadAllocation[];
+  activeFailedAllocations: number;
 }
 
 export default function DashboardPage() {
@@ -18,6 +20,8 @@ export default function DashboardPage() {
     namespaces: [],
     agentSelf: null,
     agentMembers: null,
+    allocations: [],
+    activeFailedAllocations: 0,
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -27,13 +31,19 @@ export default function DashboardPage() {
     const client = createNomadClient();
 
     try {
-      const [jobsResponse, nodes, namespaces, agentSelf, agentMembers] = await Promise.all([
+      const [jobsResponse, nodes, namespaces, agentSelf, agentMembers, allocations] = await Promise.all([
         client.getJobs(currentNamespace),
         client.getNodes(),
         client.getNamespaces(),
         client.getAgentSelf().catch(() => null),
         client.getAgentMembers().catch(() => null),
+        client.getAllocations().catch(() => [] as NomadAllocation[]),
       ]);
+
+      // Count only ACTIVE failed allocations (real allocation objects, not historical counters)
+      const activeFailedAllocations = allocations.filter(
+        (alloc) => alloc.ClientStatus === 'failed' || alloc.ClientStatus === 'lost'
+      ).length;
 
       setData({
         jobs: jobsResponse.Jobs || [],
@@ -41,6 +51,8 @@ export default function DashboardPage() {
         namespaces,
         agentSelf,
         agentMembers,
+        allocations,
+        activeFailedAllocations,
       });
       setError(null);
     } catch (err) {
@@ -78,14 +90,20 @@ export default function DashboardPage() {
         agentSelf={data.agentSelf}
         agentMembers={data.agentMembers}
         nodes={data.nodes}
-        jobs={data.jobs}
+        activeFailedAllocations={data.activeFailedAllocations}
         loading={loading}
       />
 
-      <StatCounters jobs={data.jobs} nodes={data.nodes} namespaces={data.namespaces} loading={loading} />
+      <StatCounters
+        jobs={data.jobs}
+        nodes={data.nodes}
+        namespaces={data.namespaces}
+        activeFailedAllocations={data.activeFailedAllocations}
+        loading={loading}
+      />
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <ClusterResources nodes={data.nodes} loading={loading} />
+        <ClusterResources nodes={data.nodes} allocations={data.allocations} loading={loading} />
         <QuickActions
           namespaces={data.namespaces}
           currentNamespace={currentNamespace}

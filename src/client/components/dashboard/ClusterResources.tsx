@@ -1,7 +1,8 @@
-import { NomadNode } from '../../types/nomad';
+import { NomadNode, NomadAllocation } from '../../types/nomad';
 
 interface ClusterResourcesProps {
   nodes: NomadNode[];
+  allocations: NomadAllocation[];
   loading?: boolean;
 }
 
@@ -52,28 +53,37 @@ function ResourceBar({ label, used, total, unit, color }: ResourceBarProps) {
   );
 }
 
-function calculateClusterResources(nodes: NomadNode[]) {
+function calculateClusterResources(nodes: NomadNode[], allocations: NomadAllocation[]) {
   let totalCpu = 0;
-  let usedCpu = 0;
   let totalMemory = 0;
+  let usedCpu = 0;
   let usedMemory = 0;
 
+  // Calculate total resources from ready nodes
   nodes.forEach((node) => {
     if (node.Status === 'ready' && node.NodeResources) {
       totalCpu += node.NodeResources.Cpu?.CpuShares || 0;
       totalMemory += node.NodeResources.Memory?.MemoryMB || 0;
-
-      if (node.ReservedResources) {
-        usedCpu += node.ReservedResources.Cpu?.CpuShares || 0;
-        usedMemory += node.ReservedResources.Memory?.MemoryMB || 0;
-      }
     }
   });
+
+  // Calculate used resources from running allocations
+  allocations
+    .filter((alloc) => alloc.ClientStatus === 'running')
+    .forEach((alloc) => {
+      // Sum resources from all tasks in the allocation
+      if (alloc.AllocatedResources?.Tasks) {
+        Object.values(alloc.AllocatedResources.Tasks).forEach((task) => {
+          usedCpu += task.Cpu?.CpuShares || 0;
+          usedMemory += task.Memory?.MemoryMB || 0;
+        });
+      }
+    });
 
   return { totalCpu, usedCpu, totalMemory, usedMemory };
 }
 
-export function ClusterResources({ nodes, loading }: ClusterResourcesProps) {
+export function ClusterResources({ nodes, allocations, loading }: ClusterResourcesProps) {
   if (loading) {
     return (
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 animate-pulse">
@@ -92,7 +102,7 @@ export function ClusterResources({ nodes, loading }: ClusterResourcesProps) {
     );
   }
 
-  const resources = calculateClusterResources(nodes);
+  const resources = calculateClusterResources(nodes, allocations);
   const readyNodes = nodes.filter((n) => n.Status === 'ready').length;
 
   return (
