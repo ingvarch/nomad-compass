@@ -40,6 +40,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const response = await fetch('/api/auth/validate', {
         credentials: 'include',
       });
+      if (!response.ok) {
+        console.error('Auth check failed:', response.status);
+        setIsAuthenticated(false);
+        return false;
+      }
       const data = await response.json();
       setIsAuthenticated(data.authenticated);
       return data.authenticated;

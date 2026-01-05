@@ -24,8 +24,10 @@ export function createApp() {
 
   app.use('*', cors(corsOptions))
 
-  // Rate limiting for auth endpoints - strict limit to prevent brute force
-  app.use('/api/auth/*', createRateLimiter({ windowMs: 15 * 60 * 1000, max: 10 }))
+  // Rate limiting for auth login - strict limit to prevent brute force
+  // Note: /api/auth/validate is excluded as it's called on every page load
+  app.use('/api/auth/login', createRateLimiter({ windowMs: 15 * 60 * 1000, max: 10 }))
+  app.use('/api/auth/logout', createRateLimiter({ windowMs: 60 * 1000, max: 10 }))
 
   // Rate limiting for API endpoints - normal limit
   app.use('/api/nomad/*', createRateLimiter({ windowMs: 60 * 1000, max: 100 }))
