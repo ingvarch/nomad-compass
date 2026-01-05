@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { createNomadClient } from '../../lib/api/nomad';
 import { NomadJob, NomadNamespace } from '../../types/nomad';
@@ -7,10 +7,13 @@ import { NomadJob, NomadNamespace } from '../../types/nomad';
 export const JobList: React.FC = () => {
   const [jobs, setJobs] = useState<NomadJob[]>([]);
   const [namespaces, setNamespaces] = useState<NomadNamespace[]>([]);
-  const [selectedNamespace, setSelectedNamespace] = useState<string>('*');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { isAuthenticated } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // Get namespace from URL or default to '*'
+  const selectedNamespace = searchParams.get('namespace') || '*';
 
   // Fetch namespaces and jobs
   useEffect(() => {
@@ -65,9 +68,16 @@ export const JobList: React.FC = () => {
     }
   };
 
-  // Handle namespace change
+  // Handle namespace change - update URL
   const handleNamespaceChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    setSelectedNamespace(e.target.value);
+    const value = e.target.value;
+    if (value === '*') {
+      // Remove namespace param for "All Namespaces"
+      searchParams.delete('namespace');
+    } else {
+      searchParams.set('namespace', value);
+    }
+    setSearchParams(searchParams);
   };
 
   // Render loading state
