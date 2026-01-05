@@ -10,15 +10,37 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-const validateToken = async (token: string | null, nomadAddr: string | null): Promise<boolean> => {
-  if (!token || !nomadAddr) return false;
+// Helper function to get cookie value
+const getCookie = (name: string): string | null => {
+  const value = `; ${document.cookie}`;
+  const parts = value.split(`; ${name}=`);
+  if (parts.length === 2) return parts.pop()?.split(';').shift() || null;
+  return null;
+};
+
+// Helper function to set cookie
+const setCookie = (name: string, value: string, days: number = 7): void => {
+  const expires = new Date();
+  expires.setTime(expires.getTime() + days * 24 * 60 * 60 * 1000);
+  document.cookie = `${name}=${value};expires=${expires.toUTCString()};path=/;SameSite=Strict;`;
+};
+
+// Helper function to delete cookie
+const deleteCookie = (name: string): void => {
+  document.cookie = `${name}=;expires=Thu, 01 Jan 1970 00:00:00 GMT;path=/;`;
+};
+
+const validateToken = async (token: string | null): Promise<boolean> => {
+  if (!token) return false;
 
   try {
-    const response = await fetch(`${nomadAddr}/v1/agent/self`, {
+    // Use API proxy to validate token instead of direct request
+    // This ensures CSRF protection and prevents SSRF
+    const response = await fetch('/api/nomad/v1/agent/self', {
       headers: {
         'X-Nomad-Token': token,
-        'Content-Type': 'application/json'
-      }
+        'Content-Type': 'application/json',
+      },
     });
 
     return response.ok;
@@ -45,20 +67,22 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [nomadAddr, setNomadAddr] = useState<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
 
-  // Load token and nomadAddr from localStorage on initial render
+  // Load token and nomadAddr from cookies on initial render
   useEffect(() => {
-    const storedToken = localStorage.getItem('nomad-token');
-    const storedNomadAddr = localStorage.getItem('nomad-addr');
-    
-    if (storedToken && storedNomadAddr) {
-      setToken(storedToken);
+    const cookieToken = getCookie('nomad-token');
+    const storedNomadAddr = localStorage.getItem('nomad-addr'); // Keep nomadAddr in localStorage as it's not sensitive
+
+    if (cookieToken && storedNomadAddr) {
+      setToken(cookieToken);
       setNomadAddr(storedNomadAddr);
       setIsAuthenticated(true);
     }
   }, []);
 
   const login = (newToken: string, newNomadAddr: string) => {
-    localStorage.setItem('nomad-token', newToken);
+    // Store token in cookie for better security
+    setCookie('nomad-token', newToken);
+    // Store nomadAddr in localStorage as it's not sensitive
     localStorage.setItem('nomad-addr', newNomadAddr);
     setToken(newToken);
     setNomadAddr(newNomadAddr);
@@ -66,7 +90,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   };
 
   const logout = () => {
-    localStorage.removeItem('nomad-token');
+    // Remove token from cookie
+    deleteCookie('nomad-token');
+    // Remove nomadAddr from localStorage
     localStorage.removeItem('nomad-addr');
     setToken(null);
     setNomadAddr(null);

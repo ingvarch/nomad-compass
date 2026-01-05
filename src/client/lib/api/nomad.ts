@@ -15,6 +15,17 @@ export class NomadClient {
   }
 
   /**
+   * Get CSRF token from cookie
+   */
+  private getCSRFToken(): string | null {
+    const name = 'csrf-token';
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) return parts.pop()?.split(';').shift() || null;
+    return null;
+  }
+
+  /**
    * Generic request method for Nomad API
    */
   private async request<T>(
@@ -35,25 +46,54 @@ export class NomadClient {
       url = `${url}?${searchParams.toString()}`;
     }
 
-    // Add Nomad token header
-    const headers = {
+    // Determine if this is a state-changing request that needs CSRF protection
+    const method = (fetchOptions.method || 'GET').toUpperCase();
+    const needsCSRF = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method);
+
+    // Extract headers from fetchOptions
+    const { headers: optHeaders, ...restFetchOptions } = fetchOptions;
+
+    // Add Nomad token header and CSRF token if needed
+    const headers: Record<string, string> = {
       'X-Nomad-Token': this.token,
       'Content-Type': 'application/json',
-      ...fetchOptions.headers,
+      ...(optHeaders as Record<string, string> | undefined),
     };
+
+    // Add CSRF token for state-changing requests
+    if (needsCSRF) {
+      const csrfToken = this.getCSRFToken();
+      if (csrfToken) {
+        headers['X-CSRF-Token'] = csrfToken;
+      } else {
+        console.warn('CSRF token not found for state-changing request');
+      }
+    }
 
     try {
       const response = await fetch(url, {
-        ...fetchOptions,
+        ...restFetchOptions,
         headers,
       });
 
       // Check if the request was successful
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
+        // Try to parse the error response
+        let errorData;
+        try {
+          errorData = await response.json();
+        } catch {
+          // If response is not JSON, create a generic error
+          errorData = {
+            error: 'Request failed',
+            message: `API request failed with status ${response.status}`,
+            status: response.status
+          };
+        }
+
         const error: ApiError = {
           statusCode: response.status,
-          message: errorData.error || `API request failed with status ${response.status}`,
+          message: errorData.message || errorData.error || `API request failed with status ${response.status}`,
         };
         throw error;
       }
