@@ -176,7 +176,7 @@ function AllocationCounterCard({ running, pending, activeFailed, historicalFaile
             {activeFailed} Failed
             {historicalFailed > 0 && (
               <span className="text-gray-400 dark:text-gray-500 ml-1">
-                ({historicalFailed} historical)
+                ({historicalFailed})
               </span>
             )}
           </Link>

@@ -10,9 +10,16 @@ interface FailedAllocationInfo {
   failedTasks: string[];
 }
 
+interface TaskGroupFailure {
+  name: string;
+  failed: number;
+  lost: number;
+}
+
 interface HistoricalJobInfo {
   job: NomadJob;
   failedCount: number;
+  taskGroups: TaskGroupFailure[];
 }
 
 function formatTimestamp(nanoTimestamp: number): string {
@@ -69,16 +76,25 @@ export default function FailedAllocationsPage() {
         .filter((job) => {
           if (!job.JobSummary?.Summary) return false;
           const failedCount = Object.values(job.JobSummary.Summary).reduce(
-            (sum, s) => sum + s.Failed, 0
+            (sum, s) => sum + s.Failed + s.Lost, 0
           );
           return failedCount > 0;
         })
-        .map((job) => ({
-          job,
-          failedCount: Object.values(job.JobSummary!.Summary).reduce(
-            (sum, s) => sum + s.Failed, 0
-          ),
-        }))
+        .map((job) => {
+          const taskGroups: TaskGroupFailure[] = Object.entries(job.JobSummary!.Summary)
+            .filter(([, s]) => s.Failed > 0 || s.Lost > 0)
+            .map(([name, s]) => ({
+              name,
+              failed: s.Failed,
+              lost: s.Lost,
+            }));
+
+          return {
+            job,
+            failedCount: taskGroups.reduce((sum, tg) => sum + tg.failed + tg.lost, 0),
+            taskGroups,
+          };
+        })
         .sort((a, b) => b.failedCount - a.failedCount);
 
       setActiveFailures(activeFailed);
@@ -289,29 +305,47 @@ export default function FailedAllocationsPage() {
           </div>
         ) : (
           <div className="divide-y divide-gray-200 dark:divide-gray-700">
-            {historicalJobs.map(({ job, failedCount }) => (
-              <div key={`${job.Namespace}/${job.ID}`} className="px-4 py-3 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                <div className="flex items-center gap-3">
-                  <Link
-                    to={`/jobs/${job.ID}?namespace=${job.Namespace}`}
-                    className="text-blue-600 dark:text-blue-400 hover:underline font-medium"
-                  >
-                    {job.Name}
-                  </Link>
-                  <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-200">
-                    {job.Namespace}
-                  </span>
-                  <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${
-                    job.Status === 'running'
-                      ? 'bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-200'
-                      : 'bg-gray-100 dark:bg-gray-600 text-gray-800 dark:text-gray-200'
-                  }`}>
-                    {job.Status}
+            {historicalJobs.map(({ job, failedCount, taskGroups }) => (
+              <div key={`${job.Namespace}/${job.ID}`} className="px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <Link
+                      to={`/jobs/${job.ID}?namespace=${job.Namespace}`}
+                      className="text-blue-600 dark:text-blue-400 hover:underline font-medium"
+                    >
+                      {job.Name}
+                    </Link>
+                    <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-purple-100 dark:bg-purple-900/50 text-purple-800 dark:text-purple-200">
+                      {job.Type}
+                    </span>
+                    <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-200">
+                      {job.Namespace}
+                    </span>
+                    <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${
+                      job.Status === 'running'
+                        ? 'bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-200'
+                        : 'bg-gray-100 dark:bg-gray-600 text-gray-800 dark:text-gray-200'
+                    }`}>
+                      {job.Status}
+                    </span>
+                  </div>
+                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    {failedCount}
                   </span>
                 </div>
-                <span className="text-sm text-gray-500 dark:text-gray-400">
-                  {failedCount} historical failure{failedCount !== 1 ? 's' : ''}
-                </span>
+                <div className="mt-2 flex flex-wrap gap-2 text-xs text-gray-500 dark:text-gray-400">
+                  {taskGroups.map((tg) => (
+                    <span key={tg.name} className="inline-flex items-center gap-1 px-2 py-0.5 bg-gray-100 dark:bg-gray-700 rounded">
+                      <span className="font-medium">{tg.name}:</span>
+                      {tg.failed > 0 && <span>{tg.failed} failed</span>}
+                      {tg.failed > 0 && tg.lost > 0 && <span>,</span>}
+                      {tg.lost > 0 && <span>{tg.lost} lost</span>}
+                    </span>
+                  ))}
+                  <span className="text-gray-400 dark:text-gray-500">
+                    Last updated: {formatTimestamp(job.ModifyTime)}
+                  </span>
+                </div>
               </div>
             ))}
           </div>
