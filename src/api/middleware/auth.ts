@@ -1,16 +1,7 @@
 import { createMiddleware } from 'hono/factory'
 import { getCookie, setCookie } from 'hono/cookie'
 import type { Env } from '../types'
-
-/**
- * Generates a cryptographically secure CSRF token
- * Uses Web Crypto API which works in both Node.js 19+ and Cloudflare Workers
- */
-function generateCSRFToken(): string {
-  const array = new Uint8Array(32)
-  crypto.getRandomValues(array)
-  return Array.from(array, (b) => b.toString(16).padStart(2, '0')).join('')
-}
+import { generateCSRFToken } from '../utils/crypto'
 
 /**
  * Auth middleware for protected routes.

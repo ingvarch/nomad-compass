@@ -4,7 +4,3 @@ export type Env = {
     fetch: (req: Request) => Promise<Response>
   }
 }
-
-export type Variables = {
-  nomadToken?: string
-}

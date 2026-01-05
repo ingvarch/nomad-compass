@@ -8,18 +8,42 @@ import { nomadRoutes } from './routes/nomad'
 import { authRoutes } from './routes/auth'
 import type { Env } from './types'
 
-export function createApp() {
+export interface CreateAppOptions {
+  /**
+   * Function to inject environment variables into context.
+   * Required for Node.js where env vars come from process.env.
+   * Cloudflare Workers get env from the bindings automatically.
+   */
+  envInjector?: (c: { env: Env }) => void
+
+  /**
+   * Additional CORS allowed headers beyond the defaults.
+   * Default headers: ['Content-Type', 'X-CSRF-Token']
+   */
+  additionalCorsHeaders?: string[]
+}
+
+export function createApp(options: CreateAppOptions = {}) {
   const app = new Hono<{ Bindings: Env }>()
 
   // Apply security headers first
   app.use('*', securityHeaders)
 
+  // Inject environment variables if provided (for Node.js)
+  if (options.envInjector) {
+    app.use('*', async (c, next) => {
+      options.envInjector!(c as { env: Env })
+      await next()
+    })
+  }
+
   // Restrictive CORS configuration - only allow necessary origins and methods
+  const defaultHeaders = ['Content-Type', 'X-CSRF-Token']
   const corsOptions = {
     origin: process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:5173', 'http://localhost:3000'],
     allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowHeaders: ['Content-Type', 'X-CSRF-Token'],
-    credentials: true, // Allow credentials to be included
+    allowHeaders: [...defaultHeaders, ...(options.additionalCorsHeaders || [])],
+    credentials: true,
   }
 
   app.use('*', cors(corsOptions))
