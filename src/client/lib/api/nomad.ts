@@ -209,6 +209,13 @@ export class NomadClient {
   }
 
   /**
+   * Get evaluation info
+   */
+  async getEvaluation(evalId: string): Promise<any> {
+    return this.request<any>(`/v1/evaluation/${evalId}`);
+  }
+
+  /**
    * Get logs for an allocation
    */
   async getAllocationLogs(allocId: string, taskName: string, logType: string, plain: boolean = true): Promise<any> {

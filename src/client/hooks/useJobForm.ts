@@ -1,6 +1,5 @@
 // src/hooks/useJobForm.ts
 import { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { createNomadClient } from '../lib/api/nomad';
 import {
@@ -13,6 +12,7 @@ import {
 import { createJobSpec, updateJobSpec, convertJobToFormData } from '../lib/services/jobSpecService';
 import { validateJobName } from '../lib/services/validationService';
 import { useToast } from '../context/ToastContext';
+import { useDeploymentTracker } from './useDeploymentTracker';
 
 // Default task group configuration
 export const defaultTaskGroupData: TaskGroupFormData = {
@@ -58,9 +58,9 @@ interface UseJobFormOptions {
 }
 
 export function useJobForm({ mode, jobId, namespace = 'default' }: UseJobFormOptions) {
-  const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
   const { addToast } = useToast();
+  const deploymentTracker = useDeploymentTracker();
 
   const [isLoading, setIsLoading] = useState(mode === 'edit');
   const [isSaving, setIsSaving] = useState(false);
@@ -412,17 +412,26 @@ export function useJobForm({ mode, jobId, namespace = 'default' }: UseJobFormOpt
       const cleanedData = cleanFormData(formData);
       const client = createNomadClient();
 
+      let response;
       if (mode === 'create') {
         const jobSpec = createJobSpec(cleanedData);
-        await client.createJob(jobSpec);
-        setSuccess(`Job "${formData.name}" created successfully in namespace "${formData.namespace}"!`);
-        setTimeout(() => navigate('/jobs'), 2000);
+        response = await client.createJob(jobSpec);
       } else {
         if (!initialJob) throw new Error('Original job data missing');
         const jobSpec = updateJobSpec(initialJob, cleanedData);
-        await client.updateJob(jobSpec);
-        setSuccess(`Job "${formData.name}" updated successfully!`);
-        setTimeout(() => navigate(`/jobs/${jobId}?namespace=${namespace}`), 2000);
+        response = await client.updateJob(jobSpec);
+      }
+
+      // Start deployment tracking
+      const evalId = response.EvalID;
+      const targetJobId = mode === 'create' ? formData.name : jobId!;
+      const targetNamespace = formData.namespace;
+
+      if (evalId) {
+        deploymentTracker.startTracking(targetJobId, targetNamespace, evalId);
+      } else {
+        // Fallback if no EvalID (shouldn't happen)
+        setSuccess(`Job "${formData.name}" ${mode === 'create' ? 'created' : 'updated'} successfully!`);
       }
     } catch (err) {
       const message =
@@ -444,6 +453,7 @@ export function useJobForm({ mode, jobId, namespace = 'default' }: UseJobFormOpt
     error,
     success,
     namespaces,
+    deploymentTracker,
     handleInputChange,
     handleGroupInputChange,
     handleSelectChange,
