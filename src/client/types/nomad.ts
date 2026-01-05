@@ -133,3 +133,72 @@ export interface NomadNamespace {
     CreateIndex?: number;
     ModifyIndex?: number;
 }
+
+// Node types for cluster monitoring
+export interface NomadNode {
+    ID: string;
+    Name: string;
+    Status: 'ready' | 'down' | 'initializing';
+    StatusDescription?: string;
+    SchedulingEligibility: 'eligible' | 'ineligible';
+    Drain: boolean;
+    Datacenter?: string;
+    NodeClass?: string;
+    Version?: string;
+    NodeResources?: {
+        Cpu: { CpuShares: number };
+        Memory: { MemoryMB: number };
+        Disk: { DiskMB: number };
+    };
+    ReservedResources?: {
+        Cpu: { CpuShares: number };
+        Memory: { MemoryMB: number };
+        Disk: { DiskMB: number };
+    };
+    Attributes?: Record<string, string>;
+}
+
+// Agent types for cluster health
+export interface NomadVersionInfo {
+    Version: string;
+    Revision: string;
+    BuildDate: string;
+    VersionMetadata?: string;
+    VersionPrerelease?: string;
+}
+
+export interface NomadAgentSelf {
+    config: {
+        Region: string;
+        Datacenter: string;
+        Version: NomadVersionInfo;
+    };
+    member: {
+        Name: string;
+        Addr: string;
+        Port: number;
+        Status: string;
+    };
+    stats?: Record<string, Record<string, string>>;
+}
+
+export interface NomadAgentMember {
+    Name: string;
+    Addr: string;
+    Port: number;
+    Status: string;
+    Leader: boolean;
+    ProtocolMin: number;
+    ProtocolMax: number;
+    ProtocolCur: number;
+    DelegateMin: number;
+    DelegateMax: number;
+    DelegateCur: number;
+}
+
+export interface NomadAgentMembers {
+    ServerName: string;
+    ServerRegion: string;
+    ServerDC: string;
+    Members: NomadAgentMember[];
+}
