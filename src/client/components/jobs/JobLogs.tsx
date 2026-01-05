@@ -26,6 +26,7 @@ export const JobLogs: React.FC<JobLogsProps> = ({ jobId, allocId, taskName, init
     const [refreshInterval, setRefreshInterval] = useState<number>(5); // seconds
     const refreshTimerRef = useRef<NodeJS.Timeout | null>(null);
     const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
+    const [showNomadTimestamp, setShowNomadTimestamp] = useState<boolean>(false);
 
 
     useEffect(() => {
@@ -214,6 +215,19 @@ export const JobLogs: React.FC<JobLogsProps> = ({ jobId, allocId, taskName, init
         fetchLogs();
     };
 
+    // Format logs by stripping Nomad timestamp prefix
+    const formatLogs = (rawLogs: string): string => {
+        if (showNomadTimestamp || !rawLogs) return rawLogs;
+
+        // Nomad format: 2026-01-05T02:06:04.596760477+00:00 stdout F <content>
+        const nomadPrefixRegex = /^\d{4}-\d{2}-\d{2}T[\d:.]+[+-]\d{2}:\d{2}\s+(?:stdout|stderr)\s+\w\s+/;
+
+        return rawLogs
+            .split('\n')
+            .map(line => line.replace(nomadPrefixRegex, ''))
+            .join('\n');
+    };
+
     if (error && !allocations.length && !selectedTaskGroup) {
         return (
             <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
@@ -297,6 +311,17 @@ export const JobLogs: React.FC<JobLogsProps> = ({ jobId, allocId, taskName, init
                         <option value="stdout">stdout</option>
                         <option value="stderr">stderr</option>
                     </select>
+
+                    {/* Nomad timestamp toggle */}
+                    <label className="flex items-center gap-1 text-sm text-gray-600 dark:text-gray-300 cursor-pointer">
+                        <input
+                            type="checkbox"
+                            checked={showNomadTimestamp}
+                            onChange={(e) => setShowNomadTimestamp(e.target.checked)}
+                            className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                        />
+                        Nomad time
+                    </label>
 
                     {/* Auto-refresh controls */}
                     <div className="flex items-center gap-2">
@@ -396,7 +421,7 @@ export const JobLogs: React.FC<JobLogsProps> = ({ jobId, allocId, taskName, init
                 </div>
 
                 <pre className={`bg-gray-800 text-white p-4 rounded-md overflow-auto max-h-96 text-sm font-mono ${isLoading ? 'opacity-50' : ''}`}>
-                    {logs || 'No logs available'}
+                    {formatLogs(logs) || 'No logs available'}
                 </pre>
             </div>
         </div>
