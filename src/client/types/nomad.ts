@@ -127,9 +127,16 @@ export interface NomadJobFormData {
     datacenters: string[];
 }
 
+export interface NomadNamespaceCapabilities {
+    EnabledTaskDrivers?: string[];
+    DisabledTaskDrivers?: string[];
+}
+
 export interface NomadNamespace {
     Name: string;
     Description?: string;
+    Meta?: Record<string, string>;
+    Capabilities?: NomadNamespaceCapabilities;
     CreateIndex?: number;
     ModifyIndex?: number;
 }

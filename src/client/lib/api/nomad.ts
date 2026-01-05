@@ -107,9 +107,20 @@ export class NomadClient {
         throw error;
       }
 
+      // Check content length - if empty, return undefined
+      const contentLength = response.headers.get('content-length');
+      if (contentLength === '0') {
+        return undefined as T;
+      }
+
       // Check if response is expected to be JSON
       if (response.headers.get('content-type')?.includes('application/json')) {
-        return await response.json();
+        const text = await response.text();
+        // Handle empty response body
+        if (!text || text.trim() === '') {
+          return undefined as T;
+        }
+        return JSON.parse(text);
       } else {
         // For non-JSON responses (like logs), return text
         const text = await response.text();
@@ -247,6 +258,42 @@ export class NomadClient {
       // Return default namespace if API fails
       return [{ Name: 'default' }];
     }
+  }
+
+  /**
+   * Get a single namespace by name
+   */
+  async getNamespace(name: string): Promise<NomadNamespace> {
+    return this.request<NomadNamespace>(`/v1/namespace/${name}`);
+  }
+
+  /**
+   * Create a new namespace
+   */
+  async createNamespace(namespace: NomadNamespace): Promise<void> {
+    await this.request<void>('/v1/namespace', {
+      method: 'POST',
+      body: JSON.stringify(namespace),
+    });
+  }
+
+  /**
+   * Update an existing namespace
+   */
+  async updateNamespace(namespace: NomadNamespace): Promise<void> {
+    await this.request<void>(`/v1/namespace/${namespace.Name}`, {
+      method: 'POST',
+      body: JSON.stringify(namespace),
+    });
+  }
+
+  /**
+   * Delete a namespace
+   */
+  async deleteNamespace(name: string): Promise<void> {
+    await this.request<void>(`/v1/namespace/${name}`, {
+      method: 'DELETE',
+    });
   }
 
   /**
