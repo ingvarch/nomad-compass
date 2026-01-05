@@ -1,32 +1,14 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 
 interface AuthContextType {
-  token: string | null;
-  nomadAddr: string | null;
   isAuthenticated: boolean;
-  login: (token: string, nomadAddr: string) => void;
-  logout: () => void;
+  isLoading: boolean;
+  login: (token: string) => Promise<{ success: boolean; error?: string }>;
+  logout: () => Promise<void>;
+  checkAuth: () => Promise<boolean>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
-
-const validateToken = async (token: string | null, nomadAddr: string | null): Promise<boolean> => {
-  if (!token || !nomadAddr) return false;
-
-  try {
-    const response = await fetch(`${nomadAddr}/v1/agent/self`, {
-      headers: {
-        'X-Nomad-Token': token,
-        'Content-Type': 'application/json'
-      }
-    });
-
-    return response.ok;
-  } catch (error) {
-    console.error('Token validation error:', error);
-    return false;
-  }
-};
 
 export const useAuth = (): AuthContextType => {
   const context = useContext(AuthContext);
@@ -41,46 +23,91 @@ interface AuthProviderProps {
 }
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
-  const [token, setToken] = useState<string | null>(null);
-  const [nomadAddr, setNomadAddr] = useState<string | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
 
-  // Load token and nomadAddr from localStorage on initial render
+  // Check authentication status on initial render
   useEffect(() => {
-    const storedToken = localStorage.getItem('nomad-token');
-    const storedNomadAddr = localStorage.getItem('nomad-addr');
-    
-    if (storedToken && storedNomadAddr) {
-      setToken(storedToken);
-      setNomadAddr(storedNomadAddr);
-      setIsAuthenticated(true);
-    }
+    checkAuth().finally(() => setIsLoading(false));
   }, []);
 
-  const login = (newToken: string, newNomadAddr: string) => {
-    localStorage.setItem('nomad-token', newToken);
-    localStorage.setItem('nomad-addr', newNomadAddr);
-    setToken(newToken);
-    setNomadAddr(newNomadAddr);
-    setIsAuthenticated(true);
+  /**
+   * Check if user is authenticated by calling server endpoint
+   * Server validates the httpOnly cookie token against Nomad
+   */
+  const checkAuth = async (): Promise<boolean> => {
+    try {
+      const response = await fetch('/api/auth/validate', {
+        credentials: 'include',
+      });
+      if (!response.ok) {
+        console.error('Auth check failed:', response.status);
+        setIsAuthenticated(false);
+        return false;
+      }
+      const data = await response.json();
+      setIsAuthenticated(data.authenticated);
+      return data.authenticated;
+    } catch (error) {
+      console.error('Auth check error:', error);
+      setIsAuthenticated(false);
+      return false;
+    }
   };
 
-  const logout = () => {
-    localStorage.removeItem('nomad-token');
-    localStorage.removeItem('nomad-addr');
-    setToken(null);
-    setNomadAddr(null);
-    setIsAuthenticated(false);
+  /**
+   * Login by sending token to server
+   * Server validates and sets httpOnly cookie
+   */
+  const login = async (token: string): Promise<{ success: boolean; error?: string }> => {
+    try {
+      const response = await fetch('/api/auth/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({ token }),
+      });
+
+      const data = await response.json();
+
+      if (response.ok && data.success) {
+        setIsAuthenticated(true);
+        return { success: true };
+      }
+
+      return { success: false, error: data.error || 'Login failed' };
+    } catch (error) {
+      console.error('Login error:', error);
+      return { success: false, error: 'Network error during login' };
+    }
+  };
+
+  /**
+   * Logout by calling server endpoint to clear cookies
+   */
+  const logout = async (): Promise<void> => {
+    try {
+      await fetch('/api/auth/logout', {
+        method: 'POST',
+        credentials: 'include',
+      });
+    } catch (error) {
+      console.error('Logout error:', error);
+    } finally {
+      setIsAuthenticated(false);
+    }
   };
 
   return (
     <AuthContext.Provider
       value={{
-        token,
-        nomadAddr,
         isAuthenticated,
+        isLoading,
         login,
         logout,
+        checkAuth,
       }}
     >
       {children}

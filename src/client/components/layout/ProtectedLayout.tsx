@@ -4,16 +4,16 @@ import { useAuth } from '../../context/AuthContext';
 import DashboardNav from './DashboardNav';
 
 export const ProtectedLayout: React.FC = () => {
-    const { isAuthenticated } = useAuth();
+    const { isAuthenticated, isLoading } = useAuth();
     const navigate = useNavigate();
 
     useEffect(() => {
-        if (!isAuthenticated) {
+        if (!isLoading && !isAuthenticated) {
             navigate('/auth/login', { replace: true });
         }
-    }, [isAuthenticated, navigate]);
+    }, [isAuthenticated, isLoading, navigate]);
 
-    if (!isAuthenticated) {
+    if (isLoading || !isAuthenticated) {
         return (
             <div className="flex justify-center items-center min-h-screen bg-gray-50 dark:bg-monokai-bg">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 dark:border-monokai-blue"></div>

@@ -1,13 +1,22 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { ThemeToggle } from '../ui/ThemeToggle';
 
 export const DashboardNav: React.FC = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [nomadAddr, setNomadAddr] = useState<string | null>(null);
   const location = useLocation();
   const pathname = location.pathname;
-  const { logout, nomadAddr } = useAuth();
+  const { logout } = useAuth();
+
+  // Fetch Nomad address from server config
+  useEffect(() => {
+    fetch('/api/config')
+      .then(res => res.json())
+      .then(data => setNomadAddr(data.nomadAddr))
+      .catch(() => setNomadAddr(null));
+  }, []);
 
   const isActive = (path: string) => {
     return pathname === path || pathname?.startsWith(`${path}/`);

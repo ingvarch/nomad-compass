@@ -10,7 +10,7 @@ interface JobLogsProps {
     initialTaskGroup?: string | null;
 }
 
-export const JobLogs: React.FC<JobLogsProps> = ({ jobId, allocId, taskName, initialTaskGroup }) => {    const { token, nomadAddr } = useAuth();
+export const JobLogs: React.FC<JobLogsProps> = ({ jobId, allocId, taskName, initialTaskGroup }) => {    const { isAuthenticated } = useAuth();
     const [logs, setLogs] = useState<string>('');
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -38,14 +38,14 @@ export const JobLogs: React.FC<JobLogsProps> = ({ jobId, allocId, taskName, init
     // Fetch job data to get task groups
     useEffect(() => {
         const fetchJobData = async () => {
-            if (!token || !nomadAddr) {
+            if (!isAuthenticated) {
                 setError('Authentication required');
                 setIsLoading(false);
                 return;
             }
 
             try {
-                const client = createNomadClient(nomadAddr, token);
+                const client = createNomadClient();
                 const namespace = new URLSearchParams(window.location.search).get('namespace') || 'default';
                 const jobData = await client.getJob(jobId, namespace);
 
@@ -64,19 +64,19 @@ export const JobLogs: React.FC<JobLogsProps> = ({ jobId, allocId, taskName, init
         };
 
         fetchJobData();
-    }, [jobId, token, nomadAddr, selectedTaskGroup]);
+    }, [jobId, isAuthenticated, selectedTaskGroup]);
 
     // Fetch job allocations based on selected task group
     useEffect(() => {
         const fetchAllocations = async () => {
-            if (!token || !nomadAddr) {
+            if (!isAuthenticated) {
                 setError('Authentication required');
                 setIsLoading(false);
                 return;
             }
 
             try {
-                const client = createNomadClient(nomadAddr, token);
+                const client = createNomadClient();
                 const namespace = new URLSearchParams(window.location.search).get('namespace') || 'default';
                 const allocs = await client.getJobAllocations(jobId, namespace);
 
@@ -130,17 +130,17 @@ export const JobLogs: React.FC<JobLogsProps> = ({ jobId, allocId, taskName, init
 
             return () => clearTimeout(timer);
         }
-    }, [jobId, token, nomadAddr, allocId, taskName, selectedTaskGroup]);
+    }, [jobId, isAuthenticated, allocId, taskName, selectedTaskGroup]);
 
     // Fetch logs
     const fetchLogs = useCallback(async () => {
-        if (!token || !nomadAddr || !selectedAlloc || !selectedTask) {
+        if (!isAuthenticated || !selectedAlloc || !selectedTask) {
             return;
         }
 
         setIsLoading(true);
         try {
-            const client = createNomadClient(nomadAddr, token);
+            const client = createNomadClient();
             const logs = await client.getAllocationLogs(
                 selectedAlloc,
                 selectedTask,
@@ -158,7 +158,7 @@ export const JobLogs: React.FC<JobLogsProps> = ({ jobId, allocId, taskName, init
         } finally {
             setIsLoading(false);
         }
-    }, [selectedAlloc, selectedTask, logType, token, nomadAddr]);
+    }, [selectedAlloc, selectedTask, logType, isAuthenticated]);
 
     // Fetch logs on allocation or task change
     useEffect(() => {

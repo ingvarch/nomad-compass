@@ -10,19 +10,19 @@ export const JobList: React.FC = () => {
   const [selectedNamespace, setSelectedNamespace] = useState<string>('*');
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { token, nomadAddr } = useAuth();
+  const { isAuthenticated } = useAuth();
 
   // Fetch namespaces and jobs
   useEffect(() => {
     const fetchNamespacesAndJobs = async () => {
-      if (!token || !nomadAddr) {
+      if (!isAuthenticated) {
         setError('Authentication required');
         setIsLoading(false);
         return;
       }
 
       try {
-        const client = createNomadClient(nomadAddr, token);
+        const client = createNomadClient();
 
         // Fetch namespaces first
         const nsResponse = await client.getNamespaces();
@@ -45,7 +45,7 @@ export const JobList: React.FC = () => {
     };
 
     fetchNamespacesAndJobs();
-  }, [token, nomadAddr, selectedNamespace]);
+  }, [isAuthenticated, selectedNamespace]);
 
   // Function to get status color
   const getStatusColor = (status: string, stop: boolean): string => {

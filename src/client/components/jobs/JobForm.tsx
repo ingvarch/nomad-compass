@@ -8,6 +8,7 @@ import AdvancedSettingsSection from './forms/parts/AdvancedSettingsSection';
 import AdvancedSettingsToggle from './forms/parts/AdvancedSettingsToggle';
 import FormInputField from '../ui/forms/FormInputField';
 import { ErrorAlert } from '../ui/ErrorAlert';
+import DeploymentOverlay from './DeploymentOverlay';
 
 interface JobFormProps {
   mode: 'create' | 'edit';
@@ -32,6 +33,7 @@ export const JobForm: React.FC<JobFormProps> = ({
     error,
     success,
     namespaces,
+    deploymentTracker,
     handleInputChange,
     handleGroupInputChange,
     handleSelectChange,
@@ -103,7 +105,17 @@ export const JobForm: React.FC<JobFormProps> = ({
   const loadingState = isEditMode ? isSaving : isLoading;
 
   return (
-    <JobFormLayout
+    <>
+      {/* Deployment Progress Overlay */}
+      {deploymentTracker.state && (
+        <DeploymentOverlay
+          state={deploymentTracker.state}
+          onClose={deploymentTracker.stopTracking}
+          onViewJob={deploymentTracker.navigateToJob}
+        />
+      )}
+
+      <JobFormLayout
       title={title}
       error={error || undefined}
       success={success || undefined}
@@ -193,6 +205,7 @@ export const JobForm: React.FC<JobFormProps> = ({
         />
       )}
     </JobFormLayout>
+    </>
   );
 };
 

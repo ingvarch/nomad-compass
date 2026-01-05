@@ -19,6 +19,7 @@ ENV NODE_ENV=production
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/dist-node ./dist-node
 COPY --from=builder /app/package.json ./
+COPY --from=builder /app/pnpm-lock.yaml ./
 
 # Install production dependencies only
 RUN corepack enable && corepack prepare pnpm@latest --activate

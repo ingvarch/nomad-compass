@@ -3,19 +3,31 @@ import { NomadJobsResponse, ApiError, NomadNamespace } from '../../types/nomad';
 
 /**
  * NomadClient - A client for interacting with Nomad API
+ * Token is now handled via httpOnly cookie for security
  */
 export class NomadClient {
   private baseUrl: string;
-  private token: string;
 
-  constructor(nomadAddr: string, token: string) {
+  constructor() {
     // Always use proxy endpoint (SPA architecture)
+    // Token is sent automatically via httpOnly cookie
     this.baseUrl = '/api/nomad';
-    this.token = token;
+  }
+
+  /**
+   * Get CSRF token from cookie
+   */
+  private getCSRFToken(): string | null {
+    const name = 'csrf-token';
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) return parts.pop()?.split(';').shift() || null;
+    return null;
   }
 
   /**
    * Generic request method for Nomad API
+   * Token is sent via httpOnly cookie, only CSRF token needs to be added
    */
   private async request<T>(
       endpoint: string,
@@ -35,25 +47,54 @@ export class NomadClient {
       url = `${url}?${searchParams.toString()}`;
     }
 
-    // Add Nomad token header
-    const headers = {
-      'X-Nomad-Token': this.token,
+    // Determine if this is a state-changing request that needs CSRF protection
+    const method = (fetchOptions.method || 'GET').toUpperCase();
+    const needsCSRF = ['POST', 'PUT', 'PATCH', 'DELETE'].includes(method);
+
+    // Extract headers from fetchOptions
+    const { headers: optHeaders, ...restFetchOptions } = fetchOptions;
+
+    // Set up headers - no X-Nomad-Token needed (sent via httpOnly cookie)
+    const headers: Record<string, string> = {
       'Content-Type': 'application/json',
-      ...fetchOptions.headers,
+      ...(optHeaders as Record<string, string> | undefined),
     };
+
+    // Add CSRF token for state-changing requests
+    if (needsCSRF) {
+      const csrfToken = this.getCSRFToken();
+      if (csrfToken) {
+        headers['X-CSRF-Token'] = csrfToken;
+      } else {
+        console.warn('CSRF token not found for state-changing request');
+      }
+    }
 
     try {
       const response = await fetch(url, {
-        ...fetchOptions,
+        ...restFetchOptions,
         headers,
+        credentials: 'include', // Include cookies in request
       });
 
       // Check if the request was successful
       if (!response.ok) {
-        const errorData = await response.json().catch(() => ({}));
+        // Try to parse the error response
+        let errorData;
+        try {
+          errorData = await response.json();
+        } catch {
+          // If response is not JSON, create a generic error
+          errorData = {
+            error: 'Request failed',
+            message: `API request failed with status ${response.status}`,
+            status: response.status
+          };
+        }
+
         const error: ApiError = {
           statusCode: response.status,
-          message: errorData.error || `API request failed with status ${response.status}`,
+          message: errorData.message || errorData.error || `API request failed with status ${response.status}`,
         };
         throw error;
       }
@@ -168,6 +209,13 @@ export class NomadClient {
   }
 
   /**
+   * Get evaluation info
+   */
+  async getEvaluation(evalId: string): Promise<any> {
+    return this.request<any>(`/v1/evaluation/${evalId}`);
+  }
+
+  /**
    * Get logs for an allocation
    */
   async getAllocationLogs(allocId: string, taskName: string, logType: string, plain: boolean = true): Promise<any> {
@@ -209,7 +257,8 @@ export class NomadClient {
 
 /**
  * Create a new Nomad API client instance
+ * Token is handled via httpOnly cookie, no parameters needed
  */
-export function createNomadClient(nomadAddr: string, token: string): NomadClient {
-  return new NomadClient(nomadAddr, token);
+export function createNomadClient(): NomadClient {
+  return new NomadClient();
 }

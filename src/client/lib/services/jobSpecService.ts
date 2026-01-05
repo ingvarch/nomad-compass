@@ -65,6 +65,11 @@ function createTaskConfig(groupData: TaskGroupFormData): TaskConfig {
     };
 
     // DockerAuth for private registry
+    // SECURITY NOTE: These credentials are stored in the job spec and visible in Nomad.
+    // For production environments, consider:
+    // 1. Nomad Vault integration for dynamic secret injection
+    // 2. Node-level registry authentication (docker login on Nomad clients)
+    // 3. Credential helper configured on Nomad clients
     if (groupData.usePrivateRegistry && groupData.dockerAuth) {
         taskConfig.auth = {
             username: groupData.dockerAuth.username,

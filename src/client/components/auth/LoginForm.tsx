@@ -1,42 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { createNomadClient } from '../../lib/api/nomad';
 import { ThemeToggle } from '../ui/ThemeToggle';
 
 export const LoginForm: React.FC = () => {
   const [token, setToken] = useState('');
-  const [nomadAddr, setNomadAddr] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const { login, isAuthenticated } = useAuth();
+  const { login, isAuthenticated, isLoading: authLoading } = useAuth();
   const navigate = useNavigate();
-
-  // Try to get default Nomad address from config API
-  useEffect(() => {
-    const fetchConfig = async () => {
-      try {
-        const response = await fetch('/api/config');
-        if (response.ok) {
-          const config = await response.json();
-          if (config.nomadAddr) {
-            setNomadAddr(config.nomadAddr);
-          }
-        }
-      } catch (err) {
-        console.error('Error fetching config:', err);
-      }
-    };
-
-    fetchConfig();
-  }, []);
 
   // Redirect if already authenticated
   useEffect(() => {
-    if (isAuthenticated) {
+    if (!authLoading && isAuthenticated) {
       navigate('/dashboard');
     }
-  }, [isAuthenticated, navigate]);
+  }, [isAuthenticated, authLoading, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -44,31 +23,19 @@ export const LoginForm: React.FC = () => {
     setIsLoading(true);
 
     try {
-      // Validate inputs
+      // Validate input
       if (!token.trim()) {
         throw new Error('Token is required');
       }
 
-      if (!nomadAddr.trim()) {
-        throw new Error('Nomad address is required');
+      // Login via server endpoint (server handles Nomad connection)
+      const result = await login(token.trim());
+
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to connect to Nomad. Please check your token.');
       }
 
-      // Ensure the nomadAddr has the correct format
-      let formattedNomadAddr = nomadAddr.trim();
-      if (!formattedNomadAddr.startsWith('http://') && !formattedNomadAddr.startsWith('https://')) {
-        formattedNomadAddr = `http://${formattedNomadAddr}`;
-      }
-
-      // Validate the connection to Nomad
-      const client = createNomadClient(formattedNomadAddr, token);
-      const isValid = await client.validateConnection();
-
-      if (!isValid) {
-        throw new Error('Failed to connect to Nomad. Please check your token and address.');
-      }
-
-      // Login successful
-      login(token, formattedNomadAddr);
+      // Login successful - redirect to dashboard
       navigate('/dashboard');
     } catch (err) {
       setError((err as Error).message);
@@ -76,6 +43,15 @@ export const LoginForm: React.FC = () => {
       setIsLoading(false);
     }
   };
+
+  // Show loading while checking auth
+  if (authLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-monokai-bg">
+        <div className="text-gray-600 dark:text-monokai-muted">Loading...</div>
+      </div>
+    );
+  }
 
   return (
       <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-monokai-bg relative">
