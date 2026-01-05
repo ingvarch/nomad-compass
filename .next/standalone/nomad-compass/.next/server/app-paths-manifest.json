@@ -1,0 +1,19 @@
+{
+  "/_global-error/page": "app/_global-error/page.js",
+  "/_not-found/page": "app/_not-found/page.js",
+  "/api/config/route": "app/api/config/route.js",
+  "/api/nomad/v1/agent/self/route": "app/api/nomad/v1/agent/self/route.js",
+  "/api/nomad/v1/allocation/[id]/route": "app/api/nomad/v1/allocation/[id]/route.js",
+  "/api/nomad/v1/client/fs/logs/[id]/route": "app/api/nomad/v1/client/fs/logs/[id]/route.js",
+  "/api/nomad/v1/job/[id]/allocations/route": "app/api/nomad/v1/job/[id]/allocations/route.js",
+  "/api/nomad/v1/job/[id]/route": "app/api/nomad/v1/job/[id]/route.js",
+  "/api/nomad/v1/namespaces/route": "app/api/nomad/v1/namespaces/route.js",
+  "/auth/login/page": "app/auth/login/page.js",
+  "/dashboard/page": "app/dashboard/page.js",
+  "/favicon.ico/route": "app/favicon.ico/route.js",
+  "/jobs/[id]/edit/page": "app/jobs/[id]/edit/page.js",
+  "/jobs/[id]/page": "app/jobs/[id]/page.js",
+  "/jobs/create/page": "app/jobs/create/page.js",
+  "/jobs/page": "app/jobs/page.js",
+  "/page": "app/page.js"
+}

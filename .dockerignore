@@ -1,0 +1,8 @@
+node_modules
+dist
+dist-node
+.next
+.git
+*.md
+.env*
+.wrangler

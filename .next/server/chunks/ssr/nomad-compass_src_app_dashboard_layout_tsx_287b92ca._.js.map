@@ -1,0 +1,1 @@
+{"version":3,"sources":["../../../../../nomad-compass/src/app/dashboard/layout.tsx"],"sourcesContent":["export default function DashboardLayout({\n    children,\n}: {\n    children: React.ReactNode;\n}) {\n    return <>{children}</>;\n}\n"],"names":[],"mappings":"wDAAe,SAAS,EAAgB,UACpC,CAAQ,CAGX,EACG,MAAO,CAAA,EAAA,EAAA,GAAA,EAAA,EAAA,QAAA,CAAA,UAAG,GACd"}

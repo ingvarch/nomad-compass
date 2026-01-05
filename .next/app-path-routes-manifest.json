@@ -1,0 +1,19 @@
+{
+  "/_global-error/page": "/_global-error",
+  "/_not-found/page": "/_not-found",
+  "/api/config/route": "/api/config",
+  "/api/nomad/v1/agent/self/route": "/api/nomad/v1/agent/self",
+  "/api/nomad/v1/allocation/[id]/route": "/api/nomad/v1/allocation/[id]",
+  "/api/nomad/v1/client/fs/logs/[id]/route": "/api/nomad/v1/client/fs/logs/[id]",
+  "/api/nomad/v1/job/[id]/allocations/route": "/api/nomad/v1/job/[id]/allocations",
+  "/api/nomad/v1/job/[id]/route": "/api/nomad/v1/job/[id]",
+  "/api/nomad/v1/namespaces/route": "/api/nomad/v1/namespaces",
+  "/auth/login/page": "/auth/login",
+  "/dashboard/page": "/dashboard",
+  "/favicon.ico/route": "/favicon.ico",
+  "/jobs/[id]/edit/page": "/jobs/[id]/edit",
+  "/jobs/[id]/page": "/jobs/[id]",
+  "/jobs/create/page": "/jobs/create",
+  "/jobs/page": "/jobs",
+  "/page": "/"
+}
