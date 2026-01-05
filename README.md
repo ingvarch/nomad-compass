@@ -76,58 +76,100 @@ Job detail pages include a logs section that allows:
 
 ## Deployment
 
+Nomad Compass supports two deployment targets from the same codebase:
+
+| Target | Best For | Latency | Infrastructure |
+|--------|----------|---------|----------------|
+| Cloudflare Workers | Global access, edge performance | Low (edge) | Serverless |
+| Docker | Self-hosted, on-premise, air-gapped | Depends on location | Container |
+
 ### Cloudflare Workers
 
-The recommended deployment method for global edge performance.
+Recommended for global edge performance. Your app runs on Cloudflare's network close to users.
+
+**Prerequisites:**
+- Cloudflare account
+- Wrangler CLI (`pnpm add -g wrangler`)
+
+**Setup:**
 
 ```bash
-# Deploy to Cloudflare Workers
-pnpm run deploy:cf
-```
+# Login to Cloudflare
+wrangler login
 
-Configure your Nomad server address:
-
-```bash
-# Set as secret (recommended for production)
+# Set Nomad server address as a secret
 wrangler secret put NOMAD_ADDR
 # Enter: https://your-nomad-server.example.com
 
-# Or for local development, create .dev.vars file:
-echo 'NOMAD_ADDR=https://your-nomad-server.example.com' > .dev.vars
+# Deploy
+pnpm run deploy:cf
+```
+
+Your app will be available at `https://nomad-compass.<your-subdomain>.workers.dev`
+
+**Custom domain (optional):**
+
+Add to `wrangler.toml`:
+```toml
+routes = [
+  { pattern = "nomad.example.com", custom_domain = true }
+]
 ```
 
 ### Docker
 
-For self-hosted or on-premise deployments.
+For self-hosted, on-premise, or air-gapped environments.
+
+**Build and run:**
 
 ```bash
-# Build the Docker image
+# Build the image
 pnpm run docker:build
-# or
+# or directly with Docker
 docker build -t nomad-compass .
 
-# Run the container
-docker run -p 3000:3000 -e NOMAD_ADDR=http://your-nomad-server:4646 nomad-compass
+# Run
+docker run -d \
+  --name nomad-compass \
+  -p 3000:3000 \
+  -e NOMAD_ADDR=http://your-nomad-server:4646 \
+  nomad-compass
 ```
 
-### Docker Compose
+**Docker Compose:**
 
 ```yaml
 services:
   nomad-compass:
-    image: nomad-compass
+    build: .
+    # or use pre-built: image: ghcr.io/ingvarch/nomad-compass:latest
     ports:
       - "3000:3000"
     environment:
       - NOMAD_ADDR=http://nomad:4646
+    restart: unless-stopped
+```
+
+**With reverse proxy (Traefik example):**
+
+```yaml
+services:
+  nomad-compass:
+    build: .
+    environment:
+      - NOMAD_ADDR=http://nomad:4646
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.nomad-compass.rule=Host(`nomad.example.com`)"
+      - "traefik.http.services.nomad-compass.loadbalancer.server.port=3000"
 ```
 
 ### Environment Variables
 
-| Variable | Description | Default |
-|----------|-------------|---------|
-| `NOMAD_ADDR` | Nomad server address | `http://localhost:4646` |
-| `PORT` | Server port (Docker only) | `3000` |
+| Variable | Description | Default | Used In |
+|----------|-------------|---------|---------|
+| `NOMAD_ADDR` | Nomad server address | `http://localhost:4646` | Both |
+| `PORT` | Server port | `3000` | Docker only |
 
 ## Development
 
