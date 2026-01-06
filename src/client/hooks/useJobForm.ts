@@ -9,6 +9,7 @@ import {
   NomadPort,
   NomadHealthCheck,
   NomadJob,
+  NomadJobPlanResponse,
 } from '../types/nomad';
 import { createJobSpec, updateJobSpec, convertJobToFormData } from '../lib/services/jobSpecService';
 import { validateJobName } from '../lib/services/validationService';
@@ -75,6 +76,12 @@ export function useJobForm({ mode, jobId, namespace = 'default' }: UseJobFormOpt
   const [formData, setFormData] = useState<NomadJobFormData | null>(
     mode === 'create' ? defaultFormValues : null
   );
+
+  // Plan (dry-run) state
+  const [isPlanning, setIsPlanning] = useState(false);
+  const [showPlanPreview, setShowPlanPreview] = useState(false);
+  const [planResult, setPlanResult] = useState<NomadJobPlanResponse | null>(null);
+  const [planError, setPlanError] = useState<string | null>(null);
 
   // Fetch available namespaces
   useEffect(() => {
@@ -450,6 +457,62 @@ export function useJobForm({ mode, jobId, namespace = 'default' }: UseJobFormOpt
 
   const clearPermissionError = () => setPermissionError(null);
 
+  // Plan (dry-run) handler
+  const handlePlan = async () => {
+    setPlanError(null);
+    setPlanResult(null);
+
+    const validationError = validateForm();
+    if (validationError) {
+      setError(validationError);
+      return;
+    }
+
+    if (!isAuthenticated || !formData) {
+      setError('Authentication required');
+      return;
+    }
+
+    setIsPlanning(true);
+    setShowPlanPreview(true);
+
+    try {
+      const cleanedData = cleanFormData(formData);
+      const client = createNomadClient();
+
+      let jobSpec;
+      if (mode === 'create') {
+        jobSpec = createJobSpec(cleanedData);
+      } else {
+        if (!initialJob) throw new Error('Original job data missing');
+        jobSpec = updateJobSpec(initialJob, cleanedData);
+      }
+
+      const targetJobId = mode === 'create' ? formData.name : jobId!;
+      const result = await client.planJob(targetJobId, jobSpec, formData.namespace);
+      setPlanResult(result);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to plan job';
+      setPlanError(message);
+    } finally {
+      setIsPlanning(false);
+    }
+  };
+
+  // Submit from plan preview (after user confirms)
+  const handleSubmitFromPlan = async () => {
+    setShowPlanPreview(false);
+    // Trigger normal submit
+    const fakeEvent = { preventDefault: () => {} } as React.FormEvent;
+    await handleSubmit(fakeEvent);
+  };
+
+  const closePlanPreview = () => {
+    setShowPlanPreview(false);
+    setPlanResult(null);
+    setPlanError(null);
+  };
+
   return {
     formData,
     initialJob,
@@ -477,5 +540,13 @@ export function useJobForm({ mode, jobId, namespace = 'default' }: UseJobFormOpt
     addTaskGroup,
     removeTaskGroup,
     handleSubmit,
+    // Plan functions
+    handlePlan,
+    handleSubmitFromPlan,
+    closePlanPreview,
+    isPlanning,
+    showPlanPreview,
+    planResult,
+    planError,
   };
 }

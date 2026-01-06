@@ -10,6 +10,7 @@ import FormInputField from '../ui/forms/FormInputField';
 import { ErrorAlert, LoadingSpinner } from '../ui';
 import { PermissionErrorModal } from '../ui/PermissionErrorModal';
 import DeploymentOverlay from './DeploymentOverlay';
+import { JobPlanPreview } from './JobPlanPreview';
 
 interface JobFormProps {
   mode: 'create' | 'edit';
@@ -51,6 +52,14 @@ export const JobForm: React.FC<JobFormProps> = ({
     addTaskGroup,
     removeTaskGroup,
     handleSubmit,
+    // Plan functionality
+    handlePlan,
+    handleSubmitFromPlan,
+    closePlanPreview,
+    isPlanning,
+    showPlanPreview,
+    planResult,
+    planError,
   } = useJobForm({ mode, jobId, namespace });
 
   // Loading state
@@ -121,15 +130,28 @@ export const JobForm: React.FC<JobFormProps> = ({
         />
       )}
 
+      {/* Job Plan Preview Modal */}
+      <JobPlanPreview
+        isOpen={showPlanPreview}
+        onClose={closePlanPreview}
+        onConfirm={handleSubmitFromPlan}
+        planResult={planResult}
+        isLoading={isPlanning}
+        error={planError}
+        isSubmitting={isSaving}
+      />
+
       <JobFormLayout
-      title={title}
-      error={error || undefined}
-      success={success || undefined}
-      isLoading={loadingState}
-      onSubmit={handleSubmit}
-      submitButtonText={submitButtonText}
-      cancelHref={cancelHref}
-    >
+        title={title}
+        error={error || undefined}
+        success={success || undefined}
+        isLoading={loadingState}
+        onSubmit={handleSubmit}
+        submitButtonText={submitButtonText}
+        cancelHref={cancelHref}
+        onPlan={handlePlan}
+        isPlanning={isPlanning}
+      >
       {isEditMode ? (
         <>
           {/* Job Name (Readonly in edit mode) */}

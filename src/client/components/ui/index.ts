@@ -5,6 +5,7 @@ export { ExpandIcon } from './ExpandIcon';
 export { FilterButtons, type FilterOption } from './FilterButtons';
 export { InfoBox } from './InfoBox';
 export { LoadingSpinner } from './LoadingSpinner';
+export { Modal } from './Modal';
 export { PageHeader } from './PageHeader';
 export { RefreshButton } from './RefreshButton';
 export { ThemeToggle } from './ThemeToggle';

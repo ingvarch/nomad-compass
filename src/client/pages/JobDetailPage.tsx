@@ -1,27 +1,34 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { createNomadClient } from '../lib/api/nomad';
 import { useToast } from '../context/ToastContext';
 import { LoadingSpinner, ErrorAlert } from '../components/ui';
-import { JobHeader, JobSummary, TaskGroupCard } from '../components/jobs/detail';
-import JobLogs from '../components/jobs/JobLogs';
+import {
+  JobHeader,
+  JobDetailTabs,
+  useActiveJobTab,
+  OverviewTab,
+  VersionsTab,
+  EvaluationsTab,
+  LogsTab,
+} from '../components/jobs/detail';
 import JobActions from '../components/jobs/JobActions';
 import type { NomadAllocation } from '../types/nomad';
 
 export default function JobDetailPage() {
   const { id } = useParams<{ id: string }>();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
   const { addToast } = useToast();
+  const activeTab = useActiveJobTab();
   const [job, setJob] = useState<any>(null);
   const [allocations, setAllocations] = useState<NomadAllocation[]>([]);
   const [createTime, setCreateTime] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
-  const logsRef = useRef<HTMLDivElement>(null);
   const [selectedGroupForLogs, setSelectedGroupForLogs] = useState<string | null>(null);
 
   const jobId = id as string;
@@ -96,6 +103,14 @@ export default function JobDetailPage() {
     fetchJobDetail();
   };
 
+  const handleViewLogs = (groupName: string) => {
+    setSelectedGroupForLogs(groupName);
+    // Switch to logs tab
+    const newParams = new URLSearchParams(searchParams);
+    newParams.set('tab', 'logs');
+    setSearchParams(newParams);
+  };
+
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -144,34 +159,32 @@ export default function JobDetailPage() {
         namespace={job.Namespace || 'default'}
       />
 
-      <JobSummary job={job} allocations={allocations} createTime={createTime} />
+      <JobDetailTabs namespace={namespace} />
 
-      {/* Task Groups */}
-      {job.TaskGroups?.length > 0 && (
-        <div className="space-y-6">
-          {job.TaskGroups.map((taskGroup: any, groupIndex: number) => (
-            <TaskGroupCard
-              key={groupIndex}
-              taskGroup={taskGroup}
-              isExpanded={expandedGroups[taskGroup.Name] || false}
-              isContainerExpanded={expandedGroups[`${taskGroup.Name}-container`] || false}
-              onToggle={() => toggleGroupDetails(taskGroup.Name)}
-              onToggleContainer={() => toggleContainerDetails(taskGroup.Name)}
-              onViewLogs={() => {
-                setSelectedGroupForLogs(taskGroup.Name);
-                logsRef.current?.scrollIntoView({ behavior: 'smooth' });
-              }}
-            />
-          ))}
-        </div>
+      {/* Tab Content */}
+      {activeTab === 'overview' && (
+        <OverviewTab
+          job={job}
+          allocations={allocations}
+          createTime={createTime}
+          expandedGroups={expandedGroups}
+          onToggleGroup={toggleGroupDetails}
+          onToggleContainer={toggleContainerDetails}
+          onViewLogs={handleViewLogs}
+        />
       )}
 
-      {/* Logs */}
-      <div ref={logsRef} className="mt-6">
-        {job.ID && (
-          <JobLogs jobId={job.ID} initialTaskGroup={selectedGroupForLogs} />
-        )}
-      </div>
+      {activeTab === 'versions' && (
+        <VersionsTab jobId={jobId} namespace={namespace} />
+      )}
+
+      {activeTab === 'evaluations' && (
+        <EvaluationsTab jobId={jobId} namespace={namespace} />
+      )}
+
+      {activeTab === 'logs' && (
+        <LogsTab jobId={job.ID} initialTaskGroup={selectedGroupForLogs} />
+      )}
 
       {/* Actions */}
       <div className="flex justify-between">

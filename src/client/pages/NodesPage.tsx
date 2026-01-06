@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, useNavigate } from 'react-router-dom';
 import { createNomadClient } from '../lib/api/nomad';
 import { NomadNode } from '../types/nomad';
 import {
@@ -22,6 +22,7 @@ function formatResources(cpu: number, memoryMB: number): string {
 
 export default function NodesPage() {
   const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
   const [nodes, setNodes] = useState<NomadNode[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -127,10 +128,14 @@ export default function NodesPage() {
                 {filteredNodes.map((node) => {
                   const statusColors = getNodeStatusColor(node.Status, node.Drain);
                   return (
-                    <tr key={node.ID} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                    <tr
+                      key={node.ID}
+                      className="hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer"
+                      onClick={() => navigate(`/nodes/${node.ID}`)}
+                    >
                       <td className="px-4 py-3 whitespace-nowrap">
                         <div className="flex items-center gap-2">
-                          <span className="font-medium text-gray-900 dark:text-white">
+                          <span className="font-medium text-blue-600 dark:text-blue-400 hover:underline">
                             {node.Name}
                           </span>
                           <span className="text-xs text-gray-400 dark:text-gray-500 font-mono">
