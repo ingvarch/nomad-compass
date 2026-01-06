@@ -4,6 +4,7 @@ import { createNomadClient } from '../lib/api/nomad';
 import { isPermissionError, getPermissionErrorMessage } from '../lib/api/errors';
 import { NomadNamespace, NomadJob } from '../types/nomad';
 import { Modal } from '../components/ui/Modal';
+import { LoadingSpinner } from '../components/ui';
 import { NamespaceForm } from '../components/namespaces/NamespaceForm';
 import { DeleteNamespaceConfirm } from '../components/namespaces/DeleteNamespaceConfirm';
 import { useToast } from '../context/ToastContext';
@@ -144,9 +145,7 @@ export default function NamespacesPage() {
             View cluster namespaces and their jobs
           </p>
         </div>
-        <div className="flex justify-center items-center h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
-        </div>
+        <LoadingSpinner />
       </div>
     );
   }

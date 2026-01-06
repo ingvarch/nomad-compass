@@ -5,6 +5,7 @@ import {
   NomadAclRole,
   NomadAclPolicyListItem,
 } from '../../../types/acl';
+import { LoadingSpinner } from '../../ui';
 import { Modal } from '../../ui/Modal';
 import { RoleForm } from '../role/RoleForm';
 import { useToast } from '../../../context/ToastContext';
@@ -123,7 +124,7 @@ export function RolesTab({ hasManagementAccess }: RolesTabProps) {
   if (loading) {
     return (
       <div className="flex justify-center items-center h-48">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+        <LoadingSpinner size="sm" className="h-32" />
       </div>
     );
   }

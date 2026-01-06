@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { createNomadClient } from '../lib/api/nomad';
 import { NomadAllocation, NomadJob } from '../types/nomad';
+import { LoadingSpinner } from '../components/ui';
 
 type StatusFilter = 'all' | 'running' | 'pending' | 'complete' | 'failed';
 
@@ -93,9 +94,7 @@ export default function AllocationsPage() {
             View all cluster allocations
           </p>
         </div>
-        <div className="flex justify-center items-center h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
-        </div>
+        <LoadingSpinner />
       </div>
     );
   }

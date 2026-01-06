@@ -7,7 +7,7 @@ import TaskGroupsSection from './forms/parts/TaskGroupsSection';
 import AdvancedSettingsSection from './forms/parts/AdvancedSettingsSection';
 import AdvancedSettingsToggle from './forms/parts/AdvancedSettingsToggle';
 import FormInputField from '../ui/forms/FormInputField';
-import { ErrorAlert } from '../ui/ErrorAlert';
+import { ErrorAlert, LoadingSpinner } from '../ui';
 import { PermissionErrorModal } from '../ui/PermissionErrorModal';
 import DeploymentOverlay from './DeploymentOverlay';
 
@@ -55,11 +55,7 @@ export const JobForm: React.FC<JobFormProps> = ({
 
   // Loading state
   if (isLoading || (!formData && mode === 'create')) {
-    return (
-      <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
-      </div>
-    );
+    return <LoadingSpinner />;
   }
 
   // Error state (edit mode only - when job not found)

@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { createNomadClient } from '../lib/api/nomad';
 import { NomadAllocation, NomadNamespace } from '../types/nomad';
+import { LoadingSpinner } from '../components/ui';
 import { extractRecentEvents, formatTimeAgo, RecentEvent } from '../lib/services/allocationAnalyzer';
 
 type SeverityFilter = 'all' | 'info' | 'warning' | 'error';
@@ -142,7 +143,7 @@ export default function ActivityPage() {
           </p>
         </div>
         <div className="flex justify-center items-center h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+          <LoadingSpinner />
         </div>
       </div>
     );

@@ -3,6 +3,7 @@ import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { createNomadClient } from '../lib/api/nomad';
 import { useToast } from '../context/ToastContext';
+import { LoadingSpinner } from '../components/ui';
 import { JobHeader, JobSummary, TaskGroupCard } from '../components/jobs/detail';
 import JobLogs from '../components/jobs/JobLogs';
 import JobActions from '../components/jobs/JobActions';
@@ -98,7 +99,7 @@ export default function JobDetailPage() {
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-64">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+        <LoadingSpinner />
       </div>
     );
   }

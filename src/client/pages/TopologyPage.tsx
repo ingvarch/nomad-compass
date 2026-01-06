@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { createNomadClient } from '../lib/api/nomad';
 import type { NomadNode, NomadAllocation } from '../types/nomad';
+import { LoadingSpinner } from '../components/ui';
 
 interface NodeWithAllocations extends NomadNode {
   allocations: NomadAllocation[];
@@ -122,7 +123,7 @@ export default function TopologyPage() {
           </p>
         </div>
         <div className="flex justify-center items-center h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500" />
+          <LoadingSpinner />
         </div>
       </div>
     );

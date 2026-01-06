@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { createNomadClient } from '../../lib/api/nomad';
 import { isPermissionError } from '../../lib/api/errors';
+import { LoadingSpinner } from '../ui';
 import { RefreshCw, Pause, Play } from 'lucide-react';
 
 interface JobLogsProps {
@@ -267,11 +268,7 @@ export const JobLogs: React.FC<JobLogsProps> = ({ jobId, allocId, taskName, init
     }
 
     if (isLoading && !allocations.length && !taskGroups.length) {
-        return (
-            <div className="flex justify-center items-center h-24">
-                <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
-            </div>
-        );
+        return <LoadingSpinner size="sm" className="h-24" />;
     }
 
     return (
@@ -409,9 +406,7 @@ export const JobLogs: React.FC<JobLogsProps> = ({ jobId, allocId, taskName, init
 
             <div className="p-6">
                 {isLoading && !logs && (
-                    <div className="flex justify-center items-center h-24">
-                        <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-blue-500"></div>
-                    </div>
+                    <LoadingSpinner size="sm" className="h-24" />
                 )}
 
                 {error && (

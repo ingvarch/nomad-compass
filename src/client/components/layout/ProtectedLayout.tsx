@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { LoadingSpinner } from '../ui';
 import DashboardNav from './DashboardNav';
 
 export const ProtectedLayout: React.FC = () => {
@@ -15,8 +16,8 @@ export const ProtectedLayout: React.FC = () => {
 
     if (isLoading || !isAuthenticated) {
         return (
-            <div className="flex justify-center items-center min-h-screen bg-gray-50 dark:bg-monokai-bg">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 dark:border-monokai-blue"></div>
+            <div className="min-h-screen bg-gray-50 dark:bg-monokai-bg">
+                <LoadingSpinner className="min-h-screen" />
             </div>
         );
     }

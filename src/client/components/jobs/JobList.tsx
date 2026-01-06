@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { createNomadClient } from '../../lib/api/nomad';
 import { NomadJob, NomadNamespace } from '../../types/nomad';
+import { LoadingSpinner } from '../ui';
 
 export const JobList: React.FC = () => {
   const [jobs, setJobs] = useState<NomadJob[]>([]);
@@ -84,7 +85,7 @@ export const JobList: React.FC = () => {
   if (isLoading) {
     return (
         <div className="flex justify-center items-center h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 dark:border-monokai-blue"></div>
+          <LoadingSpinner />
         </div>
     );
   }

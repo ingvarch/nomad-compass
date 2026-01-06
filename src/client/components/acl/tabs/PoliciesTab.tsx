@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { createNomadClient } from '../../../lib/api/nomad';
 import { NomadAclPolicyListItem, NomadAclPolicy } from '../../../types/acl';
+import { LoadingSpinner } from '../../ui';
 import { Modal } from '../../ui/Modal';
 import { PolicyForm } from '../policy/PolicyForm';
 import { useToast } from '../../../context/ToastContext';
@@ -94,7 +95,7 @@ export function PoliciesTab({ hasManagementAccess }: PoliciesTabProps) {
   if (loading) {
     return (
       <div className="flex justify-center items-center h-48">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+        <LoadingSpinner size="sm" className="h-32" />
       </div>
     );
   }

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAclPermissions } from '../hooks/useAclPermissions';
+import { LoadingSpinner } from '../components/ui';
 import { PoliciesTab } from '../components/acl/tabs/PoliciesTab';
 import { RolesTab } from '../components/acl/tabs/RolesTab';
 import { TokensTab } from '../components/acl/tabs/TokensTab';
@@ -28,9 +29,7 @@ export default function AclPage() {
             Manage ACL policies, roles, and tokens
           </p>
         </div>
-        <div className="flex justify-center items-center h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
-        </div>
+        <LoadingSpinner />
       </div>
     );
   }

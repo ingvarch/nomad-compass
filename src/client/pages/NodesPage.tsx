@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { createNomadClient } from '../lib/api/nomad';
 import { NomadNode } from '../types/nomad';
+import { LoadingSpinner } from '../components/ui';
 
 type StatusFilter = 'all' | 'ready' | 'down' | 'draining';
 
@@ -68,9 +69,7 @@ export default function NodesPage() {
             View and manage cluster nodes
           </p>
         </div>
-        <div className="flex justify-center items-center h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
-        </div>
+        <LoadingSpinner />
       </div>
     );
   }
