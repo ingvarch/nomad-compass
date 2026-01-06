@@ -8,6 +8,15 @@ import {
   NomadAgentMembers,
   NomadAllocation,
 } from '../../types/nomad';
+import {
+  NomadAclPolicy,
+  NomadAclPolicyListItem,
+  NomadAclRole,
+  NomadAclRoleListItem,
+  NomadAclToken,
+  NomadAclTokenListItem,
+  TokenType,
+} from '../../types/acl';
 
 /**
  * NomadClient - A client for interacting with Nomad API
@@ -373,6 +382,161 @@ export class NomadClient {
     } catch (error) {
       return false;
     }
+  }
+
+  // ==================== ACL Policies ====================
+
+  /**
+   * Get all ACL policies
+   */
+  async getAclPolicies(): Promise<NomadAclPolicyListItem[]> {
+    return this.request<NomadAclPolicyListItem[]>('/v1/acl/policies');
+  }
+
+  /**
+   * Get a single ACL policy by name
+   */
+  async getAclPolicy(name: string): Promise<NomadAclPolicy> {
+    return this.request<NomadAclPolicy>(`/v1/acl/policy/${encodeURIComponent(name)}`);
+  }
+
+  /**
+   * Create or update an ACL policy
+   */
+  async createAclPolicy(name: string, description: string, rules: string): Promise<void> {
+    await this.request<void>(`/v1/acl/policy/${encodeURIComponent(name)}`, {
+      method: 'POST',
+      body: JSON.stringify({ Name: name, Description: description, Rules: rules }),
+    });
+  }
+
+  /**
+   * Update an existing ACL policy (alias for createAclPolicy)
+   */
+  async updateAclPolicy(name: string, description: string, rules: string): Promise<void> {
+    return this.createAclPolicy(name, description, rules);
+  }
+
+  /**
+   * Delete an ACL policy
+   */
+  async deleteAclPolicy(name: string): Promise<void> {
+    await this.request<void>(`/v1/acl/policy/${encodeURIComponent(name)}`, {
+      method: 'DELETE',
+    });
+  }
+
+  // ==================== ACL Roles ====================
+
+  /**
+   * Get all ACL roles
+   */
+  async getAclRoles(): Promise<NomadAclRoleListItem[]> {
+    return this.request<NomadAclRoleListItem[]>('/v1/acl/roles');
+  }
+
+  /**
+   * Get a single ACL role by ID
+   */
+  async getAclRole(id: string): Promise<NomadAclRole> {
+    return this.request<NomadAclRole>(`/v1/acl/role/${encodeURIComponent(id)}`);
+  }
+
+  /**
+   * Get a single ACL role by name
+   */
+  async getAclRoleByName(name: string): Promise<NomadAclRole> {
+    return this.request<NomadAclRole>(`/v1/acl/role/name/${encodeURIComponent(name)}`);
+  }
+
+  /**
+   * Create a new ACL role
+   */
+  async createAclRole(role: {
+    Name: string;
+    Description?: string;
+    Policies: { Name: string }[];
+  }): Promise<NomadAclRole> {
+    return this.request<NomadAclRole>('/v1/acl/role', {
+      method: 'POST',
+      body: JSON.stringify(role),
+    });
+  }
+
+  /**
+   * Update an existing ACL role
+   */
+  async updateAclRole(
+    id: string,
+    role: {
+      ID: string;
+      Name: string;
+      Description?: string;
+      Policies: { Name: string }[];
+    }
+  ): Promise<NomadAclRole> {
+    return this.request<NomadAclRole>(`/v1/acl/role/${encodeURIComponent(id)}`, {
+      method: 'POST',
+      body: JSON.stringify(role),
+    });
+  }
+
+  /**
+   * Delete an ACL role
+   */
+  async deleteAclRole(id: string): Promise<void> {
+    await this.request<void>(`/v1/acl/role/${encodeURIComponent(id)}`, {
+      method: 'DELETE',
+    });
+  }
+
+  // ==================== ACL Tokens ====================
+
+  /**
+   * Get all ACL tokens
+   */
+  async getAclTokens(): Promise<NomadAclTokenListItem[]> {
+    return this.request<NomadAclTokenListItem[]>('/v1/acl/tokens');
+  }
+
+  /**
+   * Get a single ACL token by accessor ID
+   */
+  async getAclToken(accessorId: string): Promise<NomadAclToken> {
+    return this.request<NomadAclToken>(`/v1/acl/token/${encodeURIComponent(accessorId)}`);
+  }
+
+  /**
+   * Get the current token's information
+   */
+  async getAclTokenSelf(): Promise<NomadAclToken> {
+    return this.request<NomadAclToken>('/v1/acl/token/self');
+  }
+
+  /**
+   * Create a new ACL token
+   */
+  async createAclToken(token: {
+    Name: string;
+    Type: TokenType;
+    Policies?: string[];
+    Roles?: { Name: string }[];
+    ExpirationTTL?: string;
+    Global?: boolean;
+  }): Promise<NomadAclToken> {
+    return this.request<NomadAclToken>('/v1/acl/token', {
+      method: 'POST',
+      body: JSON.stringify(token),
+    });
+  }
+
+  /**
+   * Delete/revoke an ACL token
+   */
+  async deleteAclToken(accessorId: string): Promise<void> {
+    await this.request<void>(`/v1/acl/token/${encodeURIComponent(accessorId)}`, {
+      method: 'DELETE',
+    });
   }
 }
 
