@@ -158,11 +158,6 @@ export function getNodeStatusColor(status: string, isDraining?: boolean): Status
   return nodeStatusColors[normalized] || defaultStatusColor;
 }
 
-export function getSeverityColor(severity: string): StatusColorConfig {
-  const normalized = severity.toLowerCase() as Severity;
-  return severityColors[normalized] || defaultStatusColor;
-}
-
 // Utility to combine bg and text classes
 export function getStatusClasses(config: StatusColorConfig): string {
   return `${config.bg} ${config.text}`;
