@@ -107,29 +107,60 @@ export const LoadingSpinner: React.FC<{ size?: 'sm' | 'md' | 'lg'; className?: s
 
 ---
 
-### Issue #2: Duplicate Error Alert Styling ⚠️ HIGH
+### Issue #2: Duplicate Error Alert Styling FIXED
 
-**Severity:** HIGH  
-**Occurrences:** 17 instances  
-**Files:** AllocationsPage.tsx (lines 123-127), NodesPage.tsx (lines 98-102), NamespacesPage.tsx (lines 187-191), etc.
+**Severity:** HIGH
+**Status:** COMPLETED
+**Date Fixed:** January 6, 2026
+**Original Occurrences:** 17 instances across 15 files
+**Files Affected:** DashboardPage.tsx, AllocationsPage.tsx, NodesPage.tsx, NamespacesPage.tsx, AclPage.tsx, TopologyPage.tsx, ActivityPage.tsx, FailedAllocationsPage.tsx, JobDetailPage.tsx, JobList.tsx, JobLogs.tsx (2 instances), JobFormLayout.tsx, TokensTab.tsx, RolesTab.tsx, PoliciesTab.tsx
 
-**Pattern:**
+**Original Pattern:**
 ```tsx
 <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
   <p className="text-red-800 dark:text-red-200">{error}</p>
 </div>
 ```
 
-**Current ErrorAlert component exists but not used consistently!**
+**Solution Implemented:** Updated `ErrorAlert` component and enforced its use across all files.
 
-**Location:** `src/client/components/ui/ErrorAlert.tsx` (lines 1-27)
+**Implementation Details:**
 
-**Recommended Fix:** Enforce use of existing `ErrorAlert` component everywhere
+1. Updated `ErrorAlert` component with Page style (bg-red-50) and added:
+   - `variant` prop: `'default' | 'bar'` for different layouts
+   - `showTitle` prop: optional title display
+   - `className` prop: for custom styling overrides
 
+2. Replaced all 17 inline error divs with `<ErrorAlert message={error} />` or variant-specific usage
+
+**Usage Examples:**
 ```tsx
-// Replace all inline error divs with:
+// Default usage (block style)
 <ErrorAlert message={error} />
+
+// With title
+<ErrorAlert message={error} showTitle />
+
+// Bar style (for ACL tabs)
+<ErrorAlert message={error} variant="bar" />
+
+// With custom className
+<ErrorAlert message={error} className="mb-4" />
 ```
+
+**Files Modified:** 16 files (1 component + 15 consumers)
+**Lines of Code Removed:** ~85 lines of duplicate styling
+**Lines of Code Added:** ~25 lines (component enhancements)
+**Net Reduction:** ~60 lines
+
+**Benefits:**
+- Eliminated 17 code duplicates
+- Centralized error alert UI logic
+- Added variant support for different layouts
+- Full dark mode support across all error alerts
+- Semantic `role="alert"` for accessibility
+- Type-safe with TypeScript
+- Easier to maintain and update styling globally
 
 ---
 
@@ -972,11 +1003,11 @@ Create `CONTRIBUTING.md` with:
 | Severity | Count | Issues |
 |----------|-------|--------|
 | **CRITICAL** | 1 | #12 (Docker credentials in plaintext) |
-| **HIGH** | 6 | #1, #2, #13, #19, #21, #28 |
+| **HIGH** | 4 | ~~#1~~, ~~#2~~, #13, #19, #21, #28 |
 | **MEDIUM** | 13 | #3, #4, #5, #7, #8, #9, #11, #14, #15, #16, #20, #22, #23 |
 | **LOW** | 10 | #6, #10, #17, #18, #24, #25, #26, #27, #29, #30 |
 
-**Total Issues Found:** 30
+**Total Issues Found:** 30 (2 fixed: #1 LoadingSpinner, #2 ErrorAlert)
 
 ---
 

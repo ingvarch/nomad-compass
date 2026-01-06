@@ -4,7 +4,7 @@ import { createNomadClient } from '../lib/api/nomad';
 import { isPermissionError, getPermissionErrorMessage } from '../lib/api/errors';
 import { NomadNamespace, NomadJob } from '../types/nomad';
 import { Modal } from '../components/ui/Modal';
-import { LoadingSpinner } from '../components/ui';
+import { LoadingSpinner, ErrorAlert } from '../components/ui';
 import { NamespaceForm } from '../components/namespaces/NamespaceForm';
 import { DeleteNamespaceConfirm } from '../components/namespaces/DeleteNamespaceConfirm';
 import { useToast } from '../context/ToastContext';
@@ -183,11 +183,7 @@ export default function NamespacesPage() {
         </div>
       </div>
 
-      {error && (
-        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
-          <p className="text-red-800 dark:text-red-200">{error}</p>
-        </div>
-      )}
+      {error && <ErrorAlert message={error} />}
 
       {/* Namespaces Table */}
       <div className="bg-white dark:bg-gray-800 shadow rounded-lg overflow-hidden">

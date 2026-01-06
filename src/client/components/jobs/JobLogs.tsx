@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { createNomadClient } from '../../lib/api/nomad';
 import { isPermissionError } from '../../lib/api/errors';
-import { LoadingSpinner } from '../ui';
+import { LoadingSpinner, ErrorAlert } from '../ui';
 import { RefreshCw, Pause, Play } from 'lucide-react';
 
 interface JobLogsProps {
@@ -259,12 +259,7 @@ export const JobLogs: React.FC<JobLogsProps> = ({ jobId, allocId, taskName, init
     };
 
     if (error && !allocations.length && !selectedTaskGroup) {
-        return (
-            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
-                <strong className="font-bold">Error: </strong>
-                <span className="block sm:inline">{error}</span>
-            </div>
-        );
+        return <ErrorAlert message={error} showTitle />;
     }
 
     if (isLoading && !allocations.length && !taskGroups.length) {
@@ -409,11 +404,7 @@ export const JobLogs: React.FC<JobLogsProps> = ({ jobId, allocId, taskName, init
                     <LoadingSpinner size="sm" className="h-24" />
                 )}
 
-                {error && (
-                    <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
-                        <span className="block sm:inline">{error}</span>
-                    </div>
-                )}
+                {error && <ErrorAlert message={error} />}
 
                 {!selectedTaskGroup && (
                     <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4">

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useAclPermissions } from '../hooks/useAclPermissions';
-import { LoadingSpinner } from '../components/ui';
+import { LoadingSpinner, ErrorAlert } from '../components/ui';
 import { PoliciesTab } from '../components/acl/tabs/PoliciesTab';
 import { RolesTab } from '../components/acl/tabs/RolesTab';
 import { TokensTab } from '../components/acl/tabs/TokensTab';
@@ -47,26 +47,7 @@ export default function AclPage() {
       </div>
 
       {/* Error/Warning Banner */}
-      {error && (
-        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
-          <div className="flex items-center">
-            <svg
-              className="w-5 h-5 text-red-600 dark:text-red-400 mr-2 flex-shrink-0"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-              />
-            </svg>
-            <p className="text-red-700 dark:text-red-300">{error}</p>
-          </div>
-        </div>
-      )}
+      {error && <ErrorAlert message={error} />}
 
       {!hasManagementAccess && !error && (
         <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-700 rounded-lg p-4">

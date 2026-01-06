@@ -1,5 +1,6 @@
 import React, { ReactNode } from 'react';
 import { Link } from 'react-router-dom';
+import { ErrorAlert } from '../../ui';
 
 interface JobFormLayoutProps {
   title: string;
@@ -27,11 +28,7 @@ export const JobFormLayout: React.FC<JobFormLayoutProps> = ({
       <div className="p-6">
         <h2 className="text-lg font-medium text-gray-900 mb-4">{title}</h2>
 
-        {error && (
-          <div className="mb-4 p-3 bg-red-100 text-red-700 rounded-md text-sm">
-            {error}
-          </div>
-        )}
+        {error && <ErrorAlert message={error} className="mb-4" />}
 
         {success && (
           <div className="mb-4 p-3 bg-green-100 text-green-700 rounded-md text-sm">

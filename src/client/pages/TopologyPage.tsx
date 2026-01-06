@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { createNomadClient } from '../lib/api/nomad';
 import type { NomadNode, NomadAllocation } from '../types/nomad';
-import { LoadingSpinner } from '../components/ui';
+import { LoadingSpinner, ErrorAlert } from '../components/ui';
 
 interface NodeWithAllocations extends NomadNode {
   allocations: NomadAllocation[];
@@ -158,11 +158,7 @@ export default function TopologyPage() {
         </button>
       </div>
 
-      {error && (
-        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
-          <p className="text-red-800 dark:text-red-200">{error}</p>
-        </div>
-      )}
+      {error && <ErrorAlert message={error} />}
 
       {/* Filter Bar */}
       <div className="flex flex-wrap items-center gap-4 bg-white dark:bg-gray-800 rounded-lg shadow p-4">

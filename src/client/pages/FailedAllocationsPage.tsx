@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { createNomadClient } from '../lib/api/nomad';
 import { NomadAllocation, NomadJob } from '../types/nomad';
-import { LoadingSpinner } from '../components/ui';
+import { LoadingSpinner, ErrorAlert } from '../components/ui';
 import { useToast } from '../context/ToastContext';
 
 interface FailedAllocationInfo {
@@ -197,11 +197,7 @@ export default function FailedAllocationsPage() {
         </div>
       </div>
 
-      {error && (
-        <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
-          <p className="text-red-800 dark:text-red-200">{error}</p>
-        </div>
-      )}
+      {error && <ErrorAlert message={error} />}
 
       {/* Active Failures Section */}
       <div className="bg-white dark:bg-gray-800 shadow rounded-lg overflow-hidden">

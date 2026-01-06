@@ -3,7 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { createNomadClient } from '../../lib/api/nomad';
 import { NomadJob, NomadNamespace } from '../../types/nomad';
-import { LoadingSpinner } from '../ui';
+import { LoadingSpinner, ErrorAlert } from '../ui';
 
 export const JobList: React.FC = () => {
   const [jobs, setJobs] = useState<NomadJob[]>([]);
@@ -92,12 +92,7 @@ export const JobList: React.FC = () => {
 
   // Render error state
   if (error) {
-    return (
-        <div className="bg-red-100 border border-red-400 text-red-700 dark:bg-monokai-surface dark:border-monokai-red dark:text-monokai-red px-4 py-3 rounded relative" role="alert">
-          <strong className="font-bold">Error: </strong>
-          <span className="block sm:inline">{error}</span>
-        </div>
-    );
+    return <ErrorAlert message={error} showTitle />;
   }
 
   return (

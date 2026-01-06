@@ -3,7 +3,7 @@ import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { createNomadClient } from '../lib/api/nomad';
 import { useToast } from '../context/ToastContext';
-import { LoadingSpinner } from '../components/ui';
+import { LoadingSpinner, ErrorAlert } from '../components/ui';
 import { JobHeader, JobSummary, TaskGroupCard } from '../components/jobs/detail';
 import JobLogs from '../components/jobs/JobLogs';
 import JobActions from '../components/jobs/JobActions';
@@ -105,15 +105,7 @@ export default function JobDetailPage() {
   }
 
   if (error) {
-    return (
-      <div
-        className="bg-red-100 dark:bg-red-900 border border-red-400 dark:border-red-700 text-red-700 dark:text-red-200 px-4 py-3 rounded relative"
-        role="alert"
-      >
-        <strong className="font-bold">Error: </strong>
-        <span className="block sm:inline">{error}</span>
-      </div>
-    );
+    return <ErrorAlert message={error} showTitle />;
   }
 
   if (!job) {

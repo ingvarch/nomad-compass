@@ -6,7 +6,7 @@ import {
   NomadAclPolicyListItem,
   NomadAclRoleListItem,
 } from '../../../types/acl';
-import { LoadingSpinner } from '../../ui';
+import { LoadingSpinner, ErrorAlert } from '../../ui';
 import { Modal } from '../../ui/Modal';
 import { TokenForm } from '../token/TokenForm';
 import { SecretIdDisplay } from '../token/SecretIdDisplay';
@@ -206,11 +206,7 @@ export function TokensTab({ hasManagementAccess }: TokensTabProps) {
       </div>
 
       {/* Error */}
-      {error && (
-        <div className="px-4 py-3 bg-red-50 dark:bg-red-900/20 border-b border-red-200 dark:border-red-800">
-          <p className="text-sm text-red-700 dark:text-red-300">{error}</p>
-        </div>
-      )}
+      {error && <ErrorAlert message={error} variant="bar" />}
 
       {/* Table */}
       {tokens.length === 0 ? (
