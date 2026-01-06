@@ -18,6 +18,7 @@ import AllocationsPage from './pages/AllocationsPage';
 import NamespacesPage from './pages/NamespacesPage';
 import TopologyPage from './pages/TopologyPage';
 import ActivityPage from './pages/ActivityPage';
+import AclPage from './pages/AclPage';
 
 const router = createBrowserRouter([
   {
@@ -74,6 +75,10 @@ const router = createBrowserRouter([
       {
         path: '/activity',
         element: <ActivityPage />,
+      },
+      {
+        path: '/acl',
+        element: <AclPage />,
       },
     ],
   },

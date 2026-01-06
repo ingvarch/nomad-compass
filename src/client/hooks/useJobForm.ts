@@ -2,6 +2,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { createNomadClient } from '../lib/api/nomad';
+import { isPermissionError, getPermissionErrorMessage } from '../lib/api/errors';
 import {
   NomadJobFormData,
   TaskGroupFormData,
@@ -65,6 +66,7 @@ export function useJobForm({ mode, jobId, namespace = 'default' }: UseJobFormOpt
   const [isLoading, setIsLoading] = useState(mode === 'edit');
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [permissionError, setPermissionError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [namespaces, setNamespaces] = useState<string[]>(['default']);
   const [isLoadingNamespaces, setIsLoadingNamespaces] = useState(true);
@@ -434,14 +436,19 @@ export function useJobForm({ mode, jobId, namespace = 'default' }: UseJobFormOpt
         setSuccess(`Job "${formData.name}" ${mode === 'create' ? 'created' : 'updated'} successfully!`);
       }
     } catch (err) {
-      const message =
-        err instanceof Error ? err.message : `Failed to ${mode} job`;
-      setError(message);
-      addToast(message, 'error');
+      if (isPermissionError(err)) {
+        setPermissionError(getPermissionErrorMessage(mode === 'create' ? 'create-job' : 'update-job'));
+      } else {
+        const message = err instanceof Error ? err.message : `Failed to ${mode} job`;
+        setError(message);
+        addToast(message, 'error');
+      }
     } finally {
       setIsSaving(false);
     }
   };
+
+  const clearPermissionError = () => setPermissionError(null);
 
   return {
     formData,
@@ -451,6 +458,8 @@ export function useJobForm({ mode, jobId, namespace = 'default' }: UseJobFormOpt
     isLoadingNamespaces,
     isNameValid,
     error,
+    permissionError,
+    clearPermissionError,
     success,
     namespaces,
     deploymentTracker,

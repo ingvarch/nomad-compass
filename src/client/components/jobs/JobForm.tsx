@@ -8,6 +8,7 @@ import AdvancedSettingsSection from './forms/parts/AdvancedSettingsSection';
 import AdvancedSettingsToggle from './forms/parts/AdvancedSettingsToggle';
 import FormInputField from '../ui/forms/FormInputField';
 import { ErrorAlert } from '../ui/ErrorAlert';
+import { PermissionErrorModal } from '../ui/PermissionErrorModal';
 import DeploymentOverlay from './DeploymentOverlay';
 
 interface JobFormProps {
@@ -31,6 +32,8 @@ export const JobForm: React.FC<JobFormProps> = ({
     isLoadingNamespaces,
     isNameValid,
     error,
+    permissionError,
+    clearPermissionError,
     success,
     namespaces,
     deploymentTracker,
@@ -106,6 +109,13 @@ export const JobForm: React.FC<JobFormProps> = ({
 
   return (
     <>
+      {/* Permission Error Modal */}
+      <PermissionErrorModal
+        isOpen={!!permissionError}
+        onClose={clearPermissionError}
+        message={permissionError || ''}
+      />
+
       {/* Deployment Progress Overlay */}
       {deploymentTracker.state && (
         <DeploymentOverlay

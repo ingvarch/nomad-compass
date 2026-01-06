@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { useAclPermissions } from '../../hooks/useAclPermissions';
 import { ThemeToggle } from '../ui/ThemeToggle';
 import { UserMenu } from '../ui/UserMenu';
 
@@ -10,6 +11,7 @@ export const DashboardNav: React.FC = () => {
   const location = useLocation();
   const pathname = location.pathname;
   const { logout } = useAuth();
+  const { hasManagementAccess } = useAclPermissions();
 
   // Fetch Nomad address from server config
   useEffect(() => {
@@ -72,6 +74,18 @@ export const DashboardNav: React.FC = () => {
               >
                 Namespaces
               </Link>
+              {hasManagementAccess && (
+                <Link
+                  to="/acl"
+                  className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
+                    isActive('/acl')
+                      ? 'border-blue-500 text-gray-900 dark:border-monokai-blue dark:text-monokai-text'
+                      : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-monokai-muted dark:hover:border-monokai-surface dark:hover:text-monokai-text'
+                  }`}
+                >
+                  ACL
+                </Link>
+              )}
             </div>
           </div>
           <div className="hidden sm:ml-6 sm:flex sm:items-center">
@@ -167,6 +181,18 @@ export const DashboardNav: React.FC = () => {
           >
             Namespaces
           </Link>
+          {hasManagementAccess && (
+            <Link
+              to="/acl"
+              className={`block pl-3 pr-4 py-2 border-l-4 text-base font-medium ${
+                isActive('/acl')
+                  ? 'bg-blue-50 border-blue-500 text-blue-700 dark:bg-monokai-surface dark:border-monokai-blue dark:text-monokai-blue'
+                  : 'border-transparent text-gray-600 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-800 dark:text-monokai-muted dark:hover:bg-monokai-surface dark:hover:border-monokai-surface dark:hover:text-monokai-text'
+              }`}
+            >
+              ACL
+            </Link>
+          )}
         </div>
         <div className="pt-4 pb-3 border-t border-gray-200 dark:border-monokai-surface">
           <div className="flex items-center px-4">
