@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { createNomadClient } from '../lib/api/nomad';
 import { NomadAllocation, NomadJob } from '../types/nomad';
@@ -147,6 +147,11 @@ export default function FailedAllocationsPage() {
     fetchData();
   };
 
+  const totalHistoricalCount = useMemo(
+    () => historicalJobs.reduce((sum, j) => sum + j.failedCount, 0),
+    [historicalJobs]
+  );
+
   const headerActions = (
     <>
       <RefreshButton onClick={handleRefresh} />
@@ -188,8 +193,6 @@ export default function FailedAllocationsPage() {
       </div>
     );
   }
-
-  const totalHistoricalCount = historicalJobs.reduce((sum, j) => sum + j.failedCount, 0);
 
   return (
     <div className="space-y-6">

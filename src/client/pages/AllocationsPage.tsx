@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { createNomadClient } from '../lib/api/nomad';
 import { NomadAllocation, NomadJob } from '../types/nomad';
@@ -62,12 +62,12 @@ export default function AllocationsPage() {
     return alloc.ClientStatus === statusFilter;
   });
 
-  const stats = {
+  const stats = useMemo(() => ({
     running: allocations.filter((a) => a.ClientStatus === 'running').length,
     pending: allocations.filter((a) => a.ClientStatus === 'pending').length,
     complete: allocations.filter((a) => a.ClientStatus === 'complete').length,
     failed: allocations.filter((a) => a.ClientStatus === 'failed' || a.ClientStatus === 'lost').length,
-  };
+  }), [allocations]);
 
   const setFilter = (filter: StatusFilter) => {
     if (filter === 'all') {

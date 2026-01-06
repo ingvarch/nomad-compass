@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { createNomadClient } from '../lib/api/nomad';
 import { NomadNode } from '../types/nomad';
@@ -54,11 +54,11 @@ export default function NodesPage() {
     return true;
   });
 
-  const stats = {
+  const stats = useMemo(() => ({
     ready: nodes.filter((n) => n.Status === 'ready' && !n.Drain).length,
     down: nodes.filter((n) => n.Status === 'down').length,
     draining: nodes.filter((n) => n.Drain).length,
-  };
+  }), [nodes]);
 
   const setFilter = (filter: StatusFilter) => {
     if (filter === 'all') {

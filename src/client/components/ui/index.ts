@@ -1,5 +1,6 @@
 export { BackLink } from './BackLink';
 export { ErrorAlert } from './ErrorAlert';
+export { ErrorBoundary } from '../ErrorBoundary';
 export { ExpandIcon } from './ExpandIcon';
 export { FilterButtons, type FilterOption } from './FilterButtons';
 export { InfoBox } from './InfoBox';

@@ -3,6 +3,7 @@ import { createBrowserRouter, RouterProvider, Navigate } from 'react-router-dom'
 import { AuthProvider } from './context/AuthContext';
 import { ToastProvider } from './context/ToastContext';
 import { ThemeProvider } from './context/ThemeContext';
+import { ErrorBoundary } from './components/ui';
 import ProtectedLayout from './components/layout/ProtectedLayout';
 
 // Pages
@@ -89,7 +90,9 @@ export function App() {
     <ThemeProvider>
       <AuthProvider>
         <ToastProvider>
-          <RouterProvider router={router} />
+          <ErrorBoundary>
+            <RouterProvider router={router} />
+          </ErrorBoundary>
         </ToastProvider>
       </AuthProvider>
     </ThemeProvider>

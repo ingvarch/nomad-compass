@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { createNomadClient } from '../lib/api/nomad';
 import { isPermissionError, getPermissionErrorMessage } from '../lib/api/errors';
@@ -142,6 +142,11 @@ export default function NamespacesPage() {
     }
   };
 
+  const totalJobs = useMemo(
+    () => namespaces.reduce((sum, ns) => sum + ns.jobCount, 0),
+    [namespaces]
+  );
+
   if (loading) {
     return (
       <div className="space-y-6">
@@ -150,8 +155,6 @@ export default function NamespacesPage() {
       </div>
     );
   }
-
-  const totalJobs = namespaces.reduce((sum, ns) => sum + ns.jobCount, 0);
 
   return (
     <div className="space-y-6">
