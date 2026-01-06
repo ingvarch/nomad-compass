@@ -3,6 +3,8 @@
  * Relays messages between browser and Nomad exec endpoint.
  */
 
+import { validateTicket } from '../utils/crypto'
+
 export interface ExecParams {
   allocId: string;
   task: string;
@@ -78,9 +80,50 @@ export function parseExecParams(searchParams: URLSearchParams): ExecParams | nul
 }
 
 /**
- * Validate token from cookie or query param.
- * For WebSocket, we accept token via query param since
- * browsers don't support custom headers during WS handshake.
+ * Extract token from cookie header.
+ */
+function extractTokenFromCookie(request: Request): string | null {
+  const cookieHeader = request.headers.get('Cookie');
+  if (!cookieHeader) return null;
+
+  const cookies = cookieHeader.split(';').map(c => c.trim());
+  for (const cookie of cookies) {
+    const [name, value] = cookie.split('=');
+    if (name === 'nomad-token') {
+      return decodeURIComponent(value);
+    }
+  }
+  return null;
+}
+
+/**
+ * Validate ticket and extract real token from cookie.
+ * Uses short-lived signed ticket for WebSocket auth instead of exposing real token in URL.
+ *
+ * @param request - The incoming request (for cookie access)
+ * @param searchParams - URL search params (for ticket)
+ * @param secret - HMAC secret for ticket validation
+ * @returns The real Nomad token if ticket is valid, null otherwise
+ */
+export async function extractTokenFromTicket(
+  request: Request,
+  searchParams: URLSearchParams,
+  secret: string
+): Promise<string | null> {
+  const ticket = searchParams.get('ticket');
+  if (!ticket) return null;
+
+  // Validate ticket (30 second expiry)
+  const isValid = await validateTicket(ticket, secret, 30000);
+  if (!isValid) return null;
+
+  // Get real token from cookie
+  return extractTokenFromCookie(request);
+}
+
+/**
+ * Legacy: Validate token from cookie or query param.
+ * @deprecated Use extractTokenFromTicket instead
  */
 export function extractToken(
   request: Request,
@@ -93,18 +136,7 @@ export function extractToken(
   }
 
   // Fallback to cookie
-  const cookieHeader = request.headers.get('Cookie');
-  if (cookieHeader) {
-    const cookies = cookieHeader.split(';').map(c => c.trim());
-    for (const cookie of cookies) {
-      const [name, value] = cookie.split('=');
-      if (name === 'nomad-token') {
-        return decodeURIComponent(value);
-      }
-    }
-  }
-
-  return null;
+  return extractTokenFromCookie(request);
 }
 
 /**

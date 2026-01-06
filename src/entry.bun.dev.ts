@@ -1,17 +1,18 @@
 import { createApp } from './api/app'
 import {
   parseExecParams,
-  extractToken,
+  extractTokenFromTicket,
   buildNomadExecUrl,
 } from './api/handlers/execWebSocket'
 
 // Development server - API only, Vite handles frontend
 const nomadAddr = process.env.NOMAD_ADDR || 'http://localhost:4646'
+const ticketSecret = process.env.TICKET_SECRET || 'nomad-compass-dev-secret-change-in-production'
 const port = Number(process.env.PORT) || 3000
 
 const app = createApp({
   envInjector: (c) => {
-    c.env = { NOMAD_ADDR: nomadAddr }
+    c.env = { NOMAD_ADDR: nomadAddr, TICKET_SECRET: ticketSecret }
   },
   additionalCorsHeaders: ['X-Nomad-Token'],
 })
@@ -24,7 +25,7 @@ const wsConnections = new Map<WebSocket, WebSocket>()
 
 export default {
   port,
-  fetch(request: Request, server: { upgrade: (req: Request, options?: { data?: unknown }) => boolean }) {
+  async fetch(request: Request, server: { upgrade: (req: Request, options?: { data?: unknown }) => boolean }) {
     const url = new URL(request.url)
 
     // Handle WebSocket upgrade for exec endpoint
@@ -37,9 +38,10 @@ export default {
         return new Response('Missing required parameters: allocId, task', { status: 400 })
       }
 
-      const token = extractToken(request, url.searchParams)
+      // Validate ticket and extract real token from cookie
+      const token = await extractTokenFromTicket(request, url.searchParams, ticketSecret)
       if (!token) {
-        return new Response('Authentication required', { status: 401 })
+        return new Response('Authentication required or ticket expired', { status: 401 })
       }
 
       // Upgrade the connection, passing params and token as data

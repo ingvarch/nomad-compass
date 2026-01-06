@@ -48,19 +48,34 @@ function decodeBase64(data: string): string {
 }
 
 /**
- * Fetch the token from the server for WebSocket auth.
- * The token is stored in an httpOnly cookie that JS can't read directly.
+ * Get CSRF token from cookie.
  */
-async function fetchToken(): Promise<string | null> {
+function getCsrfToken(): string | null {
+  return document.cookie
+    .split('; ')
+    .find(row => row.startsWith('csrf-token='))
+    ?.split('=')[1] || null;
+}
+
+/**
+ * Fetch a short-lived ticket for WebSocket auth.
+ * The actual token never appears in the URL - only this opaque ticket.
+ */
+async function fetchTicket(): Promise<string | null> {
   try {
-    const response = await fetch('/api/auth/ws-token', {
+    const csrfToken = getCsrfToken();
+    const response = await fetch('/api/auth/ws-ticket', {
+      method: 'POST',
       credentials: 'include',
+      headers: {
+        'X-CSRF-Token': csrfToken || '',
+      },
     });
     if (!response.ok) {
       return null;
     }
     const data = await response.json();
-    return data.token || null;
+    return data.ticket || null;
   } catch {
     return null;
   }
@@ -92,8 +107,9 @@ export function useExecSession({
     setError(null);
     setExitCode(null);
 
-    const token = await fetchToken();
-    if (!token) {
+    // Fetch a short-lived ticket (real token never in URL)
+    const ticket = await fetchTicket();
+    if (!ticket) {
       const err = 'Authentication required';
       setError(err);
       setIsConnecting(false);
@@ -101,14 +117,14 @@ export function useExecSession({
       return;
     }
 
-    // Build WebSocket URL
+    // Build WebSocket URL with ticket (not token)
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const wsUrl = new URL(`${protocol}//${window.location.host}/api/ws/exec`);
     wsUrl.searchParams.set('allocId', allocId);
     wsUrl.searchParams.set('task', task);
     wsUrl.searchParams.set('command', JSON.stringify(command));
     wsUrl.searchParams.set('tty', String(tty));
-    wsUrl.searchParams.set('token', token);
+    wsUrl.searchParams.set('ticket', ticket);
 
     const ws = new WebSocket(wsUrl.toString());
 

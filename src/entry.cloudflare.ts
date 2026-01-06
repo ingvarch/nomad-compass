@@ -1,8 +1,7 @@
 import { createApp } from './api/app'
 import {
   parseExecParams,
-  extractToken,
-  buildNomadExecUrl,
+  extractTokenFromTicket,
 } from './api/handlers/execWebSocket'
 
 const app = createApp()
@@ -34,7 +33,7 @@ function buildNomadExecUrlForFetch(
  */
 async function handleExecWebSocket(
   request: Request,
-  env: { NOMAD_ADDR: string }
+  env: { NOMAD_ADDR: string; TICKET_SECRET?: string }
 ): Promise<Response> {
   const url = new URL(request.url)
   const params = parseExecParams(url.searchParams)
@@ -43,9 +42,10 @@ async function handleExecWebSocket(
     return new Response('Missing required parameters: allocId, task', { status: 400 })
   }
 
-  const token = extractToken(request, url.searchParams)
+  const secret = env.TICKET_SECRET || 'nomad-compass-dev-secret-change-in-production'
+  const token = await extractTokenFromTicket(request, url.searchParams, secret)
   if (!token) {
-    return new Response('Authentication required', { status: 401 })
+    return new Response('Authentication required or ticket expired', { status: 401 })
   }
 
   // Build Nomad exec URL (without token - it goes in header)
@@ -139,7 +139,7 @@ async function handleExecWebSocket(
 
 // Export with fetch handler that checks for WebSocket upgrades
 export default {
-  async fetch(request: Request, env: { NOMAD_ADDR: string; ASSETS?: { fetch: (req: Request) => Promise<Response> } }) {
+  async fetch(request: Request, env: { NOMAD_ADDR: string; TICKET_SECRET?: string; ASSETS?: { fetch: (req: Request) => Promise<Response> } }) {
     const url = new URL(request.url)
 
     // Handle WebSocket upgrade for exec endpoint

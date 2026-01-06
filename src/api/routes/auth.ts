@@ -1,7 +1,7 @@
 import { Hono } from 'hono'
 import { setCookie, deleteCookie, getCookie } from 'hono/cookie'
 import type { Env } from '../types'
-import { generateCSRFToken } from '../utils/crypto'
+import { generateCSRFToken, createTicket, timingSafeEqual } from '../utils/crypto'
 
 export const authRoutes = new Hono<{ Bindings: Env }>()
 
@@ -73,17 +73,31 @@ authRoutes.post('/logout', (c) => {
 })
 
 /**
- * GET /api/auth/ws-token
- * Returns the token for WebSocket connections (since httpOnly cookies can't be read by JS)
+ * POST /api/auth/ws-ticket
+ * Returns a short-lived signed ticket for WebSocket authentication.
+ * The real token never appears in the URL - only this opaque ticket.
+ * Requires CSRF token for protection.
  */
-authRoutes.get('/ws-token', (c) => {
-  const token = getCookie(c, 'nomad-token')
+authRoutes.post('/ws-ticket', async (c) => {
+  // Validate CSRF token
+  const csrfHeader = c.req.header('X-CSRF-Token')
+  const csrfCookie = getCookie(c, 'csrf-token')
 
+  if (!csrfHeader || !csrfCookie || !timingSafeEqual(csrfHeader, csrfCookie)) {
+    return c.json({ error: 'Invalid CSRF token' }, 403)
+  }
+
+  // Check authentication
+  const token = getCookie(c, 'nomad-token')
   if (!token) {
     return c.json({ error: 'Not authenticated' }, 401)
   }
 
-  return c.json({ token })
+  // Generate ticket (default secret for dev, should be set via env in production)
+  const secret = c.env.TICKET_SECRET || 'nomad-compass-dev-secret-change-in-production'
+  const ticket = await createTicket(secret)
+
+  return c.json({ ticket })
 })
 
 /**
