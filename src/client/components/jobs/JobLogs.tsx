@@ -1,9 +1,10 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { createNomadClient } from '../../lib/api/nomad';
 import { isPermissionError } from '../../lib/api/errors';
 import { LoadingSpinner, ErrorAlert } from '../ui';
-import { RefreshCw, Pause, Play } from 'lucide-react';
+import { RefreshCw, Radio } from 'lucide-react';
+import { useLogStream } from '../../hooks/useLogStream';
 
 interface JobLogsProps {
     jobId: string;
@@ -25,13 +26,36 @@ export const JobLogs: React.FC<JobLogsProps> = ({ jobId, allocId, taskName, init
     const [statusFilter, setStatusFilter] = useState<'all' | 'running' | 'failed' | 'complete'>('all');
     const [allAllocations, setAllAllocations] = useState<any[]>([]);
 
-    // Auto-refresh state
-    const [autoRefresh, setAutoRefresh] = useState<boolean>(false);
-    const [refreshInterval, setRefreshInterval] = useState<number>(5); // seconds
-    const refreshTimerRef = useRef<NodeJS.Timeout | null>(null);
     const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
     const [showNomadTimestamp, setShowNomadTimestamp] = useState<boolean>(false);
 
+    // Streaming mode state
+    const [streamingMode, setStreamingMode] = useState<boolean>(false);
+    const [streamError, setStreamError] = useState<string | null>(null);
+
+    // Ref for auto-scroll
+    const logsContainerRef = useRef<HTMLPreElement>(null);
+
+    // Streaming hook
+    const {
+        logs: streamLogs,
+        isStreaming,
+        startStream,
+        stopStream,
+        clearLogs: clearStreamLogs,
+    } = useLogStream({
+        allocId: selectedAlloc || '',
+        task: selectedTask || '',
+        logType,
+        onError: setStreamError,
+    });
+
+    // Auto-scroll to bottom when logs change
+    useEffect(() => {
+        if (logsContainerRef.current) {
+            logsContainerRef.current.scrollTop = logsContainerRef.current.scrollHeight;
+        }
+    }, [logs, streamLogs]);
 
     useEffect(() => {
         if (initialTaskGroup && initialTaskGroup !== selectedTaskGroup) {
@@ -196,37 +220,22 @@ export const JobLogs: React.FC<JobLogsProps> = ({ jobId, allocId, taskName, init
         }
     }, [selectedAlloc, selectedTask, logType, fetchLogs]);
 
-    // Setup auto-refresh timer
-    useEffect(() => {
-        // Clear any existing timer when dependencies change
-        if (refreshTimerRef.current) {
-            clearInterval(refreshTimerRef.current);
-            refreshTimerRef.current = null;
+    // Toggle streaming mode
+    const toggleStreamingMode = () => {
+        if (streamingMode) {
+            // Stop streaming
+            stopStream();
+            setStreamingMode(false);
+            setStreamError(null);
+            // Fetch current logs once
+            fetchLogs();
+        } else {
+            // Start streaming
+            setStreamingMode(true);
+            setStreamError(null);
+            clearStreamLogs();
+            startStream();
         }
-
-        // Only setup the timer if auto-refresh is enabled
-        if (autoRefresh && selectedAlloc && selectedTask) {
-            refreshTimerRef.current = setInterval(() => {
-                fetchLogs();
-            }, refreshInterval * 1000);
-        }
-
-        // Cleanup on unmount
-        return () => {
-            if (refreshTimerRef.current) {
-                clearInterval(refreshTimerRef.current);
-            }
-        };
-    }, [autoRefresh, refreshInterval, selectedAlloc, selectedTask, fetchLogs]);
-
-    // Toggle auto-refresh
-    const toggleAutoRefresh = () => {
-        setAutoRefresh(prev => !prev);
-    };
-
-    // Handle refresh interval change
-    const handleRefreshIntervalChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-        setRefreshInterval(Number(e.target.value));
     };
 
     // Handle task group change
@@ -271,84 +280,93 @@ export const JobLogs: React.FC<JobLogsProps> = ({ jobId, allocId, taskName, init
             <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex flex-wrap justify-between items-center">
                 <h3 className="text-lg font-medium text-gray-900 dark:text-white">Job Logs</h3>
 
-                <div className="flex flex-wrap gap-2 mt-2 sm:mt-0">
+                <div className="flex flex-wrap gap-2 mt-2 sm:mt-0 items-center">
                     {/* Task Group Selector */}
-                    {taskGroups.length > 0 && (
-                        <select
-                            value={selectedTaskGroup || ''}
-                            onChange={handleTaskGroupChange}
-                            className="block w-full sm:w-auto pl-3 pr-10 py-1 text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500 rounded-md"
-                        >
-                            <option value="">Select Task Group</option>
-                            {taskGroups.map((group) => (
-                                <option key={group.Name} value={group.Name}>
-                                    {group.Name}
-                                </option>
-                            ))}
-                        </select>
-                    )}
+                    <select
+                        value={selectedTaskGroup || ''}
+                        onChange={handleTaskGroupChange}
+                        disabled={taskGroups.length === 0}
+                        className={`block w-full sm:w-auto pl-3 pr-10 py-1 text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500 rounded-md ${
+                            taskGroups.length === 0 ? 'opacity-50 cursor-not-allowed' : ''
+                        }`}
+                    >
+                        <option value="">Task Group</option>
+                        {taskGroups.map((group) => (
+                            <option key={group.Name} value={group.Name}>
+                                {group.Name}
+                            </option>
+                        ))}
+                    </select>
 
                     {/* Status Filter */}
-                    {selectedTaskGroup && (
-                        <select
-                            value={statusFilter}
-                            onChange={(e) => setStatusFilter(e.target.value as 'all' | 'running' | 'failed' | 'complete')}
-                            className="block w-full sm:w-auto pl-3 pr-10 py-1 text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500 rounded-md"
-                        >
-                            <option value="all">All Status</option>
-                            <option value="running">Running</option>
-                            <option value="failed">Failed/Lost</option>
-                            <option value="complete">Complete</option>
-                        </select>
-                    )}
+                    <select
+                        value={statusFilter}
+                        onChange={(e) => setStatusFilter(e.target.value as 'all' | 'running' | 'failed' | 'complete')}
+                        disabled={!selectedTaskGroup}
+                        className={`block w-full sm:w-auto pl-3 pr-10 py-1 text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500 rounded-md ${
+                            !selectedTaskGroup ? 'opacity-50 cursor-not-allowed' : ''
+                        }`}
+                    >
+                        <option value="all">All Status</option>
+                        <option value="running">Running</option>
+                        <option value="failed">Failed/Lost</option>
+                        <option value="complete">Complete</option>
+                    </select>
 
                     {/* Allocation Selector */}
-                    {allocations.length > 1 && (
-                        <select
-                            value={selectedAlloc || ''}
-                            onChange={(e) => setSelectedAlloc(e.target.value)}
-                            className="block w-full sm:w-auto pl-3 pr-10 py-1 text-sm border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 rounded-md"
-                        >
-                            {allocations.map((alloc) => (
+                    <select
+                        value={selectedAlloc || ''}
+                        onChange={(e) => setSelectedAlloc(e.target.value)}
+                        disabled={allocations.length <= 1}
+                        className={`block w-full sm:w-auto pl-3 pr-10 py-1 text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500 rounded-md ${
+                            allocations.length <= 1 ? 'opacity-50 cursor-not-allowed' : ''
+                        }`}
+                    >
+                        {allocations.length === 0 ? (
+                            <option value="">Allocation</option>
+                        ) : (
+                            allocations.map((alloc) => (
                                 <option key={alloc.ID} value={alloc.ID}>
                                     {alloc.ID.substring(0, 8)}... - {alloc.ClientStatus}
                                 </option>
-                            ))}
-                        </select>
-                    )}
+                            ))
+                        )}
+                    </select>
 
                     {/* Task Selector */}
-                    {selectedAlloc && (
-                        <select
-                            value={selectedTask || ''}
-                            onChange={(e) => setSelectedTask(e.target.value)}
-                            className="block w-full sm:w-auto pl-3 pr-10 py-1 text-sm border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 rounded-md"
-                        >
-                            {allocations
-                                    .find((alloc) => alloc.ID === selectedAlloc)
-                                    ?.TaskStates &&
-                                Object.keys(
-                                    allocations.find((alloc) => alloc.ID === selectedAlloc)?.TaskStates || {}
-                                ).map((task) => (
-                                    <option key={task} value={task}>
-                                        {task}
-                                    </option>
-                                ))}
-                        </select>
-                    )}
+                    <select
+                        value={selectedTask || ''}
+                        onChange={(e) => setSelectedTask(e.target.value)}
+                        disabled={!selectedAlloc}
+                        className={`block w-full sm:w-auto pl-3 pr-10 py-1 text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500 rounded-md ${
+                            !selectedAlloc ? 'opacity-50 cursor-not-allowed' : ''
+                        }`}
+                    >
+                        {!selectedAlloc ? (
+                            <option value="">Task</option>
+                        ) : (
+                            Object.keys(
+                                allocations.find((alloc) => alloc.ID === selectedAlloc)?.TaskStates || {}
+                            ).map((task) => (
+                                <option key={task} value={task}>
+                                    {task}
+                                </option>
+                            ))
+                        )}
+                    </select>
 
                     {/* Log Type Selector */}
                     <select
                         value={logType}
                         onChange={(e) => setLogType(e.target.value as 'stdout' | 'stderr')}
-                        className="block w-full sm:w-auto pl-3 pr-10 py-1 text-sm border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 rounded-md"
+                        className="block w-full sm:w-auto pl-3 pr-10 py-1 text-sm border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500 rounded-md"
                     >
                         <option value="stdout">stdout</option>
                         <option value="stderr">stderr</option>
                     </select>
 
                     {/* Nomad timestamp toggle */}
-                    <label className="flex items-center gap-1 text-sm text-gray-600 dark:text-gray-300 cursor-pointer">
+                    <label className="flex items-center gap-1 text-sm text-gray-600 dark:text-gray-300 cursor-pointer whitespace-nowrap">
                         <input
                             type="checkbox"
                             checked={showNomadTimestamp}
@@ -358,39 +376,30 @@ export const JobLogs: React.FC<JobLogsProps> = ({ jobId, allocId, taskName, init
                         Nomad time
                     </label>
 
-                    {/* Auto-refresh controls */}
+                    {/* Refresh controls */}
                     <div className="flex items-center gap-2">
+                        {/* Streaming toggle */}
                         <button
-                            onClick={toggleAutoRefresh}
+                            onClick={toggleStreamingMode}
+                            disabled={!selectedAlloc || !selectedTask}
                             className={`inline-flex items-center px-2 py-1 text-sm font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 ${
-                                autoRefresh
-                                    ? 'text-white bg-blue-600 hover:bg-blue-700 focus:ring-blue-500'
-                                    : 'text-gray-700 bg-gray-100 hover:bg-gray-200 focus:ring-gray-500'
-                            }`}
-                            title={autoRefresh ? 'Disable auto-refresh' : 'Enable auto-refresh'}
+                                streamingMode
+                                    ? 'text-white bg-green-600 hover:bg-green-700 focus:ring-green-500'
+                                    : 'text-gray-700 dark:text-gray-200 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 focus:ring-gray-500'
+                            } ${!selectedAlloc || !selectedTask ? 'opacity-50 cursor-not-allowed' : ''}`}
+                            title={streamingMode ? 'Stop streaming (live)' : 'Start streaming (live)'}
                         >
-                            {autoRefresh ? <Pause size={16} /> : <Play size={16} />}
-                            <span className="ml-1">Auto</span>
+                            <Radio size={16} className={isStreaming ? 'animate-pulse' : ''} />
+                            <span className="ml-1">{streamingMode ? 'Live' : 'Stream'}</span>
                         </button>
 
-                        {autoRefresh && (
-                            <select
-                                value={refreshInterval}
-                                onChange={handleRefreshIntervalChange}
-                                className="block w-full sm:w-auto pl-2 pr-7 py-1 text-sm border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 rounded-md"
-                            >
-                                <option value="2">2s</option>
-                                <option value="5">5s</option>
-                                <option value="10">10s</option>
-                                <option value="30">30s</option>
-                                <option value="60">60s</option>
-                            </select>
-                        )}
-
+                        {/* Manual refresh - invisible when streaming to prevent layout shift */}
                         <button
                             onClick={handleManualRefresh}
-                            className="inline-flex items-center px-2 py-1 border border-gray-300 shadow-sm text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                            disabled={isLoading || !selectedAlloc || !selectedTask}
+                            className={`inline-flex items-center px-2 py-1 border border-gray-300 dark:border-gray-600 shadow-sm text-sm font-medium rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 ${
+                                streamingMode ? 'invisible' : ''
+                            }`}
+                            disabled={isLoading || !selectedAlloc || !selectedTask || streamingMode}
                             title="Refresh logs"
                         >
                             <RefreshCw size={16} className={isLoading ? 'animate-spin' : ''} />
@@ -486,24 +495,41 @@ export const JobLogs: React.FC<JobLogsProps> = ({ jobId, allocId, taskName, init
                 )}
 
                 <div className="mb-2 flex justify-between items-center text-xs text-gray-500 dark:text-gray-400">
-                    {lastRefreshed && (
+                    {streamingMode ? (
+                        <span className="flex items-center gap-1">
+                            <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
+                            Streaming live logs...
+                        </span>
+                    ) : lastRefreshed ? (
                         <span>Last updated: {lastRefreshed.toLocaleTimeString()}</span>
-                    )}
-                    {autoRefresh && (
-                        <span>Auto-refreshing every {refreshInterval} seconds</span>
-                    )}
+                    ) : null}
                 </div>
 
-                <pre className={`p-4 rounded-md overflow-auto max-h-96 text-sm font-mono ${
-                    isLoading ? 'opacity-50' : ''
-                } ${
-                    selectedAlloc && allocations.find(a => a.ID === selectedAlloc)?.ClientStatus === 'failed'
-                        ? 'bg-red-950 text-red-100 border-2 border-red-500'
-                        : selectedAlloc && allocations.find(a => a.ID === selectedAlloc)?.ClientStatus === 'lost'
-                            ? 'bg-orange-950 text-orange-100 border-2 border-orange-500'
-                            : 'bg-gray-800 text-white'
-                }`}>
-                    {formatLogs(logs) || 'No logs available'}
+                {/* Streaming error */}
+                {streamError && (
+                    <div className="mb-2 text-sm text-red-600 dark:text-red-400">
+                        Stream error: {streamError}
+                    </div>
+                )}
+
+                <pre
+                    ref={logsContainerRef}
+                    className={`p-4 rounded-md overflow-auto max-h-96 text-sm font-mono ${
+                        isLoading && !streamingMode ? 'opacity-50' : ''
+                    } ${
+                        selectedAlloc && allocations.find(a => a.ID === selectedAlloc)?.ClientStatus === 'failed'
+                            ? 'bg-red-950 text-red-100 border-2 border-red-500'
+                            : selectedAlloc && allocations.find(a => a.ID === selectedAlloc)?.ClientStatus === 'lost'
+                                ? 'bg-orange-950 text-orange-100 border-2 border-orange-500'
+                                : streamingMode
+                                    ? 'bg-gray-900 text-green-400 border-2 border-green-600'
+                                    : 'bg-gray-800 text-white'
+                    }`}
+                >
+                    {streamingMode
+                        ? (formatLogs(streamLogs) || 'Waiting for log data...')
+                        : (formatLogs(logs) || 'No logs available')
+                    }
                 </pre>
             </div>
         </div>

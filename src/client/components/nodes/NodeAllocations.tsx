@@ -1,5 +1,14 @@
 import { Link } from 'react-router-dom';
 import { NomadAllocation } from '../../types/nomad';
+import { Terminal } from 'lucide-react';
+
+function getFirstTask(alloc: NomadAllocation): string | null {
+  if (alloc.TaskStates) {
+    const tasks = Object.keys(alloc.TaskStates);
+    if (tasks.length > 0) return tasks[0];
+  }
+  return null;
+}
 
 interface NodeAllocationsProps {
   allocations: NomadAllocation[];
@@ -59,6 +68,9 @@ export function NodeAllocations({ allocations }: NodeAllocationsProps) {
             <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
               Version
             </th>
+            <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+              Actions
+            </th>
           </tr>
         </thead>
         <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
@@ -89,6 +101,18 @@ export function NodeAllocations({ allocations }: NodeAllocationsProps) {
                 </td>
                 <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
                   v{alloc.JobVersion}
+                </td>
+                <td className="px-4 py-3 whitespace-nowrap text-right">
+                  {alloc.ClientStatus === 'running' && getFirstTask(alloc) && (
+                    <Link
+                      to={`/exec/${alloc.ID}/${getFirstTask(alloc)}?namespace=${alloc.Namespace}`}
+                      className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded transition-colors"
+                      title="Open terminal"
+                    >
+                      <Terminal className="w-3.5 h-3.5" />
+                      Exec
+                    </Link>
+                  )}
                 </td>
               </tr>
             );

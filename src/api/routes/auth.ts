@@ -73,6 +73,20 @@ authRoutes.post('/logout', (c) => {
 })
 
 /**
+ * GET /api/auth/ws-token
+ * Returns the token for WebSocket connections (since httpOnly cookies can't be read by JS)
+ */
+authRoutes.get('/ws-token', (c) => {
+  const token = getCookie(c, 'nomad-token')
+
+  if (!token) {
+    return c.json({ error: 'Not authenticated' }, 401)
+  }
+
+  return c.json({ token })
+})
+
+/**
  * GET /api/auth/validate
  * Checks if user is authenticated by validating the token against Nomad
  */

@@ -1,6 +1,8 @@
 import { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { NomadAllocation, NomadTaskEvent } from '../../../types/nomad';
 import ExpandIcon from '../../ui/ExpandIcon';
+import { Terminal } from 'lucide-react';
 
 interface TaskEventsTableProps {
   allocations: NomadAllocation[];
@@ -42,6 +44,7 @@ function getEventTypeColor(type: string, failsTask?: boolean): string {
 interface TaskEventsRowData {
   allocId: string;
   allocName: string;
+  namespace: string;
   taskName: string;
   taskState: string;
   taskFailed: boolean;
@@ -64,6 +67,7 @@ export function TaskEventsTable({ allocations, taskGroupName }: TaskEventsTableP
         taskEventsData.push({
           allocId: alloc.ID,
           allocName: alloc.Name,
+          namespace: alloc.Namespace,
           taskName,
           taskState: taskState.State,
           taskFailed: taskState.Failed,
@@ -107,6 +111,9 @@ export function TaskEventsTable({ allocations, taskGroupName }: TaskEventsTableP
             </th>
             <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
               Time
+            </th>
+            <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
+              Actions
             </th>
           </tr>
         </thead>
@@ -171,10 +178,23 @@ export function TaskEventsTable({ allocations, taskGroupName }: TaskEventsTableP
                   <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
                     {latestEvent ? formatTimestamp(latestEvent.Time) : '-'}
                   </td>
+                  <td className="px-4 py-3 whitespace-nowrap text-right">
+                    {data.taskState === 'running' && (
+                      <Link
+                        to={`/exec/${data.allocId}/${data.taskName}?namespace=${data.namespace}`}
+                        className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded transition-colors"
+                        title="Open terminal"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <Terminal className="w-3.5 h-3.5" />
+                        Exec
+                      </Link>
+                    )}
+                  </td>
                 </tr>
                 {isExpanded && (
                   <tr key={`${data.allocId}-${data.taskName}-events`}>
-                    <td colSpan={5} className="px-4 py-3 bg-gray-50 dark:bg-gray-700/30">
+                    <td colSpan={6} className="px-4 py-3 bg-gray-50 dark:bg-gray-700/30">
                       <div className="space-y-2">
                         <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-2">
                           Event History ({data.events.length} events)

@@ -11,3 +11,4 @@ export { OverviewTab } from './OverviewTab';
 export { VersionsTab } from './VersionsTab';
 export { EvaluationsTab } from './EvaluationsTab';
 export { LogsTab } from './LogsTab';
+export { ExecTab } from './ExecTab';

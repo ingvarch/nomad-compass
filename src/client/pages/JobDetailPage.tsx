@@ -12,6 +12,7 @@ import {
   VersionsTab,
   EvaluationsTab,
   LogsTab,
+  ExecTab,
 } from '../components/jobs/detail';
 import JobActions from '../components/jobs/JobActions';
 import type { NomadAllocation } from '../types/nomad';
@@ -184,6 +185,10 @@ export default function JobDetailPage() {
 
       {activeTab === 'logs' && (
         <LogsTab jobId={job.ID} initialTaskGroup={selectedGroupForLogs} />
+      )}
+
+      {activeTab === 'exec' && (
+        <ExecTab allocations={allocations} namespace={namespace} />
       )}
 
       {/* Actions */}
