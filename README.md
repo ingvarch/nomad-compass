@@ -9,9 +9,55 @@ A modern, lightweight web UI for managing HashiCorp Nomad clusters. Built with H
 - **Environment Variables**: Manage environment variables with sorting
 - **Network Configuration**: Configure service networking and port mappings
 - **Service Health Checks**: Set up and monitor service health checks
-- **Log Viewing**: View and filter logs for running containers
+- **Log Viewing**: Real-time log streaming with stdout/stderr filtering
+- **Remote Exec**: Secure terminal access to running containers via WebSocket
 - **Multi-Namespace Support**: Work with multiple Nomad namespaces
 - **Dark Mode**: Full dark mode support
+
+## Security
+
+Nomad Compass is designed with security in mind:
+
+### Authentication
+
+- **httpOnly Cookies**: Nomad ACL tokens are stored in httpOnly cookies, preventing XSS attacks from accessing tokens via JavaScript
+- **SameSite=Strict**: Cookies are configured with SameSite=Strict to prevent CSRF attacks
+- **Secure Flag**: In production, cookies are only sent over HTTPS
+
+### WebSocket Security (Remote Exec)
+
+The Remote Exec feature uses a secure one-time ticket pattern:
+
+1. **No Token in URL**: The actual Nomad token never appears in WebSocket URLs
+2. **HMAC-Signed Tickets**: Short-lived tickets (30 seconds) are cryptographically signed
+3. **CSRF Protection**: Ticket requests require valid CSRF tokens
+4. **Stateless Validation**: No server-side storage needed - tickets are self-validating
+
+```
+Browser                          Server                         Nomad
+   │                                │                              │
+   │─── POST /api/auth/ws-ticket ──>│                              │
+   │    (+ CSRF header)             │                              │
+   │<── { ticket: "signed..." } ────│                              │
+   │                                │                              │
+   │─── WebSocket + ticket ────────>│                              │
+   │                                │── validate ticket            │
+   │                                │── get token from cookie      │
+   │                                │── connect with X-Nomad-Token>│
+   │<═══════════ relay ════════════>│<═════════════════════════════│
+```
+
+### Production Recommendations
+
+For production deployments, set a strong `TICKET_SECRET` environment variable:
+
+```bash
+# Generate a secure secret
+openssl rand -hex 32
+
+# Set in your environment
+export TICKET_SECRET="your-generated-secret"
+```
 
 ## Tech Stack
 
@@ -171,6 +217,7 @@ services:
 |----------|-------------|---------|---------|
 | `NOMAD_ADDR` | Nomad server address | `http://localhost:4646` | Both |
 | `PORT` | Server port | `3000` | Docker only |
+| `TICKET_SECRET` | HMAC secret for WebSocket auth tickets | Auto-generated | Both |
 
 ## Development
 
