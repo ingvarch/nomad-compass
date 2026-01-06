@@ -1,6 +1,5 @@
 import { NomadAgentSelf, NomadAgentMembers, NomadNode } from '../../types/nomad';
-
-type HealthStatus = 'healthy' | 'degraded' | 'critical';
+import { clusterHealthColors, ClusterHealth as ClusterHealthType } from '../../lib/utils/statusColors';
 
 interface ClusterHealthProps {
   agentSelf: NomadAgentSelf | null;
@@ -10,7 +9,7 @@ interface ClusterHealthProps {
   loading?: boolean;
 }
 
-function getHealthStatus(nodes: NomadNode[], activeFailedAllocations: number): HealthStatus {
+function getHealthStatus(nodes: NomadNode[], activeFailedAllocations: number): ClusterHealthType {
   const downNodes = nodes.filter((n) => n.Status === 'down');
   const drainingNodes = nodes.filter((n) => n.Drain);
 
@@ -34,26 +33,6 @@ function getLeaderName(members: NomadAgentMembers | null): string | null {
   return leader?.Name || null;
 }
 
-const statusConfig: Record<HealthStatus, { color: string; bgColor: string; text: string; pulse: boolean }> = {
-  healthy: {
-    color: 'bg-green-500',
-    bgColor: 'bg-green-100 dark:bg-green-900/30',
-    text: 'Cluster Healthy',
-    pulse: false,
-  },
-  degraded: {
-    color: 'bg-yellow-500',
-    bgColor: 'bg-yellow-100 dark:bg-yellow-900/30',
-    text: 'Cluster Degraded',
-    pulse: true,
-  },
-  critical: {
-    color: 'bg-red-500',
-    bgColor: 'bg-red-100 dark:bg-red-900/30',
-    text: 'Cluster Critical',
-    pulse: true,
-  },
-};
 
 export function ClusterHealth({ agentSelf, agentMembers, nodes, activeFailedAllocations, loading }: ClusterHealthProps) {
   if (loading) {
@@ -71,16 +50,16 @@ export function ClusterHealth({ agentSelf, agentMembers, nodes, activeFailedAllo
   }
 
   const status = getHealthStatus(nodes, activeFailedAllocations);
-  const config = statusConfig[status];
+  const config = clusterHealthColors[status];
   const leader = getLeaderName(agentMembers);
   const version = agentSelf?.config?.Version?.Version;
   const region = agentSelf?.config?.Region;
 
   return (
-    <div className={`rounded-lg shadow p-4 ${config.bgColor}`}>
+    <div className={`rounded-lg shadow p-4 ${config.bg}`}>
       <div className="flex items-center gap-4">
         <div className="relative">
-          <div className={`w-12 h-12 ${config.color} rounded-full flex items-center justify-center`}>
+          <div className={`w-12 h-12 ${config.dot} rounded-full flex items-center justify-center`}>
             {status === 'healthy' && (
               <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
@@ -103,12 +82,12 @@ export function ClusterHealth({ agentSelf, agentMembers, nodes, activeFailedAllo
             )}
           </div>
           {config.pulse && (
-            <div className={`absolute inset-0 w-12 h-12 ${config.color} rounded-full animate-ping opacity-25`} />
+            <div className={`absolute inset-0 w-12 h-12 ${config.dot} rounded-full animate-ping opacity-25`} />
           )}
         </div>
 
         <div className="flex-1">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">{config.text}</h2>
+          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">{config.label}</h2>
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-gray-600 dark:text-gray-400">
             {leader && <span>Leader: {leader}</span>}
             {version && (

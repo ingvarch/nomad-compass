@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import type { RecentEvent } from '../../lib/services/allocationAnalyzer';
 import { formatTimeAgo } from '../../lib/services/allocationAnalyzer';
+import { severityColors, getStatusClasses } from '../../lib/utils/statusColors';
 
 // Re-export RecentEvent type for other modules
 export type { RecentEvent };
@@ -9,18 +10,6 @@ interface RecentActivityProps {
   events: RecentEvent[];
   loading?: boolean;
 }
-
-const severityColors: Record<RecentEvent['severity'], string> = {
-  info: 'bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-200',
-  warning: 'bg-yellow-100 dark:bg-yellow-900/50 text-yellow-800 dark:text-yellow-200',
-  error: 'bg-red-100 dark:bg-red-900/50 text-red-800 dark:text-red-200',
-};
-
-const severityDots: Record<RecentEvent['severity'], string> = {
-  info: 'bg-blue-500',
-  warning: 'bg-yellow-500',
-  error: 'bg-red-500',
-};
 
 export function RecentActivity({ events, loading }: RecentActivityProps) {
   if (loading) {
@@ -61,7 +50,7 @@ export function RecentActivity({ events, loading }: RecentActivityProps) {
             >
               <div className="flex items-start gap-2">
                 <span
-                  className={`mt-1.5 w-2 h-2 rounded-full flex-shrink-0 ${severityDots[event.severity]}`}
+                  className={`mt-1.5 w-2 h-2 rounded-full flex-shrink-0 ${severityColors[event.severity].dot}`}
                 />
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 text-xs">
@@ -72,7 +61,7 @@ export function RecentActivity({ events, loading }: RecentActivityProps) {
                       {event.jobId}
                     </Link>
                     <span className="text-gray-400 dark:text-gray-500">{event.taskName}</span>
-                    <span className={`px-1.5 py-0.5 rounded text-xs ${severityColors[event.severity]}`}>
+                    <span className={`px-1.5 py-0.5 rounded text-xs ${getStatusClasses(severityColors[event.severity])}`}>
                       {event.type}
                     </span>
                   </div>
