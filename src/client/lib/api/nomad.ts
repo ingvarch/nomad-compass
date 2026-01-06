@@ -4,9 +4,12 @@ import {
   ApiError,
   NomadNamespace,
   NomadNode,
+  NomadNodeDetail,
   NomadAgentSelf,
   NomadAgentMembers,
   NomadAllocation,
+  NomadEvaluation,
+  NomadJobPlanResponse,
 } from '../../types/nomad';
 import {
   NomadAclPolicy,
@@ -193,6 +196,52 @@ export class NomadClient {
   }
 
   /**
+   * Get job evaluations
+   */
+  async getJobEvaluations(jobId: string, namespace: string = 'default'): Promise<NomadEvaluation[]> {
+    return this.request<NomadEvaluation[]>(`/v1/job/${jobId}/evaluations`, {
+      params: { namespace }
+    });
+  }
+
+  /**
+   * Revert job to a previous version
+   */
+  async revertJob(
+    jobId: string,
+    version: number,
+    namespace: string = 'default'
+  ): Promise<{ EvalID: string; EvalCreateIndex: number; JobModifyIndex: number }> {
+    return this.request(`/v1/job/${jobId}/revert`, {
+      method: 'POST',
+      params: { namespace },
+      body: JSON.stringify({
+        JobID: jobId,
+        JobVersion: version,
+      }),
+    });
+  }
+
+  /**
+   * Plan a job (dry-run) to preview scheduler decisions
+   */
+  async planJob(
+    jobId: string,
+    jobSpec: any,
+    namespace: string = 'default',
+    diff: boolean = true
+  ): Promise<NomadJobPlanResponse> {
+    return this.request<NomadJobPlanResponse>(`/v1/job/${jobId}/plan`, {
+      method: 'POST',
+      params: { namespace },
+      body: JSON.stringify({
+        Job: jobSpec.Job || jobSpec,
+        Diff: diff,
+      }),
+    });
+  }
+
+  /**
    * Create a new job or update an existing job
    *
    * Nomad API uses the same endpoint for both create and update operations.
@@ -331,6 +380,20 @@ export class NomadClient {
     return this.request<NomadNode[]>('/v1/nodes', {
       params: { resources: 'true' },
     });
+  }
+
+  /**
+   * Get a single node by ID
+   */
+  async getNode(nodeId: string): Promise<NomadNodeDetail> {
+    return this.request<NomadNodeDetail>(`/v1/node/${nodeId}`);
+  }
+
+  /**
+   * Get allocations for a specific node
+   */
+  async getNodeAllocations(nodeId: string): Promise<NomadAllocation[]> {
+    return this.request<NomadAllocation[]>(`/v1/node/${nodeId}/allocations`);
   }
 
   /**

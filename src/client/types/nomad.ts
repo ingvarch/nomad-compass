@@ -164,6 +164,38 @@ export interface NomadNode {
     Attributes?: Record<string, string>;
 }
 
+// Extended node detail type for individual node view
+export interface NomadNodeDetail extends NomadNode {
+    HTTPAddr?: string;
+    TLSEnabled?: boolean;
+    Drivers?: Record<string, NomadDriverInfo>;
+    HostVolumes?: Record<string, NomadHostVolumeInfo>;
+    Events?: NomadNodeEvent[];
+    CreateIndex?: number;
+    ModifyIndex?: number;
+}
+
+export interface NomadDriverInfo {
+    Detected: boolean;
+    Healthy: boolean;
+    HealthDescription?: string;
+    UpdateTime?: string;
+    Attributes?: Record<string, string>;
+}
+
+export interface NomadHostVolumeInfo {
+    Path: string;
+    ReadOnly: boolean;
+}
+
+export interface NomadNodeEvent {
+    Message: string;
+    Subsystem: string;
+    Details?: Record<string, string>;
+    Timestamp: string;
+    CreateIndex?: number;
+}
+
 // Agent types for cluster health
 export interface NomadVersionInfo {
     Version: string;
@@ -280,4 +312,117 @@ export interface NomadAllocation {
     ModifyTime: number;
     CreateIndex: number;
     ModifyIndex: number;
+}
+
+// Evaluation types
+export interface NomadEvaluation {
+    ID: string;
+    Namespace: string;
+    Priority: number;
+    Type: string;
+    TriggeredBy: string;
+    JobID: string;
+    JobModifyIndex: number;
+    NodeID?: string;
+    NodeModifyIndex?: number;
+    Status: 'pending' | 'blocked' | 'complete' | 'failed' | 'canceled';
+    StatusDescription?: string;
+    Wait: number;
+    WaitUntil?: string;
+    NextEval?: string;
+    PreviousEval?: string;
+    BlockedEval?: string;
+    FailedTGAllocs?: Record<string, NomadFailedTGAlloc>;
+    ClassEligibility?: Record<string, boolean>;
+    QuotaLimitReached?: string;
+    EscapedComputedClass: boolean;
+    AnnotatePlan: boolean;
+    QueuedAllocations?: Record<string, number>;
+    SnapshotIndex: number;
+    CreateIndex: number;
+    ModifyIndex: number;
+    CreateTime: number;
+    ModifyTime: number;
+}
+
+export interface NomadFailedTGAlloc {
+    CoalescedFailures: number;
+    NodesEvaluated: number;
+    NodesFiltered: number;
+    NodesAvailable?: Record<string, number>;
+    ClassFiltered?: Record<string, number>;
+    ConstraintFiltered?: Record<string, number>;
+    NodesExhausted: number;
+    ClassExhausted?: Record<string, number>;
+    DimensionExhausted?: Record<string, number>;
+    QuotaExhausted?: string[];
+    Scores?: Record<string, number>;
+    AllocationTime?: number;
+}
+
+// Job Plan (dry-run) response types
+export interface NomadJobPlanAnnotations {
+    DesiredTGUpdates?: Record<string, NomadDesiredUpdates>;
+    PreemptedAllocs?: NomadAllocation[];
+}
+
+export interface NomadDesiredUpdates {
+    Ignore?: number;
+    Place?: number;
+    Migrate?: number;
+    Stop?: number;
+    InPlaceUpdate?: number;
+    DestructiveUpdate?: number;
+    Canary?: number;
+    Preemptions?: number;
+}
+
+export interface NomadJobDiff {
+    Type: 'Added' | 'Deleted' | 'Edited' | 'None';
+    ID: string;
+    Fields?: NomadFieldDiff[];
+    Objects?: NomadObjectDiff[];
+    TaskGroups?: NomadTaskGroupDiff[];
+}
+
+export interface NomadFieldDiff {
+    Type: 'Added' | 'Deleted' | 'Edited' | 'None';
+    Name: string;
+    Old: string;
+    New: string;
+    Annotations?: string[];
+}
+
+export interface NomadObjectDiff {
+    Type: 'Added' | 'Deleted' | 'Edited' | 'None';
+    Name: string;
+    Fields?: NomadFieldDiff[];
+    Objects?: NomadObjectDiff[];
+}
+
+export interface NomadTaskGroupDiff {
+    Type: 'Added' | 'Deleted' | 'Edited' | 'None';
+    Name: string;
+    Fields?: NomadFieldDiff[];
+    Objects?: NomadObjectDiff[];
+    Tasks?: NomadTaskDiff[];
+    Updates?: Record<string, number>;
+}
+
+export interface NomadTaskDiff {
+    Type: 'Added' | 'Deleted' | 'Edited' | 'None';
+    Name: string;
+    Fields?: NomadFieldDiff[];
+    Objects?: NomadObjectDiff[];
+    Annotations?: string[];
+}
+
+export interface NomadJobPlanResponse {
+    Index: number;
+    Diff?: NomadJobDiff;
+    Annotations?: NomadJobPlanAnnotations;
+    FailedTGAllocs?: Record<string, NomadFailedTGAlloc>;
+    Warnings?: string;
+    NextPeriodicLaunch?: string;
+    CreatedEvals?: NomadEvaluation[];
 }

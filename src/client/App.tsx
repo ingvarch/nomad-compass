@@ -15,6 +15,8 @@ import JobCreatePage from './pages/JobCreatePage';
 import JobEditPage from './pages/JobEditPage';
 import FailedAllocationsPage from './pages/FailedAllocationsPage';
 import NodesPage from './pages/NodesPage';
+import NodeDetailPage from './pages/NodeDetailPage';
+import ServersPage from './pages/ServersPage';
 import AllocationsPage from './pages/AllocationsPage';
 import NamespacesPage from './pages/NamespacesPage';
 import TopologyPage from './pages/TopologyPage';
@@ -64,6 +66,14 @@ const router = createBrowserRouter([
       {
         path: '/nodes',
         element: <NodesPage />,
+      },
+      {
+        path: '/nodes/:nodeId',
+        element: <NodeDetailPage />,
+      },
+      {
+        path: '/servers',
+        element: <ServersPage />,
       },
       {
         path: '/namespaces',
