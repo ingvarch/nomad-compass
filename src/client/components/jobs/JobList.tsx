@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { createNomadClient } from '../../lib/api/nomad';
+import { getJobStatusColor, getStatusClasses } from '../../lib/utils/statusColors';
 import { NomadJob, NomadNamespace } from '../../types/nomad';
 import { LoadingSpinner, ErrorAlert } from '../ui';
 
@@ -50,24 +51,6 @@ export const JobList: React.FC = () => {
 
     fetchNamespacesAndJobs();
   }, [isAuthenticated, selectedNamespace]);
-
-  // Function to get status color
-  const getStatusColor = (status: string, stop: boolean): string => {
-    if (stop) {
-      return 'text-gray-600 bg-gray-100 dark:text-monokai-muted dark:bg-monokai-surface';
-    }
-
-    switch (status.toLowerCase()) {
-      case 'running':
-        return 'text-green-600 bg-green-100 dark:text-monokai-green dark:bg-monokai-surface';
-      case 'pending':
-        return 'text-yellow-600 bg-yellow-100 dark:text-monokai-yellow dark:bg-monokai-surface';
-      case 'dead':
-        return 'text-red-600 bg-red-100 dark:text-monokai-red dark:bg-monokai-surface';
-      default:
-        return 'text-gray-600 bg-gray-100 dark:text-monokai-muted dark:bg-monokai-surface';
-    }
-  };
 
   // Handle namespace change - update URL
   const handleNamespaceChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -180,7 +163,7 @@ export const JobList: React.FC = () => {
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusColor(job.Status, job.Stop)}`}>
+                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusClasses(getJobStatusColor(job.Status, job.Stop))}`}>
                         {job.Status} {job.Stop ? '(Stopped)' : ''}
                       </span>
                         </td>

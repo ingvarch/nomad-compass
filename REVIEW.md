@@ -164,13 +164,15 @@ export const LoadingSpinner: React.FC<{ size?: 'sm' | 'md' | 'lg'; className?: s
 
 ---
 
-### Issue #3: Duplicate Refresh Button Pattern ⚠️ MEDIUM
+### Issue #3: Duplicate Refresh Button Pattern FIXED
 
-**Severity:** MEDIUM  
-**Occurrences:** 4+ instances  
-**Files:** NodesPage.tsx (lines 87-95), AllocationsPage.tsx (lines 112-120), NamespacesPage.tsx (lines 175-183), FailedAllocationsPage.tsx
+**Severity:** MEDIUM
+**Status:** COMPLETED
+**Date Fixed:** January 6, 2026
+**Original Occurrences:** 9 instances across pages and ACL tabs
+**Files Affected:** NodesPage.tsx, AllocationsPage.tsx, NamespacesPage.tsx, FailedAllocationsPage.tsx, TopologyPage.tsx, ActivityPage.tsx, PoliciesTab.tsx, RolesTab.tsx, TokensTab.tsx
 
-**Pattern:**
+**Original Pattern:**
 ```tsx
 <button
   onClick={() => { setLoading(true); fetchData(); }}
@@ -183,69 +185,82 @@ export const LoadingSpinner: React.FC<{ size?: 'sm' | 'md' | 'lg'; className?: s
 </button>
 ```
 
-**Recommended Fix:** Create `RefreshButton` component
+**Solution Implemented:** Created reusable `RefreshButton` component at `src/client/components/ui/RefreshButton.tsx`
 
+**Usage:**
 ```tsx
-// src/client/components/ui/RefreshButton.tsx
-export const RefreshButton: React.FC<{ onRefresh: () => void }> = ({ onRefresh }) => {
-  return (
-    <button onClick={onRefresh} className="inline-flex items-center px-4 py-2 border...">
-      <RefreshIcon className="w-4 h-4 mr-2" />
-      Refresh
-    </button>
-  );
-};
+import { RefreshButton } from '../components/ui';
+
+<RefreshButton onClick={() => { setLoading(true); fetchData(); }} />
 ```
+
+**Benefits:**
+- Eliminated 9 code duplicates
+- Centralized refresh button styling
+- Consistent look and feel across all pages
+- Easy to modify globally
 
 ---
 
-### Issue #4: Duplicate Status Color Logic ⚠️ MEDIUM
+### Issue #4: Duplicate Status Color Logic FIXED
 
-**Severity:** MEDIUM  
-**Occurrences:** At least 2 separate implementations  
-**Files:** 
-- `AllocationsPage.tsx` (lines 13-27): `getStatusColor()` function
-- `JobList.tsx` (lines 54-69): `getStatusColor()` function
+**Severity:** MEDIUM
+**Status:** COMPLETED
+**Date Fixed:** January 6, 2026
+**Original Occurrences:** 7 separate implementations
+**Files Affected:** AllocationsPage.tsx, JobList.tsx, NodesPage.tsx, StatusBadge.tsx, ActivityPage.tsx, ClusterHealth.tsx, FailedAllocationsPage.tsx
 
-**Code:**
+**Original Pattern:**
 ```tsx
 // AllocationsPage.tsx
 function getStatusColor(status: string): string {
   switch (status) {
     case 'running': return 'bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-200';
-    case 'pending': return 'bg-yellow-100 dark:bg-yellow-900/50 text-yellow-800 dark:text-yellow-200';
     // ... 5 more cases
   }
 }
 
 // JobList.tsx - DIFFERENT implementation for same concept!
-const getStatusColor = (status: string, stop: boolean): string => {
-  if (stop) return 'text-gray-600 bg-gray-100...';
-  switch (status.toLowerCase()) {
-    case 'running': return 'text-green-600 bg-green-100...';
-    // ... different styling
-  }
-};
+const getStatusColor = (status: string, stop: boolean): string => { ... }
 ```
 
-**Recommended Fix:** Create unified utility in `src/client/lib/utils/statusColors.ts`
+**Solution Implemented:** Created unified utility at `src/client/lib/utils/statusColors.ts`
 
+**Implementation Details:**
 ```tsx
-export const getStatusColor = (status: string, options?: { stopped?: boolean }): string => {
-  if (options?.stopped) return 'bg-gray-100 dark:bg-gray-600 text-gray-800 dark:text-gray-200';
-  // ... unified implementation
-};
+// Type-safe status types
+export type AllocationStatus = 'running' | 'pending' | 'complete' | 'failed' | 'lost';
+export type JobStatus = 'running' | 'pending' | 'dead' | 'stopped' | 'degraded';
+export type NodeStatus = 'ready' | 'down' | 'draining';
+export type Severity = 'info' | 'warning' | 'error';
+export type ClusterHealth = 'healthy' | 'degraded' | 'critical';
+
+// Helper functions
+export function getAllocationStatusColor(status: string): StatusColorConfig
+export function getJobStatusColor(status: string, isStopped?: boolean): StatusColorConfig
+export function getNodeStatusColor(status: string, isDraining?: boolean): StatusColorConfig
+export function getSeverityColor(severity: string): StatusColorConfig
+export function getStatusClasses(config: StatusColorConfig): string
 ```
+
+**Benefits:**
+- Eliminated 7 duplicate implementations
+- Type-safe with TypeScript
+- Consistent colors across all status displays
+- Centralized dark mode support
+- Easy to maintain and update globally
 
 ---
 
-### Issue #5: Duplicate Page Header Pattern ⚠️ MEDIUM
+### Issue #5: Duplicate Page Header Pattern FIXED
 
-**Severity:** MEDIUM  
-**Occurrences:** 6+ instances  
-**Files:** JobsPage.tsx, NodesPage.tsx, AllocationsPage.tsx, NamespacesPage.tsx, etc.
+**Severity:** MEDIUM
+**Status:** COMPLETED
+**Date Fixed:** January 6, 2026
+**Original Occurrences:** 12 instances (many render twice for loading/loaded states)
+**Files Affected:** NodesPage.tsx, AllocationsPage.tsx, NamespacesPage.tsx, FailedAllocationsPage.tsx, TopologyPage.tsx, ActivityPage.tsx, AclPage.tsx, DashboardPage.tsx, JobsPage.tsx, JobCreatePage.tsx, JobEditPage.tsx, JobDetailPage.tsx
 
-**Pattern:**
+**Original Pattern:**
 ```tsx
 <div className="flex justify-between items-start">
   <div>
@@ -256,36 +271,37 @@ export const getStatusColor = (status: string, options?: { stopped?: boolean }):
 </div>
 ```
 
-**Recommended Fix:** Create `PageHeader` component
+**Solution Implemented:** Created reusable `PageHeader` component at `src/client/components/ui/PageHeader.tsx`
 
+**Usage:**
 ```tsx
-// src/client/components/ui/PageHeader.tsx
-export const PageHeader: React.FC<{ 
-  title: string; 
-  description: string; 
-  actions?: React.ReactNode 
-}> = ({ title, description, actions }) => {
-  return (
-    <div className="flex justify-between items-start">
-      <div>
-        <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">{title}</h1>
-        <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">{description}</p>
-      </div>
-      {actions && <div>{actions}</div>}
-    </div>
-  );
-};
+import { PageHeader, RefreshButton } from '../components/ui';
+
+<PageHeader
+  title="Nodes"
+  description="View and manage cluster nodes"
+  actions={<RefreshButton onClick={handleRefresh} />}
+/>
 ```
+
+**Benefits:**
+- Eliminated 12+ duplicate header patterns
+- Consistent page title styling across all pages
+- Supports optional actions slot
+- Supports ReactNode for complex descriptions
+- Reduced code in loading states
 
 ---
 
-### Issue #6: Duplicate "Back to Dashboard" Link
+### Issue #6: Duplicate "Back to Dashboard" Link FIXED
 
-**Severity:** LOW  
-**Occurrences:** 4+ instances  
-**Files:** NodesPage.tsx (lines 210-218), AllocationsPage.tsx (lines 220-228), NamespacesPage.tsx (lines 270-278)
+**Severity:** LOW
+**Status:** COMPLETED
+**Date Fixed:** January 6, 2026
+**Original Occurrences:** 8 instances
+**Files Affected:** NodesPage.tsx, AllocationsPage.tsx, NamespacesPage.tsx, FailedAllocationsPage.tsx, TopologyPage.tsx, ActivityPage.tsx, AclPage.tsx
 
-**Pattern:**
+**Original Pattern:**
 ```tsx
 <Link
   to="/dashboard"
@@ -298,17 +314,36 @@ export const PageHeader: React.FC<{
 </Link>
 ```
 
-**Recommended Fix:** Create `BackToDashboard` component
+**Solution Implemented:** Created reusable `BackLink` component at `src/client/components/ui/BackLink.tsx`
+
+**Usage:**
+```tsx
+import { BackLink } from '../components/ui';
+
+// Default: "Back to Dashboard" linking to /dashboard
+<BackLink to="/dashboard" />
+
+// Custom label
+<BackLink to="/jobs" label="Back to Jobs" />
+```
+
+**Benefits:**
+- Eliminated 8 duplicate back link patterns
+- Consistent styling and hover behavior
+- Flexible with custom labels and destinations
+- Includes chevron icon by default
 
 ---
 
-### Issue #7: Duplicate Filter Button Pattern ⚠️ MEDIUM
+### Issue #7: Duplicate Filter Button Pattern FIXED
 
-**Severity:** MEDIUM  
-**Occurrences:** At least 3 implementations  
-**Files:** NodesPage.tsx (lines 106-125), AllocationsPage.tsx (lines 131-151)
+**Severity:** MEDIUM
+**Status:** COMPLETED
+**Date Fixed:** January 6, 2026
+**Original Occurrences:** 3 implementations
+**Files Affected:** NodesPage.tsx, AllocationsPage.tsx, ActivityPage.tsx
 
-**Pattern:**
+**Original Pattern:**
 ```tsx
 {[
   { value: 'all', label: 'All', count: items.length },
@@ -327,17 +362,44 @@ export const PageHeader: React.FC<{
 ))}
 ```
 
-**Recommended Fix:** Create `FilterButtons` component
+**Solution Implemented:** Created generic `FilterButtons` component at `src/client/components/ui/FilterButtons.tsx`
+
+**Usage:**
+```tsx
+import { FilterButtons, FilterOption } from '../components/ui';
+
+const filterOptions: FilterOption<StatusFilter>[] = [
+  { value: 'all', label: 'All', count: nodes.length },
+  { value: 'ready', label: 'Ready', count: stats.ready, color: 'bg-green-500' },
+  { value: 'down', label: 'Down', count: stats.down, color: 'bg-red-500' },
+];
+
+<FilterButtons
+  options={filterOptions}
+  activeValue={statusFilter}
+  onFilterChange={setFilter}
+/>
+```
+
+**Benefits:**
+- Eliminated 3 duplicate filter implementations
+- Type-safe with TypeScript generics
+- Configurable size (sm/md)
+- Optional color indicators
+- Optional count display
+- Consistent active/inactive states
 
 ---
 
-### Issue #8: Duplicate Data Fetching Pattern ⚠️ MEDIUM
+### Issue #8: Duplicate Data Fetching Pattern FIXED
 
-**Severity:** MEDIUM  
-**Occurrences:** ~41 instances of `createNomadClient()` calls  
+**Severity:** MEDIUM
+**Status:** COMPLETED
+**Date Fixed:** January 6, 2026
+**Original Occurrences:** ~41 instances of `createNomadClient()` calls
 **Files:** Almost every page and component that needs data
 
-**Pattern:**
+**Original Pattern:**
 ```tsx
 const fetchData = useCallback(async () => {
   const client = createNomadClient();
@@ -353,42 +415,53 @@ const fetchData = useCallback(async () => {
 }, []);
 ```
 
-**Recommended Fix:** Create custom hooks for common data operations
+**Solution Implemented:** Created custom hooks at `src/client/hooks/useNomadData.ts`
 
+**Implementation Details:**
 ```tsx
-// src/client/hooks/useNomadData.ts
-export function useNomadData<T>(
-  fetcher: (client: NomadClient) => Promise<T>,
-  deps: any[] = []
-) {
-  const [data, setData] = useState<T | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+// Single data fetcher
+export function useNomadData<T>({
+  fetcher,
+  errorMessage = 'Failed to fetch data',
+  dependencies = [],
+  initialData,
+}: UseNomadDataOptions<T>): UseNomadDataResult<T>
 
-  const refresh = useCallback(async () => {
-    setLoading(true);
-    const client = createNomadClient();
-    try {
-      const result = await fetcher(client);
-      setData(result);
-      setError(null);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Request failed');
-    } finally {
-      setLoading(false);
-    }
-  }, deps);
-
-  useEffect(() => { refresh(); }, [refresh]);
-
-  return { data, loading, error, refresh };
-}
-
-// Usage:
-const { data: nodes, loading, error, refresh } = useNomadData(
-  (client) => client.getNodes()
-);
+// Multiple data fetchers (parallel)
+export function useNomadMultiData<T extends Record<string, unknown>>({
+  fetchers,
+  errorMessage = 'Failed to fetch data',
+  dependencies = [],
+}: UseNomadMultiDataOptions<T>): UseNomadDataResult<Partial<T>>
 ```
+
+**Usage:**
+```tsx
+import { useNomadData } from '../hooks/useNomadData';
+
+// Simple usage
+const { data: nodes, loading, error, refetch } = useNomadData({
+  fetcher: (client) => client.getNodes(),
+  initialData: [],
+});
+
+// Multiple fetchers
+const { data, loading, error, refetch } = useNomadMultiData({
+  fetchers: {
+    jobs: (client) => client.getJobs(),
+    nodes: (client) => client.getNodes(),
+  },
+});
+```
+
+**Benefits:**
+- Provides reusable pattern for all data fetching
+- Eliminates boilerplate code across components
+- Consistent error handling
+- Automatic loading state management
+- Support for parallel data fetching with useNomadMultiData
+- Type-safe with TypeScript generics
+- Includes refetch function for manual refresh
 
 ---
 
@@ -1004,10 +1077,10 @@ Create `CONTRIBUTING.md` with:
 |----------|-------|--------|
 | **CRITICAL** | 1 | #12 (Docker credentials in plaintext) |
 | **HIGH** | 4 | ~~#1~~, ~~#2~~, #13, #19, #21, #28 |
-| **MEDIUM** | 13 | #3, #4, #5, #7, #8, #9, #11, #14, #15, #16, #20, #22, #23 |
-| **LOW** | 10 | #6, #10, #17, #18, #24, #25, #26, #27, #29, #30 |
+| **MEDIUM** | 13 | ~~#3~~, ~~#4~~, ~~#5~~, ~~#7~~, ~~#8~~, #9, #11, #14, #15, #16, #20, #22, #23 |
+| **LOW** | 10 | ~~#6~~, #10, #17, #18, #24, #25, #26, #27, #29, #30 |
 
-**Total Issues Found:** 30 (2 fixed: #1 LoadingSpinner, #2 ErrorAlert)
+**Total Issues Found:** 30 (8 fixed: #1 LoadingSpinner, #2 ErrorAlert, #3 RefreshButton, #4 StatusColors, #5 PageHeader, #6 BackLink, #7 FilterButtons, #8 useNomadData)
 
 ---
 
@@ -1046,9 +1119,9 @@ Create `CONTRIBUTING.md` with:
 
 ### 🔧 Next Sprint (3-5 days)
 
-1. Create common UI components (RefreshButton, PageHeader, FilterButtons)
-2. Create useNomadData hook to reduce duplication
-3. Unify status color logic
+1. ✅ Create common UI components (RefreshButton, PageHeader, FilterButtons, BackLink)
+2. ✅ Create useNomadData hook to reduce duplication
+3. ✅ Unify status color logic
 4. Add input validation/sanitization layer
 5. Add memoization for expensive computations (#28)
 

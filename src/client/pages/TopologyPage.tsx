@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { createNomadClient } from '../lib/api/nomad';
 import type { NomadNode, NomadAllocation } from '../types/nomad';
-import { LoadingSpinner, ErrorAlert } from '../components/ui';
+import { LoadingSpinner, ErrorAlert, PageHeader, RefreshButton, BackLink } from '../components/ui';
 
 interface NodeWithAllocations extends NomadNode {
   allocations: NomadAllocation[];
@@ -116,47 +116,21 @@ export default function TopologyPage() {
   if (loading) {
     return (
       <div className="space-y-6">
-        <div>
-          <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">Cluster Topology</h1>
-          <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-            Visual overview of nodes and allocations
-          </p>
-        </div>
-        <div className="flex justify-center items-center h-64">
-          <LoadingSpinner />
-        </div>
+        <PageHeader title="Cluster Topology" description="Visual overview of nodes and allocations" />
+        <LoadingSpinner />
       </div>
     );
   }
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex justify-between items-start">
-        <div>
-          <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">Cluster Topology</h1>
-          <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-            Visual overview of nodes and allocations
-          </p>
-        </div>
-        <button
-          onClick={() => {
-            setLoading(true);
-            fetchData();
-          }}
-          className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 shadow-sm text-sm font-medium rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
-        >
-          <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
-            />
-          </svg>
-          Refresh
-        </button>
-      </div>
+      <PageHeader
+        title="Cluster Topology"
+        description="Visual overview of nodes and allocations"
+        actions={
+          <RefreshButton onClick={() => { setLoading(true); fetchData(); }} />
+        }
+      />
 
       {error && <ErrorAlert message={error} />}
 
@@ -269,15 +243,7 @@ export default function TopologyPage() {
         ))}
       </div>
 
-      <Link
-        to="/dashboard"
-        className="inline-flex items-center text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
-      >
-        <svg className="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-        </svg>
-        Back to Dashboard
-      </Link>
+      <BackLink to="/dashboard" />
     </div>
   );
 }

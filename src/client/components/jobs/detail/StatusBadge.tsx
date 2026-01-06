@@ -1,5 +1,11 @@
 import React from 'react';
 import type { NomadAllocation } from '../../../types/nomad';
+import {
+  jobStatusColors,
+  getStatusClasses,
+  type JobStatus,
+  type StatusColorConfig,
+} from '../../../lib/utils/statusColors';
 
 interface StatusBadgeProps {
   status: string;
@@ -54,25 +60,15 @@ function computeEffectiveStatus(
   return 'failed';
 }
 
+function getStatusColorConfig(effectiveStatus: EffectiveStatus): StatusColorConfig {
+  // Map 'failed' to 'dead' since they share the same color scheme
+  const mappedStatus: JobStatus = effectiveStatus === 'failed' ? 'dead' : effectiveStatus;
+  return jobStatusColors[mappedStatus];
+}
+
 export const StatusBadge: React.FC<StatusBadgeProps> = ({ status, isStopped, allocations }) => {
   const effectiveStatus = computeEffectiveStatus(status, isStopped, allocations);
-
-  const getStatusClasses = () => {
-    switch (effectiveStatus) {
-      case 'running':
-        return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200';
-      case 'pending':
-        return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200';
-      case 'stopped':
-        return 'bg-gray-100 text-gray-800 dark:bg-gray-600 dark:text-gray-200';
-      case 'degraded':
-        return 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-200';
-      case 'failed':
-      case 'dead':
-      default:
-        return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200';
-    }
-  };
+  const colorConfig = getStatusColorConfig(effectiveStatus);
 
   const getDisplayText = () => {
     if (effectiveStatus === 'stopped') {
@@ -88,7 +84,7 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({ status, isStopped, all
   };
 
   return (
-    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusClasses()}`}>
+    <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusClasses(colorConfig)}`}>
       {getDisplayText()}
     </span>
   );

@@ -2,8 +2,19 @@ import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { createNomadClient } from '../lib/api/nomad';
 import { NomadAllocation, NomadJob } from '../types/nomad';
-import { LoadingSpinner, ErrorAlert } from '../components/ui';
+import {
+  LoadingSpinner,
+  ErrorAlert,
+  PageHeader,
+  RefreshButton,
+  BackLink,
+} from '../components/ui';
 import { useToast } from '../context/ToastContext';
+import {
+  getAllocationStatusColor,
+  getJobStatusColor,
+  getStatusClasses,
+} from '../lib/utils/statusColors';
 
 interface FailedAllocationInfo {
   allocation: NomadAllocation;
@@ -131,17 +142,46 @@ export default function FailedAllocationsPage() {
     }
   };
 
+  const handleRefresh = () => {
+    setLoading(true);
+    fetchData();
+  };
+
+  const headerActions = (
+    <>
+      <RefreshButton onClick={handleRefresh} />
+      <button
+        onClick={handleGarbageCollect}
+        disabled={gcLoading}
+        className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 shadow-sm text-sm font-medium rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50"
+      >
+        {gcLoading ? (
+          <>
+            <svg className="animate-spin -ml-1 mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24">
+              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
+            </svg>
+            Running...
+          </>
+        ) : (
+          <>
+            <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+            </svg>
+            Run GC
+          </>
+        )}
+      </button>
+    </>
+  );
+
   if (loading) {
     return (
       <div className="space-y-6">
-        <div>
-          <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">
-            Failed Allocations
-          </h1>
-          <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-            View active and historical allocation failures
-          </p>
-        </div>
+        <PageHeader
+          title="Failed Allocations"
+          description="View active and historical allocation failures"
+        />
         <div className="flex justify-center items-center h-64">
           <LoadingSpinner />
         </div>
@@ -153,49 +193,11 @@ export default function FailedAllocationsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-start">
-        <div>
-          <h1 className="text-2xl font-semibold text-gray-900 dark:text-white">
-            Failed Allocations
-          </h1>
-          <p className="mt-1 text-sm text-gray-600 dark:text-gray-400">
-            View active and historical allocation failures
-          </p>
-        </div>
-        <div className="flex gap-3">
-          <button
-            onClick={() => { setLoading(true); fetchData(); }}
-            className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 shadow-sm text-sm font-medium rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600"
-          >
-            <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-            </svg>
-            Refresh
-          </button>
-          <button
-            onClick={handleGarbageCollect}
-            disabled={gcLoading}
-            className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 shadow-sm text-sm font-medium rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50"
-          >
-            {gcLoading ? (
-              <>
-                <svg className="animate-spin -ml-1 mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-                </svg>
-                Running...
-              </>
-            ) : (
-              <>
-                <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-                </svg>
-                Run GC
-              </>
-            )}
-          </button>
-        </div>
-      </div>
+      <PageHeader
+        title="Failed Allocations"
+        description="View active and historical allocation failures"
+        actions={headerActions}
+      />
 
       {error && <ErrorAlert message={error} />}
 
@@ -237,39 +239,42 @@ export default function FailedAllocationsPage() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                {activeFailures.map(({ allocation, jobName, failedTasks }) => (
-                  <tr key={allocation.ID} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                    <td className="px-4 py-2 whitespace-nowrap">
-                      <Link
-                        to={`/jobs/${allocation.JobID}?namespace=${allocation.Namespace}`}
-                        className="text-blue-600 dark:text-blue-400 hover:underline"
-                      >
-                        {jobName}
-                      </Link>
-                    </td>
-                    <td className="px-4 py-2 whitespace-nowrap">
-                      <span className="text-sm font-mono text-gray-900 dark:text-gray-100">
-                        {allocation.ID.slice(0, 8)}
-                      </span>
-                    </td>
-                    <td className="px-4 py-2 whitespace-nowrap">
-                      <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-red-100 dark:bg-red-900/50 text-red-800 dark:text-red-200">
-                        {allocation.ClientStatus}
-                      </span>
-                    </td>
-                    <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
-                      {allocation.NodeName || allocation.NodeID?.slice(0, 8) || '-'}
-                    </td>
-                    <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
-                      {formatTimestamp(allocation.ModifyTime)}
-                    </td>
-                    <td className="px-4 py-2 max-w-xs">
-                      <span className="text-sm text-red-600 dark:text-red-400 truncate block">
-                        {failedTasks.length > 0 ? failedTasks.join(', ') : allocation.ClientDescription || '-'}
-                      </span>
-                    </td>
-                  </tr>
-                ))}
+                {activeFailures.map(({ allocation, jobName, failedTasks }) => {
+                  const statusColor = getAllocationStatusColor(allocation.ClientStatus);
+                  return (
+                    <tr key={allocation.ID} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                      <td className="px-4 py-2 whitespace-nowrap">
+                        <Link
+                          to={`/jobs/${allocation.JobID}?namespace=${allocation.Namespace}`}
+                          className="text-blue-600 dark:text-blue-400 hover:underline"
+                        >
+                          {jobName}
+                        </Link>
+                      </td>
+                      <td className="px-4 py-2 whitespace-nowrap">
+                        <span className="text-sm font-mono text-gray-900 dark:text-gray-100">
+                          {allocation.ID.slice(0, 8)}
+                        </span>
+                      </td>
+                      <td className="px-4 py-2 whitespace-nowrap">
+                        <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${getStatusClasses(statusColor)}`}>
+                          {allocation.ClientStatus}
+                        </span>
+                      </td>
+                      <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
+                        {allocation.NodeName || allocation.NodeID?.slice(0, 8) || '-'}
+                      </td>
+                      <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
+                        {formatTimestamp(allocation.ModifyTime)}
+                      </td>
+                      <td className="px-4 py-2 max-w-xs">
+                        <span className="text-sm text-red-600 dark:text-red-400 truncate block">
+                          {failedTasks.length > 0 ? failedTasks.join(', ') : allocation.ClientDescription || '-'}
+                        </span>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -302,62 +307,53 @@ export default function FailedAllocationsPage() {
           </div>
         ) : (
           <div className="divide-y divide-gray-200 dark:divide-gray-700">
-            {historicalJobs.map(({ job, failedCount, taskGroups }) => (
-              <div key={`${job.Namespace}/${job.ID}`} className="px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3 flex-wrap">
-                    <Link
-                      to={`/jobs/${job.ID}?namespace=${job.Namespace}`}
-                      className="text-blue-600 dark:text-blue-400 hover:underline font-medium"
-                    >
-                      {job.Name}
-                    </Link>
-                    <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-purple-100 dark:bg-purple-900/50 text-purple-800 dark:text-purple-200">
-                      {job.Type}
-                    </span>
-                    <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-200">
-                      {job.Namespace}
-                    </span>
-                    <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${
-                      job.Status === 'running'
-                        ? 'bg-green-100 dark:bg-green-900/50 text-green-800 dark:text-green-200'
-                        : 'bg-gray-100 dark:bg-gray-600 text-gray-800 dark:text-gray-200'
-                    }`}>
-                      {job.Status}
+            {historicalJobs.map(({ job, failedCount, taskGroups }) => {
+              const jobStatusColor = getJobStatusColor(job.Status, job.Stop);
+              return (
+                <div key={`${job.Namespace}/${job.ID}`} className="px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700/50">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3 flex-wrap">
+                      <Link
+                        to={`/jobs/${job.ID}?namespace=${job.Namespace}`}
+                        className="text-blue-600 dark:text-blue-400 hover:underline font-medium"
+                      >
+                        {job.Name}
+                      </Link>
+                      <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-purple-100 dark:bg-purple-900/50 text-purple-800 dark:text-purple-200">
+                        {job.Type}
+                      </span>
+                      <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-200">
+                        {job.Namespace}
+                      </span>
+                      <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${getStatusClasses(jobStatusColor)}`}>
+                        {job.Status}
+                      </span>
+                    </div>
+                    <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                      {failedCount}
                     </span>
                   </div>
-                  <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                    {failedCount}
-                  </span>
-                </div>
-                <div className="mt-2 flex flex-wrap gap-2 text-xs text-gray-500 dark:text-gray-400">
-                  {taskGroups.map((tg) => (
-                    <span key={tg.name} className="inline-flex items-center gap-1 px-2 py-0.5 bg-gray-100 dark:bg-gray-700 rounded">
-                      <span className="font-medium">{tg.name}:</span>
-                      {tg.failed > 0 && <span>{tg.failed} failed</span>}
-                      {tg.failed > 0 && tg.lost > 0 && <span>,</span>}
-                      {tg.lost > 0 && <span>{tg.lost} lost</span>}
+                  <div className="mt-2 flex flex-wrap gap-2 text-xs text-gray-500 dark:text-gray-400">
+                    {taskGroups.map((tg) => (
+                      <span key={tg.name} className="inline-flex items-center gap-1 px-2 py-0.5 bg-gray-100 dark:bg-gray-700 rounded">
+                        <span className="font-medium">{tg.name}:</span>
+                        {tg.failed > 0 && <span>{tg.failed} failed</span>}
+                        {tg.failed > 0 && tg.lost > 0 && <span>,</span>}
+                        {tg.lost > 0 && <span>{tg.lost} lost</span>}
+                      </span>
+                    ))}
+                    <span className="text-gray-400 dark:text-gray-500">
+                      Last updated: {formatTimestamp(job.SubmitTime)}
                     </span>
-                  ))}
-                  <span className="text-gray-400 dark:text-gray-500">
-                    Last updated: {formatTimestamp(job.SubmitTime)}
-                  </span>
+                  </div>
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>
 
-      <Link
-        to="/dashboard"
-        className="inline-flex items-center text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200"
-      >
-        <svg className="w-4 h-4 mr-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
-        </svg>
-        Back to Dashboard
-      </Link>
+      <BackLink to="/dashboard" />
     </div>
   );
 }
