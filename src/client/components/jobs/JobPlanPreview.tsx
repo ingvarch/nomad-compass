@@ -41,17 +41,39 @@ function getDiffTypeBg(type: string): string {
 function FieldDiffDisplay({ field }: { field: NomadFieldDiff }) {
   if (field.Type === 'None') return null;
 
+  // For Edited fields - show git-style two-line diff
+  if (field.Type === 'Edited') {
+    return (
+      <div className="space-y-0.5">
+        {field.Old && (
+          <div className={`py-1 px-2 rounded text-sm ${getDiffTypeBg('Deleted')}`}>
+            <span className="font-medium text-red-600 dark:text-red-400">-</span>{' '}
+            <span className="font-mono text-gray-700 dark:text-gray-300">{field.Name}</span>
+            <span className="text-red-600 dark:text-red-400 font-mono"> "{field.Old}"</span>
+          </div>
+        )}
+        {field.New && (
+          <div className={`py-1 px-2 rounded text-sm ${getDiffTypeBg('Added')}`}>
+            <span className="font-medium text-green-600 dark:text-green-400">+</span>{' '}
+            <span className="font-mono text-gray-700 dark:text-gray-300">{field.Name}</span>
+            <span className="text-green-600 dark:text-green-400 font-mono"> "{field.New}"</span>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // For Added/Deleted - keep single line display
   return (
     <div className={`py-1 px-2 rounded text-sm ${getDiffTypeBg(field.Type)}`}>
       <span className={`font-medium ${getDiffTypeColor(field.Type)}`}>
-        {field.Type === 'Added' ? '+' : field.Type === 'Deleted' ? '-' : '~'}
+        {field.Type === 'Added' ? '+' : '-'}
       </span>{' '}
       <span className="font-mono text-gray-700 dark:text-gray-300">{field.Name}</span>
-      {field.Type !== 'Added' && field.Old && (
+      {field.Type === 'Deleted' && field.Old && (
         <span className="text-red-600 dark:text-red-400 font-mono"> "{field.Old}"</span>
       )}
-      {field.Type === 'Edited' && ' => '}
-      {field.Type !== 'Deleted' && field.New && (
+      {field.Type === 'Added' && field.New && (
         <span className="text-green-600 dark:text-green-400 font-mono"> "{field.New}"</span>
       )}
     </div>
