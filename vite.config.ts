@@ -27,6 +27,7 @@ export default defineConfig({
       '/api': {
         target: `http://localhost:${backendPorts[backend] || backendPorts.cf}`,
         changeOrigin: true,
+        ws: true, // Enable WebSocket proxy
       },
     },
   },

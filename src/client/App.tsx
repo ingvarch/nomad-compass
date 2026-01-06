@@ -22,6 +22,7 @@ import NamespacesPage from './pages/NamespacesPage';
 import TopologyPage from './pages/TopologyPage';
 import ActivityPage from './pages/ActivityPage';
 import AclPage from './pages/AclPage';
+import ExecPage from './pages/ExecPage';
 
 const router = createBrowserRouter([
   {
@@ -90,6 +91,10 @@ const router = createBrowserRouter([
       {
         path: '/acl',
         element: <AclPage />,
+      },
+      {
+        path: '/exec/:allocId/:task',
+        element: <ExecPage />,
       },
     ],
   },

@@ -1,6 +1,6 @@
 import { useSearchParams } from 'react-router-dom';
 
-export type JobTabType = 'overview' | 'versions' | 'evaluations' | 'logs';
+export type JobTabType = 'overview' | 'versions' | 'evaluations' | 'logs' | 'exec';
 
 interface Tab {
   id: JobTabType;
@@ -12,6 +12,7 @@ const TABS: Tab[] = [
   { id: 'versions', label: 'Versions' },
   { id: 'evaluations', label: 'Evaluations' },
   { id: 'logs', label: 'Logs' },
+  { id: 'exec', label: 'Exec' },
 ];
 
 interface JobDetailTabsProps {
