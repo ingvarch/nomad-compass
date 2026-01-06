@@ -17,6 +17,7 @@ import {
   NomadAclTokenListItem,
   TokenType,
 } from '../../types/acl';
+import { PermissionError } from './errors';
 
 /**
  * NomadClient - A client for interacting with Nomad API
@@ -109,6 +110,13 @@ export class NomadClient {
           };
         }
 
+        // Handle 403 Forbidden specifically with a PermissionError
+        if (response.status === 403) {
+          throw new PermissionError(
+            errorData.message || 'Insufficient permissions to perform this action'
+          );
+        }
+
         const error: ApiError = {
           statusCode: response.status,
           message: errorData.message || errorData.error || `API request failed with status ${response.status}`,
@@ -136,7 +144,8 @@ export class NomadClient {
         return { Data: text } as unknown as T;
       }
     } catch (error) {
-      if ((error as ApiError).statusCode) {
+      // Re-throw PermissionError and ApiError as-is
+      if (error instanceof PermissionError || (error as ApiError).statusCode) {
         throw error;
       }
 

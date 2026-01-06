@@ -2,7 +2,9 @@ import React, { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { createNomadClient } from '../../lib/api/nomad';
+import { isPermissionError, getPermissionErrorMessage } from '../../lib/api/errors';
 import { useToast } from '../../context/ToastContext';
+import { PermissionErrorModal } from '../ui/PermissionErrorModal';
 import { X, Check } from 'lucide-react';
 
 interface JobActionsProps {
@@ -20,6 +22,7 @@ export const JobActions: React.FC<JobActionsProps> = ({ jobId, jobStatus, onStat
     const [error, setError] = useState<string | null>(null);
 
     const [confirmingAction, setConfirmingAction] = useState<'start' | 'stop' | 'delete' | null>(null);
+    const [permissionError, setPermissionError] = useState<string | null>(null);
 
     // Determine if the job is stopped based on status
     const isStopped = jobStatus?.toLowerCase() === 'dead' || false;
@@ -78,12 +81,15 @@ export const JobActions: React.FC<JobActionsProps> = ({ jobId, jobStatus, onStat
         } catch (err) {
             console.error('Failed to start job:', err);
 
-            const errorMessage = typeof err === 'object' && err !== null && 'message' in err
-                ? (err as Error).message
-                : 'Failed to start job. Please try again.';
-
-            setError(errorMessage);
-            addToast(errorMessage, 'error');
+            if (isPermissionError(err)) {
+                setPermissionError(getPermissionErrorMessage('start-job'));
+            } else {
+                const errorMessage = typeof err === 'object' && err !== null && 'message' in err
+                    ? (err as Error).message
+                    : 'Failed to start job. Please try again.';
+                setError(errorMessage);
+                addToast(errorMessage, 'error');
+            }
         } finally {
             setIsLoading(false);
         }
@@ -111,12 +117,15 @@ export const JobActions: React.FC<JobActionsProps> = ({ jobId, jobStatus, onStat
         } catch (err) {
             console.error('Failed to stop job:', err);
 
-            const errorMessage = typeof err === 'object' && err !== null && 'message' in err
-                ? (err as Error).message
-                : 'Failed to stop job. Please try again.';
-
-            setError(errorMessage);
-            addToast(errorMessage, 'error');
+            if (isPermissionError(err)) {
+                setPermissionError(getPermissionErrorMessage('stop-job'));
+            } else {
+                const errorMessage = typeof err === 'object' && err !== null && 'message' in err
+                    ? (err as Error).message
+                    : 'Failed to stop job. Please try again.';
+                setError(errorMessage);
+                addToast(errorMessage, 'error');
+            }
         } finally {
             setIsLoading(false);
         }
@@ -142,12 +151,15 @@ export const JobActions: React.FC<JobActionsProps> = ({ jobId, jobStatus, onStat
         } catch (err) {
             console.error('Failed to delete job:', err);
 
-            const errorMessage = typeof err === 'object' && err !== null && 'message' in err
-                ? (err as Error).message
-                : 'Failed to delete job. Please try again.';
-
-            setError(errorMessage);
-            addToast(errorMessage, 'error');
+            if (isPermissionError(err)) {
+                setPermissionError(getPermissionErrorMessage('delete-job'));
+            } else {
+                const errorMessage = typeof err === 'object' && err !== null && 'message' in err
+                    ? (err as Error).message
+                    : 'Failed to delete job. Please try again.';
+                setError(errorMessage);
+                addToast(errorMessage, 'error');
+            }
         } finally {
             setIsLoading(false);
         }
@@ -158,6 +170,12 @@ export const JobActions: React.FC<JobActionsProps> = ({ jobId, jobStatus, onStat
     const confirmNoStyle = "bg-gray-500 hover:bg-gray-600 focus:ring-gray-400 ml-2";
 
     return (
+        <>
+        <PermissionErrorModal
+            isOpen={!!permissionError}
+            onClose={() => setPermissionError(null)}
+            message={permissionError || ''}
+        />
         <div className="flex items-center space-x-2">
             {error && (
                 <div className="text-red-600 text-sm mr-2">{error}</div>
@@ -255,6 +273,7 @@ export const JobActions: React.FC<JobActionsProps> = ({ jobId, jobStatus, onStat
                 </>
             )}
         </div>
+        </>
     );
 };
 

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { NomadNamespace } from '../../types/nomad';
+import { isPermissionError, getPermissionErrorMessage } from '../../lib/api/errors';
 
 interface DeleteNamespaceConfirmProps {
   namespace: NomadNamespace;
@@ -28,7 +29,11 @@ export const DeleteNamespaceConfirm: React.FC<DeleteNamespaceConfirmProps> = ({
     try {
       await onConfirm();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to delete namespace');
+      if (isPermissionError(err)) {
+        setError(getPermissionErrorMessage('delete-namespace'));
+      } else {
+        setError(err instanceof Error ? err.message : 'Failed to delete namespace');
+      }
       setIsDeleting(false);
     }
   };

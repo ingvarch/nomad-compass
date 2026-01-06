@@ -4,7 +4,10 @@ import { NomadAclToken } from '../types/acl';
 
 interface AclPermissions {
   isLoading: boolean;
+  /** True only for management tokens - use for ACL tab visibility */
   hasManagementAccess: boolean;
+  /** True if user can list policies (management or has acl:read) */
+  canListPolicies: boolean;
   currentToken: NomadAclToken | null;
   error: string | null;
   refetch: () => Promise<void>;
@@ -18,6 +21,7 @@ interface AclPermissions {
 export function useAclPermissions(): AclPermissions {
   const [isLoading, setIsLoading] = useState(true);
   const [hasManagementAccess, setHasManagementAccess] = useState(false);
+  const [canListPolicies, setCanListPolicies] = useState(false);
   const [currentToken, setCurrentToken] = useState<NomadAclToken | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -32,18 +36,20 @@ export function useAclPermissions(): AclPermissions {
       const token = await client.getAclTokenSelf();
       setCurrentToken(token);
 
-      // Management tokens have full ACL access
-      if (token.Type === 'management') {
-        setHasManagementAccess(true);
+      // Only management tokens have full ACL access
+      // This is used for ACL tab visibility
+      const isManagement = token.Type === 'management';
+      setHasManagementAccess(isManagement);
+
+      // Check if user can list policies (for ACL page functionality)
+      if (isManagement) {
+        setCanListPolicies(true);
       } else {
-        // For client tokens, check if they can list ACL policies
-        // If they can, they likely have some ACL management access
         try {
           await client.getAclPolicies();
-          setHasManagementAccess(true);
+          setCanListPolicies(true);
         } catch {
-          // Cannot list policies, no management access
-          setHasManagementAccess(false);
+          setCanListPolicies(false);
         }
       }
     } catch (err) {
@@ -53,11 +59,11 @@ export function useAclPermissions(): AclPermissions {
       // Check if ACLs are disabled (403 with specific message or 500)
       if (message.includes('ACL support disabled') || message.includes('ACL disabled')) {
         setError('ACL system is disabled on this Nomad cluster');
-        setHasManagementAccess(false);
       } else {
         setError(message);
-        setHasManagementAccess(false);
       }
+      setHasManagementAccess(false);
+      setCanListPolicies(false);
     } finally {
       setIsLoading(false);
     }
@@ -70,6 +76,7 @@ export function useAclPermissions(): AclPermissions {
   return {
     isLoading,
     hasManagementAccess,
+    canListPolicies,
     currentToken,
     error,
     refetch: fetchPermissions,

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Link } from 'react-router-dom';
 import { createNomadClient } from '../lib/api/nomad';
+import { isPermissionError, getPermissionErrorMessage } from '../lib/api/errors';
 import { NomadNamespace, NomadJob } from '../types/nomad';
 import { Modal } from '../components/ui/Modal';
 import { NamespaceForm } from '../components/namespaces/NamespaceForm';
@@ -72,30 +73,54 @@ export default function NamespacesPage() {
 
   const handleCreateNamespace = async (namespace: NomadNamespace) => {
     const client = createNomadClient();
-    await client.createNamespace(namespace);
-    addToast(`Namespace "${namespace.Name}" created successfully`, 'success');
-    setShowCreateModal(false);
-    setLoading(true);
-    await fetchData();
+    try {
+      await client.createNamespace(namespace);
+      addToast(`Namespace "${namespace.Name}" created successfully`, 'success');
+      setShowCreateModal(false);
+      setLoading(true);
+      await fetchData();
+    } catch (err) {
+      const message = isPermissionError(err)
+        ? getPermissionErrorMessage('create-namespace')
+        : err instanceof Error ? err.message : 'Failed to create namespace';
+      addToast(message, 'error');
+      throw err; // Re-throw so form can also handle it
+    }
   };
 
   const handleUpdateNamespace = async (namespace: NomadNamespace) => {
     const client = createNomadClient();
-    await client.updateNamespace(namespace);
-    addToast(`Namespace "${namespace.Name}" updated successfully`, 'success');
-    setEditingNamespace(null);
-    setLoading(true);
-    await fetchData();
+    try {
+      await client.updateNamespace(namespace);
+      addToast(`Namespace "${namespace.Name}" updated successfully`, 'success');
+      setEditingNamespace(null);
+      setLoading(true);
+      await fetchData();
+    } catch (err) {
+      const message = isPermissionError(err)
+        ? getPermissionErrorMessage('update-namespace')
+        : err instanceof Error ? err.message : 'Failed to update namespace';
+      addToast(message, 'error');
+      throw err;
+    }
   };
 
   const handleDeleteNamespace = async () => {
     if (!deletingNamespace) return;
     const client = createNomadClient();
-    await client.deleteNamespace(deletingNamespace.Name);
-    addToast(`Namespace "${deletingNamespace.Name}" deleted successfully`, 'success');
-    setDeletingNamespace(null);
-    setLoading(true);
-    await fetchData();
+    try {
+      await client.deleteNamespace(deletingNamespace.Name);
+      addToast(`Namespace "${deletingNamespace.Name}" deleted successfully`, 'success');
+      setDeletingNamespace(null);
+      setLoading(true);
+      await fetchData();
+    } catch (err) {
+      const message = isPermissionError(err)
+        ? getPermissionErrorMessage('delete-namespace')
+        : err instanceof Error ? err.message : 'Failed to delete namespace';
+      addToast(message, 'error');
+      throw err;
+    }
   };
 
   const handleEditClick = async (ns: NomadNamespace) => {
