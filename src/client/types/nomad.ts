@@ -102,6 +102,28 @@ export interface DockerAuth {
     password: string;
 }
 
+// Service Discovery & Ingress types
+export interface NomadServiceTag {
+    key: string;
+    value: string;
+}
+
+export interface IngressConfig {
+    enabled: boolean;
+    domain: string;
+    enableHttps: boolean;
+    pathPrefix?: string;
+}
+
+export interface NomadServiceConfig {
+    name: string;
+    portLabel: string;
+    provider: 'nomad' | 'consul';
+    tags: NomadServiceTag[];
+    ingress: IngressConfig;
+    useAdvancedMode: boolean;
+}
+
 export interface TaskGroupFormData {
     name: string;
     count: number;
@@ -116,6 +138,9 @@ export interface TaskGroupFormData {
     ports: NomadPort[];
     enableHealthCheck: boolean;
     healthCheck?: NomadHealthCheck;
+    // Service Discovery & Ingress
+    enableService: boolean;
+    serviceConfig?: NomadServiceConfig;
 }
 
 export interface NomadJobFormData {
