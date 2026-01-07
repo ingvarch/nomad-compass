@@ -1,75 +1,7 @@
 import { useState } from 'react';
 import { Modal, ErrorAlert } from '../ui';
-import { NomadJobPlanResponse, NomadJobDiff, NomadFieldDiff, NomadObjectDiff, NomadTaskGroupDiff, NomadTaskDiff } from '../../types/nomad';
-
-// Types for HCL-style diff rendering
-interface HclLine {
-  prefix: '+' | '-' | ' ';
-  indent: number;
-  content: string;
-  type: 'added' | 'deleted' | 'none';
-}
-
-interface GroupedFields {
-  simple: NomadFieldDiff[];
-  blocks: Map<string, NomadFieldDiff[]>;
-}
-
-// Utility: Parse field names like "Env[FOO]" into { block: "env", key: "FOO" }
-function parseFieldName(name: string): { block: string | null; key: string } {
-  const match = name.match(/^(\w+)\[(.+)\]$/);
-  if (match) {
-    return { block: match[1].toLowerCase(), key: match[2] };
-  }
-  return { block: null, key: name };
-}
-
-// Utility: Group indexed fields by block type
-function groupFields(fields: NomadFieldDiff[]): GroupedFields {
-  const result: GroupedFields = { simple: [], blocks: new Map() };
-
-  for (const field of fields) {
-    if (field.Type === 'None') continue;
-    const { block, key } = parseFieldName(field.Name);
-    if (block) {
-      if (!result.blocks.has(block)) {
-        result.blocks.set(block, []);
-      }
-      result.blocks.get(block)!.push({ ...field, Name: key });
-    } else {
-      result.simple.push(field);
-    }
-  }
-
-  return result;
-}
-
-// Utility: Convert PascalCase/camelCase to snake_case for HCL
-function toSnakeCase(name: string): string {
-  return name.replace(/([A-Z])/g, '_$1').toLowerCase().replace(/^_/, '');
-}
-
-// Utility: Format value with smart quoting
-function formatValue(value: string): string {
-  if (value === 'true' || value === 'false') return value;
-  if (/^\d+$/.test(value)) return value;
-  if (/^\d+\.\d+$/.test(value)) return value;
-  return `"${value}"`;
-}
-
-// Get diff type from field
-function getDiffType(type: string): 'added' | 'deleted' | 'none' {
-  if (type === 'Added') return 'added';
-  if (type === 'Deleted') return 'deleted';
-  return 'none';
-}
-
-// Get prefix for diff type
-function getPrefix(type: string): '+' | '-' | ' ' {
-  if (type === 'Added') return '+';
-  if (type === 'Deleted') return '-';
-  return ' ';
-}
+import { NomadJobPlanResponse, NomadJobDiff } from '../../types/nomad';
+import { processJobDiff, HclLine, HCL_KEYWORDS } from '../../lib/hclDiffRenderer';
 
 interface JobPlanPreviewProps {
   isOpen: boolean;
@@ -81,283 +13,78 @@ interface JobPlanPreviewProps {
   isSubmitting: boolean;
 }
 
-// HCL Generator: Render a single field as HCL assignment
-function renderFieldAsHcl(field: NomadFieldDiff, indent: number): HclLine[] {
-  const lines: HclLine[] = [];
-  const key = toSnakeCase(field.Name);
+// Syntax highlighting for HCL content
+function highlightHclContent(content: string): React.ReactNode {
+  if (!content) return content;
 
-  if (field.Type === 'Edited') {
-    if (field.Old) {
-      lines.push({
-        prefix: '-',
-        indent,
-        content: `${key} = ${formatValue(field.Old)}`,
-        type: 'deleted'
-      });
-    }
-    if (field.New) {
-      lines.push({
-        prefix: '+',
-        indent,
-        content: `${key} = ${formatValue(field.New)}`,
-        type: 'added'
-      });
-    }
-  } else {
-    const value = field.Type === 'Deleted' ? field.Old : field.New;
-    if (value) {
-      lines.push({
-        prefix: getPrefix(field.Type),
-        indent,
-        content: `${key} = ${formatValue(value)}`,
-        type: getDiffType(field.Type)
-      });
-    }
+  // Match: keyword "name" { or keyword {
+  const blockMatch = content.match(/^(\w+)(\s+"[^"]+")?(\s*\{)$/);
+  if (blockMatch) {
+    const [, keyword, name, brace] = blockMatch;
+    const isKeyword = HCL_KEYWORDS.includes(keyword);
+    return (
+      <>
+        <span className={isKeyword ? 'text-purple-400' : ''}>{keyword}</span>
+        {name && <span className="text-amber-300">{name}</span>}
+        <span className="text-gray-500">{brace}</span>
+      </>
+    );
   }
 
-  return lines;
-}
-
-// HCL Generator: Render grouped fields as a block (env, meta, etc.)
-function renderBlockFields(blockName: string, fields: NomadFieldDiff[], indent: number, parentType: string): HclLine[] {
-  if (fields.length === 0) return [];
-
-  const lines: HclLine[] = [];
-  const blockType = parentType === 'Edited' ? 'none' : getDiffType(parentType);
-  const blockPrefix = parentType === 'Edited' ? ' ' : getPrefix(parentType);
-
-  // Opening brace
-  lines.push({ prefix: blockPrefix, indent, content: `${blockName} {`, type: blockType });
-
-  // Fields inside block
-  for (const field of fields) {
-    const fieldLines = renderFieldAsHcl(field, indent + 1);
-    lines.push(...fieldLines);
+  // Match: key = value
+  const assignMatch = content.match(/^(\w+)\s*=\s*(.+)$/);
+  if (assignMatch) {
+    const [, key, value] = assignMatch;
+    // Check if value is a string (quoted)
+    const isStringValue = value.startsWith('"') && value.endsWith('"');
+    // Check if value is a number or boolean
+    const isLiteralValue = /^(\d+\.?\d*|true|false)$/.test(value);
+    return (
+      <>
+        <span className="text-cyan-400">{key}</span>
+        <span className="text-gray-500"> = </span>
+        <span className={isStringValue ? 'text-amber-300' : isLiteralValue ? 'text-orange-400' : ''}>
+          {value}
+        </span>
+      </>
+    );
   }
 
   // Closing brace
-  lines.push({ prefix: blockPrefix, indent, content: '}', type: blockType });
+  if (content === '}') {
+    return <span className="text-gray-500">{'}'}</span>;
+  }
 
-  return lines;
+  return content;
 }
 
-// HCL Generator: Process object diff recursively
-function processObjectDiff(obj: NomadObjectDiff, indent: number): HclLine[] {
-  if (obj.Type === 'None') return [];
-
-  const lines: HclLine[] = [];
-  const hclName = toSnakeCase(obj.Name);
-  const objType = getDiffType(obj.Type);
-  const objPrefix = getPrefix(obj.Type);
-
-  // For edited objects, we show the block structure without prefix on braces
-  const blockPrefix = obj.Type === 'Edited' ? ' ' : objPrefix;
-  const blockType = obj.Type === 'Edited' ? 'none' : objType;
-
-  // Opening brace
-  lines.push({ prefix: blockPrefix, indent, content: `${hclName} {`, type: blockType });
-
-  // Process fields
-  if (obj.Fields) {
-    const grouped = groupFields(obj.Fields);
-
-    // Simple fields first
-    for (const field of grouped.simple) {
-      lines.push(...renderFieldAsHcl(field, indent + 1));
-    }
-
-    // Grouped blocks (env, meta, etc.)
-    for (const [blockName, blockFields] of grouped.blocks) {
-      if (lines.length > 1) {
-        lines.push({ prefix: ' ', indent: 0, content: '', type: 'none' });
-      }
-      lines.push(...renderBlockFields(blockName, blockFields, indent + 1, obj.Type));
-    }
-  }
-
-  // Nested objects
-  if (obj.Objects) {
-    for (const nested of obj.Objects.filter(o => o.Type !== 'None')) {
-      if (lines.length > 1) {
-        lines.push({ prefix: ' ', indent: 0, content: '', type: 'none' });
-      }
-      lines.push(...processObjectDiff(nested, indent + 1));
-    }
-  }
-
-  // Closing brace
-  lines.push({ prefix: blockPrefix, indent, content: '}', type: blockType });
-
-  return lines;
-}
-
-// HCL Generator: Process task diff
-function processTaskDiff(task: NomadTaskDiff, indent: number): HclLine[] {
-  if (task.Type === 'None') return [];
-
-  const lines: HclLine[] = [];
-  const taskType = getDiffType(task.Type);
-  const taskPrefix = getPrefix(task.Type);
-
-  const blockPrefix = task.Type === 'Edited' ? ' ' : taskPrefix;
-  const blockType = task.Type === 'Edited' ? 'none' : taskType;
-
-  // Opening: task "name" {
-  lines.push({ prefix: blockPrefix, indent, content: `task "${task.Name}" {`, type: blockType });
-
-  // Process fields
-  if (task.Fields) {
-    const grouped = groupFields(task.Fields);
-
-    // Simple fields first
-    for (const field of grouped.simple) {
-      lines.push(...renderFieldAsHcl(field, indent + 1));
-    }
-
-    // Grouped blocks
-    for (const [blockName, blockFields] of grouped.blocks) {
-      if (lines.length > 1) {
-        lines.push({ prefix: ' ', indent: 0, content: '', type: 'none' });
-      }
-      lines.push(...renderBlockFields(blockName, blockFields, indent + 1, task.Type));
-    }
-  }
-
-  // Nested objects (config, resources, etc.)
-  if (task.Objects) {
-    for (const obj of task.Objects.filter(o => o.Type !== 'None')) {
-      if (lines.length > 1) {
-        lines.push({ prefix: ' ', indent: 0, content: '', type: 'none' });
-      }
-      lines.push(...processObjectDiff(obj, indent + 1));
-    }
-  }
-
-  // Closing brace
-  lines.push({ prefix: blockPrefix, indent, content: '}', type: blockType });
-
-  return lines;
-}
-
-// HCL Generator: Process task group diff
-function processTaskGroupDiff(tg: NomadTaskGroupDiff, indent: number): HclLine[] {
-  if (tg.Type === 'None') return [];
-
-  const lines: HclLine[] = [];
-  const tgType = getDiffType(tg.Type);
-  const tgPrefix = getPrefix(tg.Type);
-
-  const blockPrefix = tg.Type === 'Edited' ? ' ' : tgPrefix;
-  const blockType = tg.Type === 'Edited' ? 'none' : tgType;
-
-  // Opening: group "name" {
-  lines.push({ prefix: blockPrefix, indent, content: `group "${tg.Name}" {`, type: blockType });
-
-  // Process fields
-  if (tg.Fields) {
-    const grouped = groupFields(tg.Fields);
-
-    // Simple fields first
-    for (const field of grouped.simple) {
-      lines.push(...renderFieldAsHcl(field, indent + 1));
-    }
-
-    // Grouped blocks
-    for (const [blockName, blockFields] of grouped.blocks) {
-      if (lines.length > 1) {
-        lines.push({ prefix: ' ', indent: 0, content: '', type: 'none' });
-      }
-      lines.push(...renderBlockFields(blockName, blockFields, indent + 1, tg.Type));
-    }
-  }
-
-  // Group-level objects (network, etc.)
-  if (tg.Objects) {
-    for (const obj of tg.Objects.filter(o => o.Type !== 'None')) {
-      if (lines.length > 1) {
-        lines.push({ prefix: ' ', indent: 0, content: '', type: 'none' });
-      }
-      lines.push(...processObjectDiff(obj, indent + 1));
-    }
-  }
-
-  // Tasks
-  if (tg.Tasks) {
-    for (const task of tg.Tasks.filter(t => t.Type !== 'None')) {
-      if (lines.length > 1) {
-        lines.push({ prefix: ' ', indent: 0, content: '', type: 'none' });
-      }
-      lines.push(...processTaskDiff(task, indent + 1));
-    }
-  }
-
-  // Closing brace
-  lines.push({ prefix: blockPrefix, indent, content: '}', type: blockType });
-
-  return lines;
-}
-
-// HCL Generator: Entry point - process entire job diff
-function processJobDiff(diff: NomadJobDiff): HclLine[] {
-  if (diff.Type === 'None') return [];
-
-  const lines: HclLine[] = [];
-
-  // Job-level fields
-  if (diff.Fields) {
-    const grouped = groupFields(diff.Fields);
-    for (const field of grouped.simple) {
-      lines.push(...renderFieldAsHcl(field, 0));
-    }
-    for (const [blockName, blockFields] of grouped.blocks) {
-      lines.push(...renderBlockFields(blockName, blockFields, 0, diff.Type));
-    }
-  }
-
-  // Job-level objects
-  if (diff.Objects) {
-    for (const obj of diff.Objects.filter(o => o.Type !== 'None')) {
-      if (lines.length > 0) {
-        lines.push({ prefix: ' ', indent: 0, content: '', type: 'none' });
-      }
-      lines.push(...processObjectDiff(obj, 0));
-    }
-  }
-
-  // Task groups
-  if (diff.TaskGroups) {
-    for (const tg of diff.TaskGroups.filter(t => t.Type !== 'None')) {
-      if (lines.length > 0) {
-        lines.push({ prefix: ' ', indent: 0, content: '', type: 'none' });
-      }
-      lines.push(...processTaskGroupDiff(tg, 0));
-    }
-  }
-
-  return lines;
-}
-
-// React Component: Single HCL diff line
+// React Component: Single HCL diff line with syntax highlighting
 function HclDiffLine({ line }: { line: HclLine }) {
   const indentSpaces = '  '.repeat(line.indent);
 
-  const colorClasses: Record<string, string> = {
-    added: 'text-green-400 bg-green-950/40',
-    deleted: 'text-red-400 bg-red-950/40',
-    none: 'text-gray-300'
+  const bgClasses: Record<string, string> = {
+    added: 'bg-green-950/40',
+    deleted: 'bg-red-950/40',
+    none: ''
   };
 
   const prefixClasses: Record<string, string> = {
     added: 'text-green-500',
     deleted: 'text-red-500',
-    none: 'text-gray-500'
+    none: 'text-gray-600'
   };
 
+  // For added/deleted lines, apply diff colors; for none, use syntax highlighting
+  const shouldHighlight = line.type === 'none';
+  const textColorClass = line.type === 'added' ? 'text-green-400' : line.type === 'deleted' ? 'text-red-400' : '';
+
   return (
-    <div className={`${colorClasses[line.type]} leading-relaxed`}>
+    <div className={`${bgClasses[line.type]} leading-relaxed`}>
       <span className={`select-none ${prefixClasses[line.type]}`}>{line.prefix}</span>
       <span className="select-none">{indentSpaces}</span>
-      <span>{line.content}</span>
+      <span className={textColorClass}>
+        {shouldHighlight ? highlightHclContent(line.content) : line.content}
+      </span>
     </div>
   );
 }
