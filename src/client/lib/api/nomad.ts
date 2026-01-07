@@ -311,6 +311,15 @@ export class NomadClient {
   }
 
   /**
+   * Get service registrations for a service name
+   */
+  async getServiceRegistrations(serviceName: string, namespace: string = 'default'): Promise<any[]> {
+    return this.request<any[]>(`/v1/service/${serviceName}`, {
+      params: { namespace }
+    });
+  }
+
+  /**
    * Get logs for an allocation
    */
   async getAllocationLogs(allocId: string, taskName: string, logType: string, plain: boolean = true): Promise<any> {

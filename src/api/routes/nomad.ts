@@ -3,7 +3,7 @@ import { getCookie } from 'hono/cookie'
 import type { Env } from '../types'
 
 // Valid Nomad API paths regex - only allow legitimate Nomad API endpoints
-const VALID_NOMAD_PATHS = /^\/v1\/(agent|allocations|allocation|client|eval|evaluation|jobs|job|nodes|node|regions|status|operator|acl|sentinel|validate|deployment|deployments|search|namespaces|namespace|quota|quotas|system|variables|variable|vault|consul)\/?.*/
+const VALID_NOMAD_PATHS = /^\/v1\/(agent|allocations|allocation|client|eval|evaluation|jobs|job|nodes|node|regions|status|operator|acl|sentinel|validate|deployment|deployments|search|namespaces|namespace|quota|quotas|system|variables|variable|vault|consul|services|service)\/?.*/
 
 export const nomadRoutes = new Hono<{ Bindings: Env }>()
 

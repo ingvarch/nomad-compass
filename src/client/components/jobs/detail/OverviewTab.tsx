@@ -1,11 +1,12 @@
 import { useState } from 'react';
-import { JobSummary, TaskGroupCard, TaskEventsTable } from './index';
+import { JobSummary, NetworkAccessCard, TaskGroupCard, TaskEventsTable } from './index';
 import ExpandIcon from '../../ui/ExpandIcon';
-import type { NomadAllocation } from '../../../types/nomad';
+import type { NomadAllocation, NomadServiceRegistration } from '../../../types/nomad';
 
 interface OverviewTabProps {
   job: any;
   allocations: NomadAllocation[];
+  serviceRegistrations: NomadServiceRegistration[];
   createTime: number | null;
   expandedGroups: Record<string, boolean>;
   onToggleGroup: (groupName: string) => void;
@@ -16,6 +17,7 @@ interface OverviewTabProps {
 export function OverviewTab({
   job,
   allocations,
+  serviceRegistrations,
   createTime,
   expandedGroups,
   onToggleGroup,
@@ -32,6 +34,8 @@ export function OverviewTab({
   return (
     <div className="space-y-6">
       <JobSummary job={job} allocations={allocations} createTime={createTime} />
+
+      <NetworkAccessCard job={job} serviceRegistrations={serviceRegistrations} />
 
       {/* Task Groups */}
       {job.TaskGroups?.length > 0 && (

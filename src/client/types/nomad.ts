@@ -452,3 +452,19 @@ export interface NomadJobPlanResponse {
     NextPeriodicLaunch?: string;
     CreatedEvals?: NomadEvaluation[];
 }
+
+// Service Registration types (from Nomad service discovery)
+export interface NomadServiceRegistration {
+    Address: string;
+    AllocID: string;
+    CreateIndex: number;
+    Datacenter: string;
+    ID: string;
+    JobID: string;
+    ModifyIndex: number;
+    Namespace: string;
+    NodeID: string;
+    Port: number;
+    ServiceName: string;
+    Tags?: string[];
+}
