@@ -42,20 +42,22 @@ export const FormInputField: React.FC<FormInputFieldProps> = ({
 
   if (type === 'checkbox') {
     return (
-      <div className={`flex items-center ${className}`}>
-        <input
-          id={id}
-          name={name}
-          type="checkbox"
-          checked={value as boolean}
-          onChange={onChange}
-          className={checkboxClasses}
-          disabled={disabled}
-          required={required}
-        />
-        <label htmlFor={id} className="ml-2 block text-sm font-medium text-gray-700 dark:text-monokai-text">
-          {label}
-        </label>
+      <div className={className}>
+        <div className="flex items-center">
+          <input
+            id={id}
+            name={name}
+            type="checkbox"
+            checked={value as boolean}
+            onChange={onChange}
+            className={checkboxClasses}
+            disabled={disabled}
+            required={required}
+          />
+          <label htmlFor={id} className="ml-2 block text-sm font-medium text-gray-700 dark:text-monokai-text">
+            {label}
+          </label>
+        </div>
         {helpText && <p className="mt-1 text-xs text-gray-500 dark:text-monokai-muted">{helpText}</p>}
       </div>
     );

@@ -1,5 +1,154 @@
 // src/lib/services/jobSpecService.ts
-import { NomadJobFormData, TaskGroupFormData, NomadPort, NomadHealthCheck, NomadEnvVar } from '../../types/nomad';
+import {
+    NomadJobFormData,
+    TaskGroupFormData,
+    NomadPort,
+    NomadHealthCheck,
+    NomadEnvVar,
+    NomadServiceConfig,
+    NomadServiceTag,
+    IngressConfig
+} from '../../types/nomad';
+
+/**
+ * Generates Traefik service tags from ingress configuration (Simple Mode)
+ */
+function generateTraefikTags(serviceName: string, ingress: IngressConfig): string[] {
+    if (!ingress.enabled || !ingress.domain) {
+        return [];
+    }
+
+    // Sanitize service name for use as router name
+    const routerName = serviceName.replace(/[^a-zA-Z0-9]/g, '-');
+    const tags: string[] = ['traefik.enable=true'];
+
+    // Build the routing rule
+    let routeRule = `Host(\`${ingress.domain}\`)`;
+    if (ingress.pathPrefix) {
+        routeRule = `Host(\`${ingress.domain}\`) && PathPrefix(\`${ingress.pathPrefix}\`)`;
+    }
+    tags.push(`traefik.http.routers.${routerName}.rule=${routeRule}`);
+
+    // Configure entrypoints and TLS
+    if (ingress.enableHttps) {
+        tags.push(`traefik.http.routers.${routerName}.entrypoints=websecure`);
+        tags.push(`traefik.http.routers.${routerName}.tls.certresolver=letsencrypt`);
+    } else {
+        tags.push(`traefik.http.routers.${routerName}.entrypoints=web`);
+    }
+
+    return tags;
+}
+
+/**
+ * Converts raw service tags array to string array for Nomad
+ */
+function serviceTagsToStrings(tags: NomadServiceTag[]): string[] {
+    return tags
+        .filter(t => t.key.trim() !== '')
+        .map(t => t.value ? `${t.key}=${t.value}` : t.key);
+}
+
+/**
+ * Parses Traefik tags back to IngressConfig (for edit mode)
+ */
+function parseTraefikTagsToIngress(tags: NomadServiceTag[]): IngressConfig {
+    const defaultConfig: IngressConfig = {
+        enabled: false,
+        domain: '',
+        enableHttps: true,
+        pathPrefix: '',
+    };
+
+    // Check if traefik is enabled
+    const enableTag = tags.find(t => t.key === 'traefik.enable');
+    if (!enableTag || enableTag.value !== 'true') {
+        return defaultConfig;
+    }
+
+    // Find the router rule to extract domain
+    const ruleTag = tags.find(t => t.key.match(/traefik\.http\.routers\.[^.]+\.rule/));
+    if (!ruleTag) {
+        return defaultConfig;
+    }
+
+    // Parse domain from rule: Host(`domain.com`) or Host(`domain.com`) && PathPrefix(`/api`)
+    const hostMatch = ruleTag.value.match(/Host\(`([^`]+)`\)/);
+    const domain = hostMatch ? hostMatch[1] : '';
+
+    // Parse path prefix if present
+    const pathMatch = ruleTag.value.match(/PathPrefix\(`([^`]+)`\)/);
+    const pathPrefix = pathMatch ? pathMatch[1] : '';
+
+    // Check for HTTPS (certresolver or tls)
+    const httpsTag = tags.find(t =>
+        t.key.match(/traefik\.http\.routers\.[^.]+\.tls\.certresolver/) ||
+        t.key.match(/traefik\.http\.routers\.[^.]+\.tls$/)
+    );
+    const enableHttps = !!httpsTag;
+
+    return {
+        enabled: !!domain,
+        domain,
+        enableHttps,
+        pathPrefix,
+    };
+}
+
+/**
+ * Creates service configuration for a task group
+ */
+function createServiceForTaskGroup(
+    groupData: TaskGroupFormData,
+    healthCheckConfig: any | null
+): any | null {
+    // Determine if we need a service
+    const needsService = groupData.enableService || groupData.enableHealthCheck;
+    if (!needsService) {
+        return null;
+    }
+
+    const serviceConfig = groupData.serviceConfig;
+    const portLabel = groupData.ports.length > 0 && groupData.ports[0].label
+        ? groupData.ports[0].label
+        : 'http';
+
+    // Build tags array
+    let tags: string[] = [];
+
+    if (groupData.enableService && serviceConfig) {
+        if (serviceConfig.useAdvancedMode) {
+            // Advanced mode: use raw tags
+            tags = serviceTagsToStrings(serviceConfig.tags);
+        } else if (serviceConfig.ingress?.enabled) {
+            // Simple mode: generate Traefik tags
+            tags = generateTraefikTags(
+                serviceConfig.name || groupData.name,
+                serviceConfig.ingress
+            );
+        }
+    }
+
+    const service: any = {
+        Name: serviceConfig?.name || groupData.name,
+        TaskName: groupData.name,
+        AddressMode: serviceConfig?.addressMode || 'alloc',
+        PortLabel: serviceConfig?.portLabel || portLabel,
+        Provider: serviceConfig?.provider || 'nomad',
+    };
+
+    // Only add Tags if there are any
+    if (tags.length > 0) {
+        service.Tags = tags;
+    }
+
+    // Add health checks if enabled
+    if (healthCheckConfig) {
+        service.Checks = [healthCheckConfig];
+    }
+
+    return service;
+}
 
 interface NetworkConfig {
     Mode: string;
@@ -146,31 +295,27 @@ function createJobSpec(formData: NomadJobFormData): JobSpec {
             }
         }
 
-        // Add health check service if enabled
+        // Build health check config if enabled
+        let healthCheckConfig: any | null = null;
         if (groupData.enableHealthCheck && groupData.healthCheck) {
             const healthCheck = groupData.healthCheck;
-
-            const service = {
-                Name: groupData.name,
-                TaskName: groupData.name,
-                AddressMode: "auto",
-                PortLabel: groupData.ports.length > 0 && groupData.ports[0].label ?
-                    groupData.ports[0].label : "http",
-                Provider: "nomad",
-                Checks: [{
-                    Type: healthCheck.type,
-                    ...(healthCheck.type === 'http' ? {Path: healthCheck.path} : {}),
-                    ...(healthCheck.type === 'script' ? {Command: healthCheck.command} : {}),
-                    Interval: healthCheck.interval * 1000000000, // Convert to nanoseconds
-                    Timeout: healthCheck.timeout * 1000000000, // Convert to nanoseconds
-                    CheckRestart: {
-                        Limit: 3,
-                        Grace: (healthCheck.initialDelay || 5) * 1000000000,
-                        IgnoreWarnings: false
-                    }
-                }]
+            healthCheckConfig = {
+                Type: healthCheck.type,
+                ...(healthCheck.type === 'http' ? { Path: healthCheck.path } : {}),
+                ...(healthCheck.type === 'script' ? { Command: healthCheck.command } : {}),
+                Interval: healthCheck.interval * 1000000000, // Convert to nanoseconds
+                Timeout: healthCheck.timeout * 1000000000, // Convert to nanoseconds
+                CheckRestart: {
+                    Limit: 3,
+                    Grace: (healthCheck.initialDelay || 5) * 1000000000,
+                    IgnoreWarnings: false
+                }
             };
+        }
 
+        // Create service (includes both service discovery tags and health checks)
+        const service = createServiceForTaskGroup(groupData, healthCheckConfig);
+        if (service) {
             taskGroup.Services = [service];
         }
 
@@ -299,7 +444,7 @@ function convertJobToFormData(job: any): NomadJobFormData {
             ports = [{ label: 'http', value: 8080, to: 8080, static: false }];
         }
 
-        // Extract health checks
+        // Extract service configuration
         const services = group.Services || [];
         const service = services.length > 0 ? services[0] : null;
         const healthCheck = service && service.Checks && service.Checks.length > 0 ? service.Checks[0] : null;
@@ -314,6 +459,37 @@ function convertJobToFormData(job: any): NomadJobFormData {
             failuresBeforeUnhealthy: 3,
             successesBeforeHealthy: 2
         } : undefined;
+
+        // Parse service tags
+        const serviceTags: NomadServiceTag[] = (service?.Tags || []).map((tag: string) => {
+            const eqIndex = tag.indexOf('=');
+            if (eqIndex > 0) {
+                return {
+                    key: tag.substring(0, eqIndex),
+                    value: tag.substring(eqIndex + 1),
+                };
+            }
+            return { key: tag, value: '' };
+        });
+
+        // Detect if this is a Traefik ingress configuration (simple mode)
+        const hasTraefikTags = serviceTags.some(t => t.key.startsWith('traefik.'));
+        const ingressConfig = parseTraefikTagsToIngress(serviceTags);
+        const canUseSimpleMode = hasTraefikTags && ingressConfig.enabled;
+
+        // Build service config
+        const serviceConfig: NomadServiceConfig = {
+            name: service?.Name || group.Name,
+            portLabel: service?.PortLabel || 'http',
+            provider: (service?.Provider || 'nomad') as 'nomad' | 'consul',
+            addressMode: (service?.AddressMode || 'alloc') as 'alloc' | 'auto' | 'host',
+            tags: serviceTags,
+            ingress: ingressConfig,
+            useAdvancedMode: hasTraefikTags && !canUseSimpleMode,
+        };
+
+        // Determine if service discovery is enabled (has service with tags)
+        const enableService = !!service && (serviceTags.length > 0 || !healthCheck);
 
         return {
             name: group.Name,
@@ -335,7 +511,9 @@ function convertJobToFormData(job: any): NomadJobFormData {
             networkMode: networkMode as 'none' | 'host' | 'bridge',
             ports,
             enableHealthCheck: !!healthCheck,
-            healthCheck: healthCheckData
+            healthCheck: healthCheckData,
+            enableService,
+            serviceConfig,
         };
     });
 

@@ -10,11 +10,29 @@ import {
   NomadHealthCheck,
   NomadJob,
   NomadJobPlanResponse,
+  NomadServiceConfig,
+  IngressConfig,
 } from '../types/nomad';
 import { createJobSpec, updateJobSpec, convertJobToFormData } from '../lib/services/jobSpecService';
 import { validateJobName } from '../lib/services/validationService';
 import { useToast } from '../context/ToastContext';
 import { useDeploymentTracker } from './useDeploymentTracker';
+
+// Default service configuration
+const defaultServiceConfig: NomadServiceConfig = {
+  name: '',
+  portLabel: 'http',
+  provider: 'nomad',
+  addressMode: 'alloc',
+  tags: [],
+  ingress: {
+    enabled: false,
+    domain: '',
+    enableHttps: true,
+    pathPrefix: '',
+  },
+  useAdvancedMode: false,
+};
 
 // Default task group configuration
 export const defaultTaskGroupData: TaskGroupFormData = {
@@ -32,7 +50,7 @@ export const defaultTaskGroupData: TaskGroupFormData = {
   dockerAuth: { username: '', password: '' },
   enableNetwork: false,
   networkMode: 'bridge',
-  ports: [{ label: 'http', value: 8080, to: 8080, static: false }],
+  ports: [{ label: 'http', value: 0, to: 80, static: false }],
   enableHealthCheck: false,
   healthCheck: {
     type: 'http',
@@ -43,6 +61,8 @@ export const defaultTaskGroupData: TaskGroupFormData = {
     failuresBeforeUnhealthy: 3,
     successesBeforeHealthy: 2,
   },
+  enableService: false,
+  serviceConfig: { ...defaultServiceConfig },
 };
 
 export const defaultFormValues: NomadJobFormData = {
@@ -351,6 +371,111 @@ export function useJobForm({ mode, jobId, namespace = 'default' }: UseJobFormOpt
     });
   };
 
+  // Service Discovery & Ingress handlers
+  const handleEnableServiceChange = (groupIndex: number, enabled: boolean) => {
+    updateGroup(groupIndex, (group) => {
+      const updates: Partial<TaskGroupFormData> = {
+        enableService: enabled,
+        serviceConfig: group.serviceConfig || { ...defaultServiceConfig },
+      };
+
+      // Auto-enable network configuration when service discovery is enabled
+      if (enabled && !group.enableNetwork) {
+        updates.enableNetwork = true;
+        updates.networkMode = 'bridge';
+        // Set default port if no ports configured
+        if (!group.ports || group.ports.length === 0 || !group.ports[0].label) {
+          updates.ports = [{ label: 'http', value: 0, to: 80, static: false }];
+        }
+      }
+
+      return { ...group, ...updates };
+    });
+  };
+
+  const handleServiceConfigChange = (
+    groupIndex: number,
+    config: Partial<NomadServiceConfig>
+  ) => {
+    updateGroup(groupIndex, (group) => ({
+      ...group,
+      serviceConfig: {
+        ...(group.serviceConfig || defaultServiceConfig),
+        ...config,
+      },
+    }));
+  };
+
+  const handleIngressChange = (
+    groupIndex: number,
+    field: keyof IngressConfig,
+    value: string | boolean
+  ) => {
+    updateGroup(groupIndex, (group) => ({
+      ...group,
+      serviceConfig: {
+        ...(group.serviceConfig || defaultServiceConfig),
+        ingress: {
+          ...(group.serviceConfig?.ingress || defaultServiceConfig.ingress),
+          [field]: value,
+        },
+      },
+    }));
+  };
+
+  const handleServiceTagChange = (
+    groupIndex: number,
+    tagIndex: number,
+    field: 'key' | 'value',
+    value: string
+  ) => {
+    updateGroup(groupIndex, (group) => {
+      const tags = [...(group.serviceConfig?.tags || [])];
+      if (!tags[tagIndex]) tags[tagIndex] = { key: '', value: '' };
+      tags[tagIndex] = { ...tags[tagIndex], [field]: value };
+      return {
+        ...group,
+        serviceConfig: {
+          ...(group.serviceConfig || defaultServiceConfig),
+          tags,
+        },
+      };
+    });
+  };
+
+  const addServiceTag = (groupIndex: number) => {
+    updateGroup(groupIndex, (group) => ({
+      ...group,
+      serviceConfig: {
+        ...(group.serviceConfig || defaultServiceConfig),
+        tags: [...(group.serviceConfig?.tags || []), { key: '', value: '' }],
+      },
+    }));
+  };
+
+  const removeServiceTag = (groupIndex: number, tagIndex: number) => {
+    updateGroup(groupIndex, (group) => {
+      const tags = [...(group.serviceConfig?.tags || [])];
+      if (tags.length <= 1) {
+        return {
+          ...group,
+          serviceConfig: {
+            ...(group.serviceConfig || defaultServiceConfig),
+            tags: [],
+          },
+        };
+      }
+      tags.splice(tagIndex, 1);
+      return {
+        ...group,
+        serviceConfig: {
+          ...(group.serviceConfig || defaultServiceConfig),
+          tags,
+        },
+      };
+    });
+  };
+
   // Form validation
   const validateForm = (): string | null => {
     if (!formData) return 'Form data is missing';
@@ -540,6 +665,13 @@ export function useJobForm({ mode, jobId, namespace = 'default' }: UseJobFormOpt
     addTaskGroup,
     removeTaskGroup,
     handleSubmit,
+    // Service Discovery & Ingress
+    handleEnableServiceChange,
+    handleServiceConfigChange,
+    handleIngressChange,
+    handleServiceTagChange,
+    addServiceTag,
+    removeServiceTag,
     // Plan functions
     handlePlan,
     handleSubmitFromPlan,

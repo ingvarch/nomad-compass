@@ -15,7 +15,7 @@ import {
   ExecTab,
 } from '../components/jobs/detail';
 import JobActions from '../components/jobs/JobActions';
-import type { NomadAllocation } from '../types/nomad';
+import type { NomadAllocation, NomadServiceRegistration } from '../types/nomad';
 
 export default function JobDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -26,6 +26,7 @@ export default function JobDetailPage() {
   const activeTab = useActiveJobTab();
   const [job, setJob] = useState<any>(null);
   const [allocations, setAllocations] = useState<NomadAllocation[]>([]);
+  const [serviceRegistrations, setServiceRegistrations] = useState<NomadServiceRegistration[]>([]);
   const [createTime, setCreateTime] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -69,6 +70,32 @@ export default function JobDetailPage() {
           initialExpandedState[`${group.Name}-container`] = false;
         });
         setExpandedGroups(initialExpandedState);
+      }
+
+      // Fetch service registrations for each service in the job
+      const serviceNames = new Set<string>();
+      if (jobDetail.TaskGroups) {
+        for (const group of jobDetail.TaskGroups) {
+          if (group.Services) {
+            for (const service of group.Services) {
+              if (service.Name) {
+                serviceNames.add(service.Name);
+              }
+            }
+          }
+        }
+      }
+
+      // Fetch all service registrations in parallel
+      if (serviceNames.size > 0) {
+        const servicePromises = Array.from(serviceNames).map(name =>
+          client.getServiceRegistrations(name, namespace).catch(() => [])
+        );
+        const serviceResults = await Promise.all(servicePromises);
+        const allRegistrations = serviceResults.flat();
+        setServiceRegistrations(allRegistrations);
+      } else {
+        setServiceRegistrations([]);
       }
 
       setError(null);
@@ -167,6 +194,7 @@ export default function JobDetailPage() {
         <OverviewTab
           job={job}
           allocations={allocations}
+          serviceRegistrations={serviceRegistrations}
           createTime={createTime}
           expandedGroups={expandedGroups}
           onToggleGroup={toggleGroupDetails}

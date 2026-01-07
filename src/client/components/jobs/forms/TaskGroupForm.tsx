@@ -1,12 +1,13 @@
 // src/components/jobs/forms/TaskGroupForm.tsx
 import React from 'react';
-import { NomadEnvVar, NomadPort, NomadHealthCheck } from '../../../types/nomad';
+import { NomadEnvVar, NomadPort, NomadHealthCheck, NomadServiceConfig, IngressConfig } from '../../../types/nomad';
 import FormInputField from '../../ui/forms/FormInputField';
 import ToggleableSection from '../../ui/forms/ToggleableSection';
 import PrivateRegistryForm from './parts/PrivateRegistryForm';
 import ResourcesForm from './parts/ResourcesForm';
 import EnvVarsSection from './parts/EnvVarsSection';
 import NetworkSection from './parts/NetworkSection';
+import ServiceSection from './parts/ServiceSection';
 import HealthCheckSection from './parts/HealthCheckSection';
 import NomadEnvironmentInfo from './parts/NomadEnvironmentInfo';
 
@@ -33,6 +34,8 @@ interface TaskGroupFormProps {
         ports: NomadPort[];
         enableHealthCheck: boolean;
         healthCheck?: NomadHealthCheck;
+        enableService: boolean;
+        serviceConfig?: NomadServiceConfig;
     };
     isFirst: boolean;
     onInputChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void;
@@ -44,6 +47,13 @@ interface TaskGroupFormProps {
     onAddPort: () => void;
     onRemovePort: (portIndex: number) => void;
     onHealthCheckChange: (field: keyof NomadHealthCheck, value: string | number) => void;
+    // Service Discovery & Ingress handlers
+    onEnableServiceChange: (enabled: boolean) => void;
+    onServiceConfigChange: (config: Partial<NomadServiceConfig>) => void;
+    onIngressChange: (field: keyof IngressConfig, value: string | boolean) => void;
+    onTagChange: (tagIndex: number, field: 'key' | 'value', value: string) => void;
+    onAddTag: () => void;
+    onRemoveTag: (tagIndex: number) => void;
     onRemoveGroup: () => void;
     jobName: string;
     namespace: string;
@@ -63,6 +73,12 @@ export const TaskGroupForm: React.FC<TaskGroupFormProps> = ({
     onAddPort,
     onRemovePort,
     onHealthCheckChange,
+    onEnableServiceChange,
+    onServiceConfigChange,
+    onIngressChange,
+    onTagChange,
+    onAddTag,
+    onRemoveTag,
     onRemoveGroup,
     jobName,
     namespace,
@@ -147,6 +163,7 @@ export const TaskGroupForm: React.FC<TaskGroupFormProps> = ({
                 value={group.plugin}
                 onChange={onInputChange}
                 disabled={isLoading}
+                className="mt-6"
                 options={[
                     { value: 'podman', label: 'Podman' },
                     { value: 'docker', label: 'Docker' }
@@ -180,6 +197,22 @@ export const TaskGroupForm: React.FC<TaskGroupFormProps> = ({
                 onPortChange={onPortChange}
                 onAddPort={onAddPort}
                 onRemovePort={onRemovePort}
+                isLoading={isLoading}
+                groupIndex={groupIndex}
+            />
+
+            {/* Service Discovery & Ingress Configuration */}
+            <ServiceSection
+                enableService={group.enableService}
+                serviceConfig={group.serviceConfig}
+                ports={group.ports}
+                groupName={group.name || jobName}
+                onEnableServiceChange={onEnableServiceChange}
+                onServiceConfigChange={onServiceConfigChange}
+                onIngressChange={onIngressChange}
+                onTagChange={onTagChange}
+                onAddTag={onAddTag}
+                onRemoveTag={onRemoveTag}
                 isLoading={isLoading}
                 groupIndex={groupIndex}
             />

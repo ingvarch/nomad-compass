@@ -102,6 +102,29 @@ export interface DockerAuth {
     password: string;
 }
 
+// Service Discovery & Ingress types
+export interface NomadServiceTag {
+    key: string;
+    value: string;
+}
+
+export interface IngressConfig {
+    enabled: boolean;
+    domain: string;
+    enableHttps: boolean;
+    pathPrefix?: string;
+}
+
+export interface NomadServiceConfig {
+    name: string;
+    portLabel: string;
+    provider: 'nomad' | 'consul';
+    addressMode: 'alloc' | 'auto' | 'host';
+    tags: NomadServiceTag[];
+    ingress: IngressConfig;
+    useAdvancedMode: boolean;
+}
+
 export interface TaskGroupFormData {
     name: string;
     count: number;
@@ -116,6 +139,9 @@ export interface TaskGroupFormData {
     ports: NomadPort[];
     enableHealthCheck: boolean;
     healthCheck?: NomadHealthCheck;
+    // Service Discovery & Ingress
+    enableService: boolean;
+    serviceConfig?: NomadServiceConfig;
 }
 
 export interface NomadJobFormData {
@@ -425,4 +451,20 @@ export interface NomadJobPlanResponse {
     Warnings?: string;
     NextPeriodicLaunch?: string;
     CreatedEvals?: NomadEvaluation[];
+}
+
+// Service Registration types (from Nomad service discovery)
+export interface NomadServiceRegistration {
+    Address: string;
+    AllocID: string;
+    CreateIndex: number;
+    Datacenter: string;
+    ID: string;
+    JobID: string;
+    ModifyIndex: number;
+    Namespace: string;
+    NodeID: string;
+    Port: number;
+    ServiceName: string;
+    Tags?: string[];
 }

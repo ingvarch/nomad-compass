@@ -1,5 +1,5 @@
 import React from 'react';
-import { NomadEnvVar, NomadPort, NomadHealthCheck } from '../../../../types/nomad';
+import { NomadEnvVar, NomadPort, NomadHealthCheck, NomadServiceConfig, IngressConfig } from '../../../../types/nomad';
 import TaskGroupForm from '../TaskGroupForm';
 
 interface TaskGroupsSectionProps {
@@ -24,6 +24,8 @@ interface TaskGroupsSectionProps {
     ports: NomadPort[];
     enableHealthCheck: boolean;
     healthCheck?: NomadHealthCheck;
+    enableService: boolean;
+    serviceConfig?: NomadServiceConfig;
   }>;
   jobName: string;
   namespace: string;
@@ -38,6 +40,13 @@ interface TaskGroupsSectionProps {
   onAddPort: (groupIndex: number) => void;
   onRemovePort: (groupIndex: number, portIndex: number) => void;
   onHealthCheckChange: (groupIndex: number, field: keyof NomadHealthCheck, value: string | number) => void;
+  // Service Discovery & Ingress handlers
+  onEnableServiceChange: (groupIndex: number, enabled: boolean) => void;
+  onServiceConfigChange: (groupIndex: number, config: Partial<NomadServiceConfig>) => void;
+  onIngressChange: (groupIndex: number, field: keyof IngressConfig, value: string | boolean) => void;
+  onTagChange: (groupIndex: number, tagIndex: number, field: 'key' | 'value', value: string) => void;
+  onAddTag: (groupIndex: number) => void;
+  onRemoveTag: (groupIndex: number, tagIndex: number) => void;
   onRemoveTaskGroup: (groupIndex: number) => void;
 }
 
@@ -56,6 +65,12 @@ export const TaskGroupsSection: React.FC<TaskGroupsSectionProps> = ({
   onAddPort,
   onRemovePort,
   onHealthCheckChange,
+  onEnableServiceChange,
+  onServiceConfigChange,
+  onIngressChange,
+  onTagChange,
+  onAddTag,
+  onRemoveTag,
   onRemoveTaskGroup
 }) => {
   return (
@@ -88,6 +103,12 @@ export const TaskGroupsSection: React.FC<TaskGroupsSectionProps> = ({
             onAddPort={() => onAddPort(index)}
             onRemovePort={(portIndex) => onRemovePort(index, portIndex)}
             onHealthCheckChange={(field, value) => onHealthCheckChange(index, field, value)}
+            onEnableServiceChange={(enabled) => onEnableServiceChange(index, enabled)}
+            onServiceConfigChange={(config) => onServiceConfigChange(index, config)}
+            onIngressChange={(field, value) => onIngressChange(index, field, value)}
+            onTagChange={(tagIndex, field, value) => onTagChange(index, tagIndex, field, value)}
+            onAddTag={() => onAddTag(index)}
+            onRemoveTag={(tagIndex) => onRemoveTag(index, tagIndex)}
             onRemoveGroup={() => onRemoveTaskGroup(index)}
             jobName={jobName}
             namespace={namespace}
@@ -99,4 +120,4 @@ export const TaskGroupsSection: React.FC<TaskGroupsSectionProps> = ({
   );
 };
 
-export default TaskGroupsSection; 
+export default TaskGroupsSection;
