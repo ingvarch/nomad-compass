@@ -119,6 +119,7 @@ export interface NomadServiceConfig {
     name: string;
     portLabel: string;
     provider: 'nomad' | 'consul';
+    addressMode: 'alloc' | 'auto' | 'host';
     tags: NomadServiceTag[];
     ingress: IngressConfig;
     useAdvancedMode: boolean;

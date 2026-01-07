@@ -132,7 +132,7 @@ function createServiceForTaskGroup(
     const service: any = {
         Name: serviceConfig?.name || groupData.name,
         TaskName: groupData.name,
-        AddressMode: 'auto',
+        AddressMode: serviceConfig?.addressMode || 'alloc',
         PortLabel: serviceConfig?.portLabel || portLabel,
         Provider: serviceConfig?.provider || 'nomad',
     };
@@ -482,6 +482,7 @@ function convertJobToFormData(job: any): NomadJobFormData {
             name: service?.Name || group.Name,
             portLabel: service?.PortLabel || 'http',
             provider: (service?.Provider || 'nomad') as 'nomad' | 'consul',
+            addressMode: (service?.AddressMode || 'alloc') as 'alloc' | 'auto' | 'host',
             tags: serviceTags,
             ingress: ingressConfig,
             useAdvancedMode: hasTraefikTags && !canUseSimpleMode,

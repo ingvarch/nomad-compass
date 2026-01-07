@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Eye, EyeOff, Trash } from 'lucide-react';
+import { Eye, EyeOff, Trash, Plus } from 'lucide-react';
 import { NomadEnvVar } from '../../../../types/nomad';
 
 interface EnvVarsSectionProps {
@@ -31,102 +31,60 @@ export const EnvVarsSection: React.FC<EnvVarsSectionProps> = ({
   return (
     <div className="mb-4">
       <div className="flex justify-between items-center mb-2">
-        <h5 className="text-md font-medium text-gray-700">Environment Variables</h5>
+        <h5 className="text-md font-medium text-gray-700 dark:text-gray-300">Environment Variables</h5>
       </div>
 
-      {envVars.length === 0 ? (
-        <div className="flex space-x-2 mb-2 items-center">
+      {/* Existing env vars */}
+      {envVars.map((envVar, index) => (
+        <div key={index} className="flex space-x-2 mb-2 items-center">
           <input
             type="text"
-            value=""
-            onChange={(e) => onEnvVarChange(0, 'key', e.target.value)}
+            value={envVar.key}
+            onChange={(e) => onEnvVarChange(index, 'key', e.target.value)}
             placeholder="KEY"
-            className="w-1/3 p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="flex-1 min-w-0 p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
             disabled={isLoading}
           />
-          <div className="relative w-1/2">
+          <div className="relative flex-1 min-w-0">
             <input
-              type="password"
-              value=""
-              onChange={(e) => onEnvVarChange(0, 'value', e.target.value)}
+              type={visibleEnvValues[index] ? "text" : "password"}
+              value={envVar.value}
+              onChange={(e) => onEnvVarChange(index, 'value', e.target.value)}
               placeholder="value"
-              className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full p-2 pr-10 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
               disabled={isLoading}
             />
             <button
               type="button"
-              onClick={() => toggleEnvValueVisibility(0)}
-              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none"
+              onClick={() => toggleEnvValueVisibility(index)}
+              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 focus:outline-none"
               disabled={isLoading}
             >
-              <Eye size={16} />
+              {visibleEnvValues[index] ? <EyeOff size={16} /> : <Eye size={16} />}
             </button>
           </div>
           <button
             type="button"
-            onClick={onAddEnvVar}
-            className="inline-flex items-center p-2 border border-transparent text-xs font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 w-16"
+            onClick={() => onRemoveEnvVar(index)}
+            className="flex-shrink-0 p-2 border border-transparent text-xs font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
             disabled={isLoading}
+            title="Remove"
           >
-            Add
+            <Trash size={16} />
           </button>
         </div>
-      ) : (
-        envVars.map((envVar, index) => (
-          <div key={index} className="flex space-x-2 mb-2 items-center">
-            <input
-              type="text"
-              value={envVar.key}
-              onChange={(e) => onEnvVarChange(index, 'key', e.target.value)}
-              placeholder="KEY"
-              className="w-1/3 p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              disabled={isLoading}
-            />
-            <div className="relative w-1/2">
-              <input
-                type={visibleEnvValues[index] ? "text" : "password"}
-                value={envVar.value}
-                onChange={(e) => onEnvVarChange(index, 'value', e.target.value)}
-                placeholder="value"
-                className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                disabled={isLoading}
-              />
-              <button
-                type="button"
-                onClick={() => toggleEnvValueVisibility(index)}
-                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 focus:outline-none"
-                disabled={isLoading}
-              >
-                {visibleEnvValues[index] ? <EyeOff size={16} /> : <Eye size={16} />}
-              </button>
-            </div>
-            {index === envVars.length - 1 ? (
-              <button
-                type="button"
-                onClick={onAddEnvVar}
-                className="flex justify-center items-center p-2 border border-transparent text-xs font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 w-16"
-                disabled={isLoading}
-              >
-                Add
-              </button>
-            ) : (
-              <button
-                type="button"
-                onClick={() => onRemoveEnvVar(index)}
-                className="inline-flex items-center p-2 border border-transparent text-xs font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 w-16"
-                disabled={isLoading}
-              >
-                <Trash size={16} className="mx-auto" />
-              </button>
-            )}
-            {index === envVars.length - 1 ? null : (
-              <div className="w-16">
-                {/* Empty block to align the buttons */}
-              </div>
-            )}
-          </div>
-        ))
-      )}
+      ))}
+
+      {/* Add button */}
+      <button
+        type="button"
+        onClick={onAddEnvVar}
+        className="flex items-center gap-1 px-3 py-1.5 text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-md transition-colors"
+        disabled={isLoading}
+      >
+        <Plus size={16} />
+        Add Variable
+      </button>
     </div>
   );
 };

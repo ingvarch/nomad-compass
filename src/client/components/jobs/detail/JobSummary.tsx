@@ -1,6 +1,13 @@
 import React from 'react';
+import { ExternalLink } from 'lucide-react';
 import StatusBadge from './StatusBadge';
 import type { NomadAllocation } from '../../../types/nomad';
+
+interface IngressInfo {
+  domain: string;
+  url: string;
+  https: boolean;
+}
 
 interface JobSummaryProps {
   job: {
@@ -12,9 +19,65 @@ interface JobSummaryProps {
     SubmitTime?: number;
     Namespace?: string;
     Version?: number;
+    TaskGroups?: Array<{
+      Services?: Array<{
+        Tags?: string[];
+      }>;
+    }>;
   };
   allocations?: NomadAllocation[];
   createTime?: number | null;
+}
+
+/**
+ * Extract ingress URLs from Traefik service tags
+ */
+function extractIngressUrls(job: JobSummaryProps['job']): IngressInfo[] {
+  const ingresses: IngressInfo[] = [];
+
+  if (!job.TaskGroups) return ingresses;
+
+  for (const group of job.TaskGroups) {
+    if (!group.Services) continue;
+
+    for (const service of group.Services) {
+      if (!service.Tags) continue;
+
+      // Check if Traefik is enabled
+      const enableTag = service.Tags.find(t => t === 'traefik.enable=true');
+      if (!enableTag) continue;
+
+      // Find router rule with domain
+      const ruleTag = service.Tags.find(t => t.match(/traefik\.http\.routers\.[^.]+\.rule=/));
+      if (!ruleTag) continue;
+
+      // Extract domain from Host(`domain.com`)
+      const hostMatch = ruleTag.match(/Host\(`([^`]+)`\)/);
+      if (!hostMatch) continue;
+
+      const domain = hostMatch[1];
+
+      // Check if HTTPS is enabled (has certresolver or tls config)
+      const hasHttps = service.Tags.some(t =>
+        t.match(/traefik\.http\.routers\.[^.]+\.tls\.certresolver=/) ||
+        t.match(/traefik\.http\.routers\.[^.]+\.tls$/)
+      );
+
+      // Extract path prefix if present
+      const pathMatch = ruleTag.match(/PathPrefix\(`([^`]+)`\)/);
+      const pathPrefix = pathMatch ? pathMatch[1] : '';
+
+      const protocol = hasHttps ? 'https' : 'http';
+      const url = `${protocol}://${domain}${pathPrefix}`;
+
+      // Avoid duplicates
+      if (!ingresses.some(i => i.url === url)) {
+        ingresses.push({ domain, url, https: hasHttps });
+      }
+    }
+  }
+
+  return ingresses;
 }
 
 const NANOSECONDS_TO_MILLISECONDS = 1_000_000;
@@ -34,6 +97,8 @@ const formatDate = (nanoseconds: number): string => {
 };
 
 export const JobSummary: React.FC<JobSummaryProps> = ({ job, allocations, createTime }) => {
+  const ingresses = extractIngressUrls(job);
+
   return (
     <div className="bg-white dark:bg-gray-800 shadow rounded-lg overflow-hidden">
       <div className="px-6 py-5 border-b border-gray-200 dark:border-gray-700">
@@ -114,6 +179,32 @@ export const JobSummary: React.FC<JobSummaryProps> = ({ job, allocations, create
                 {job.Version ?? 'Unknown'}
               </dd>
             </div>
+            {ingresses.length > 0 && (
+              <div className="bg-gray-50 dark:bg-gray-700 px-4 py-3 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6 rounded-md">
+                <dt className="text-sm font-medium text-gray-500 dark:text-gray-400">
+                  Ingress
+                </dt>
+                <dd className="mt-1 text-sm sm:mt-0 sm:col-span-2 space-y-1">
+                  {ingresses.map((ingress, idx) => (
+                    <a
+                      key={idx}
+                      href={ingress.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex items-center gap-1.5 text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:underline"
+                    >
+                      <ExternalLink className="w-3.5 h-3.5 flex-shrink-0" />
+                      <span className="truncate">{ingress.domain}</span>
+                      {ingress.https && (
+                        <span className="px-1.5 py-0.5 text-xs bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300 rounded">
+                          HTTPS
+                        </span>
+                      )}
+                    </a>
+                  ))}
+                </dd>
+              </div>
+            )}
           </dl>
         </div>
       </div>

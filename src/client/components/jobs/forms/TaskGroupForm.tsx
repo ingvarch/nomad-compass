@@ -163,6 +163,7 @@ export const TaskGroupForm: React.FC<TaskGroupFormProps> = ({
                 value={group.plugin}
                 onChange={onInputChange}
                 disabled={isLoading}
+                className="mt-6"
                 options={[
                     { value: 'podman', label: 'Podman' },
                     { value: 'docker', label: 'Docker' }

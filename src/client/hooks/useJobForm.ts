@@ -23,6 +23,7 @@ const defaultServiceConfig: NomadServiceConfig = {
   name: '',
   portLabel: 'http',
   provider: 'nomad',
+  addressMode: 'alloc',
   tags: [],
   ingress: {
     enabled: false,
@@ -49,7 +50,7 @@ export const defaultTaskGroupData: TaskGroupFormData = {
   dockerAuth: { username: '', password: '' },
   enableNetwork: false,
   networkMode: 'bridge',
-  ports: [{ label: 'http', value: 8080, to: 8080, static: false }],
+  ports: [{ label: 'http', value: 0, to: 80, static: false }],
   enableHealthCheck: false,
   healthCheck: {
     type: 'http',
@@ -372,11 +373,24 @@ export function useJobForm({ mode, jobId, namespace = 'default' }: UseJobFormOpt
 
   // Service Discovery & Ingress handlers
   const handleEnableServiceChange = (groupIndex: number, enabled: boolean) => {
-    updateGroup(groupIndex, (group) => ({
-      ...group,
-      enableService: enabled,
-      serviceConfig: group.serviceConfig || { ...defaultServiceConfig },
-    }));
+    updateGroup(groupIndex, (group) => {
+      const updates: Partial<TaskGroupFormData> = {
+        enableService: enabled,
+        serviceConfig: group.serviceConfig || { ...defaultServiceConfig },
+      };
+
+      // Auto-enable network configuration when service discovery is enabled
+      if (enabled && !group.enableNetwork) {
+        updates.enableNetwork = true;
+        updates.networkMode = 'bridge';
+        // Set default port if no ports configured
+        if (!group.ports || group.ports.length === 0 || !group.ports[0].label) {
+          updates.ports = [{ label: 'http', value: 0, to: 80, static: false }];
+        }
+      }
+
+      return { ...group, ...updates };
+    });
   };
 
   const handleServiceConfigChange = (

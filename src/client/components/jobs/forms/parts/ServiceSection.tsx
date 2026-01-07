@@ -24,6 +24,7 @@ const defaultServiceConfig: NomadServiceConfig = {
   name: '',
   portLabel: 'http',
   provider: 'nomad',
+  addressMode: 'alloc',
   tags: [],
   ingress: {
     enabled: false,
