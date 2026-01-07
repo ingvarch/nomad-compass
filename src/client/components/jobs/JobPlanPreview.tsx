@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Modal, ErrorAlert } from '../ui';
-import { NomadJobPlanResponse, NomadJobDiff, NomadFieldDiff, NomadObjectDiff, NomadTaskGroupDiff } from '../../types/nomad';
+import { NomadJobPlanResponse, NomadJobDiff } from '../../types/nomad';
+import { processJobDiff, HclLine, HCL_KEYWORDS } from '../../lib/hclDiffRenderer';
 
 interface JobPlanPreviewProps {
   isOpen: boolean;
@@ -12,152 +13,84 @@ interface JobPlanPreviewProps {
   isSubmitting: boolean;
 }
 
-function getDiffTypeColor(type: string): string {
-  switch (type) {
-    case 'Added':
-      return 'text-green-600 dark:text-green-400';
-    case 'Deleted':
-      return 'text-red-600 dark:text-red-400';
-    case 'Edited':
-      return 'text-yellow-600 dark:text-yellow-400';
-    default:
-      return 'text-gray-600 dark:text-gray-400';
-  }
-}
+// Syntax highlighting for HCL content
+function highlightHclContent(content: string): React.ReactNode {
+  if (!content) return content;
 
-function getDiffTypeBg(type: string): string {
-  switch (type) {
-    case 'Added':
-      return 'bg-green-50 dark:bg-green-900/20';
-    case 'Deleted':
-      return 'bg-red-50 dark:bg-red-900/20';
-    case 'Edited':
-      return 'bg-yellow-50 dark:bg-yellow-900/20';
-    default:
-      return '';
-  }
-}
-
-function FieldDiffDisplay({ field }: { field: NomadFieldDiff }) {
-  if (field.Type === 'None') return null;
-
-  // For Edited fields - show git-style two-line diff
-  if (field.Type === 'Edited') {
+  // Match: keyword "name" { or keyword {
+  const blockMatch = content.match(/^(\w+)(\s+"[^"]+")?(\s*\{)$/);
+  if (blockMatch) {
+    const [, keyword, name, brace] = blockMatch;
+    const isKeyword = HCL_KEYWORDS.includes(keyword);
     return (
-      <div className="space-y-0.5">
-        {field.Old && (
-          <div className={`py-1 px-2 rounded text-sm ${getDiffTypeBg('Deleted')}`}>
-            <span className="font-medium text-red-600 dark:text-red-400">-</span>{' '}
-            <span className="font-mono text-gray-700 dark:text-gray-300">{field.Name}</span>
-            <span className="text-red-600 dark:text-red-400 font-mono"> "{field.Old}"</span>
-          </div>
-        )}
-        {field.New && (
-          <div className={`py-1 px-2 rounded text-sm ${getDiffTypeBg('Added')}`}>
-            <span className="font-medium text-green-600 dark:text-green-400">+</span>{' '}
-            <span className="font-mono text-gray-700 dark:text-gray-300">{field.Name}</span>
-            <span className="text-green-600 dark:text-green-400 font-mono"> "{field.New}"</span>
-          </div>
-        )}
-      </div>
+      <>
+        <span className={isKeyword ? 'text-purple-400' : ''}>{keyword}</span>
+        {name && <span className="text-amber-300">{name}</span>}
+        <span className="text-gray-500">{brace}</span>
+      </>
     );
   }
 
-  // For Added/Deleted - keep single line display
+  // Match: key = value
+  const assignMatch = content.match(/^(\w+)\s*=\s*(.+)$/);
+  if (assignMatch) {
+    const [, key, value] = assignMatch;
+    // Check if value is a string (quoted)
+    const isStringValue = value.startsWith('"') && value.endsWith('"');
+    // Check if value is a number or boolean
+    const isLiteralValue = /^(\d+\.?\d*|true|false)$/.test(value);
+    return (
+      <>
+        <span className="text-cyan-400">{key}</span>
+        <span className="text-gray-500"> = </span>
+        <span className={isStringValue ? 'text-amber-300' : isLiteralValue ? 'text-orange-400' : ''}>
+          {value}
+        </span>
+      </>
+    );
+  }
+
+  // Closing brace
+  if (content === '}') {
+    return <span className="text-gray-500">{'}'}</span>;
+  }
+
+  return content;
+}
+
+// React Component: Single HCL diff line with syntax highlighting
+function HclDiffLine({ line }: { line: HclLine }) {
+  const indentSpaces = '  '.repeat(line.indent);
+
+  const bgClasses: Record<string, string> = {
+    added: 'bg-green-950/40',
+    deleted: 'bg-red-950/40',
+    none: ''
+  };
+
+  const prefixClasses: Record<string, string> = {
+    added: 'text-green-500',
+    deleted: 'text-red-500',
+    none: 'text-gray-600'
+  };
+
+  // For added/deleted lines, apply diff colors; for none, use syntax highlighting
+  const shouldHighlight = line.type === 'none';
+  const textColorClass = line.type === 'added' ? 'text-green-400' : line.type === 'deleted' ? 'text-red-400' : '';
+
   return (
-    <div className={`py-1 px-2 rounded text-sm ${getDiffTypeBg(field.Type)}`}>
-      <span className={`font-medium ${getDiffTypeColor(field.Type)}`}>
-        {field.Type === 'Added' ? '+' : '-'}
-      </span>{' '}
-      <span className="font-mono text-gray-700 dark:text-gray-300">{field.Name}</span>
-      {field.Type === 'Deleted' && field.Old && (
-        <span className="text-red-600 dark:text-red-400 font-mono"> "{field.Old}"</span>
-      )}
-      {field.Type === 'Added' && field.New && (
-        <span className="text-green-600 dark:text-green-400 font-mono"> "{field.New}"</span>
-      )}
+    <div className={`${bgClasses[line.type]} leading-relaxed`}>
+      <span className={`select-none ${prefixClasses[line.type]}`}>{line.prefix}</span>
+      <span className="select-none">{indentSpaces}</span>
+      <span className={textColorClass}>
+        {shouldHighlight ? highlightHclContent(line.content) : line.content}
+      </span>
     </div>
   );
 }
 
-function ObjectDiffDisplay({ obj, depth = 0 }: { obj: NomadObjectDiff; depth?: number }) {
-  if (obj.Type === 'None') return null;
-
-  return (
-    <div className={`ml-${depth * 2} py-1`}>
-      <div className={`font-medium ${getDiffTypeColor(obj.Type)}`}>
-        {obj.Type === 'Added' ? '+' : obj.Type === 'Deleted' ? '-' : '~'} {obj.Name}
-      </div>
-      <div className="ml-4">
-        {obj.Fields?.filter(f => f.Type !== 'None').map((field, i) => (
-          <FieldDiffDisplay key={i} field={field} />
-        ))}
-        {obj.Objects?.filter(o => o.Type !== 'None').map((nested, i) => (
-          <ObjectDiffDisplay key={i} obj={nested} depth={depth + 1} />
-        ))}
-      </div>
-    </div>
-  );
-}
-
-function TaskGroupDiffDisplay({ tg }: { tg: NomadTaskGroupDiff }) {
-  if (tg.Type === 'None') return null;
-
-  return (
-    <div className={`border rounded-lg p-3 mb-3 ${getDiffTypeBg(tg.Type)} border-gray-200 dark:border-gray-700`}>
-      <h5 className={`font-medium mb-2 ${getDiffTypeColor(tg.Type)}`}>
-        {tg.Type === 'Added' ? '+ ' : tg.Type === 'Deleted' ? '- ' : '~ '}
-        Task Group: {tg.Name}
-      </h5>
-
-      {/* Updates summary */}
-      {tg.Updates && Object.keys(tg.Updates).length > 0 && (
-        <div className="mb-2 text-sm">
-          {Object.entries(tg.Updates)
-            .filter(([, count]) => count > 0)
-            .map(([action, count]) => (
-              <span key={action} className={`mr-2 px-2 py-0.5 rounded ${
-                action === 'create' ? 'bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-300' :
-                action === 'destroy' ? 'bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-300' :
-                'bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300'
-              }`}>
-                {count} {action}
-              </span>
-            ))}
-        </div>
-      )}
-
-      {/* Field diffs */}
-      {tg.Fields?.filter(f => f.Type !== 'None').map((field, i) => (
-        <FieldDiffDisplay key={i} field={field} />
-      ))}
-
-      {/* Object diffs */}
-      {tg.Objects?.filter(o => o.Type !== 'None').map((obj, i) => (
-        <ObjectDiffDisplay key={i} obj={obj} />
-      ))}
-
-      {/* Task diffs */}
-      {tg.Tasks?.filter(t => t.Type !== 'None').map((task, i) => (
-        <div key={i} className="ml-4 mt-2 p-2 border-l-2 border-gray-300 dark:border-gray-600">
-          <span className={`font-medium ${getDiffTypeColor(task.Type)}`}>
-            Task: {task.Name}
-          </span>
-          <div className="ml-2">
-            {task.Fields?.filter(f => f.Type !== 'None').map((field, j) => (
-              <FieldDiffDisplay key={j} field={field} />
-            ))}
-            {task.Objects?.filter(o => o.Type !== 'None').map((obj, j) => (
-              <ObjectDiffDisplay key={j} obj={obj} />
-            ))}
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-}
-
-function JobDiffDisplay({ diff }: { diff: NomadJobDiff }) {
+// React Component: HCL-style diff display
+function HclDiffDisplay({ diff }: { diff: NomadJobDiff }) {
   if (diff.Type === 'None') {
     return (
       <div className="text-gray-500 dark:text-gray-400 text-center py-4">
@@ -166,23 +99,14 @@ function JobDiffDisplay({ diff }: { diff: NomadJobDiff }) {
     );
   }
 
+  const lines = processJobDiff(diff);
+
   return (
-    <div>
-      {/* Job-level fields */}
-      {diff.Fields?.filter(f => f.Type !== 'None').map((field, i) => (
-        <FieldDiffDisplay key={i} field={field} />
+    <pre className="font-mono text-sm bg-gray-900 dark:bg-gray-950 p-4 rounded-lg overflow-x-auto">
+      {lines.map((line, i) => (
+        <HclDiffLine key={i} line={line} />
       ))}
-
-      {/* Job-level objects */}
-      {diff.Objects?.filter(o => o.Type !== 'None').map((obj, i) => (
-        <ObjectDiffDisplay key={i} obj={obj} />
-      ))}
-
-      {/* Task Groups */}
-      {diff.TaskGroups?.filter(tg => tg.Type !== 'None').map((tg, i) => (
-        <TaskGroupDiffDisplay key={i} tg={tg} />
-      ))}
-    </div>
+    </pre>
   );
 }
 
@@ -388,9 +312,7 @@ export function JobPlanPreview({
             )}
 
             {activeSection === 'diff' && planResult.Diff && (
-              <div className="font-mono text-sm">
-                <JobDiffDisplay diff={planResult.Diff} />
-              </div>
+              <HclDiffDisplay diff={planResult.Diff} />
             )}
           </div>
 

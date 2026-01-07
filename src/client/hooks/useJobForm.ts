@@ -371,6 +371,31 @@ export function useJobForm({ mode, jobId, namespace = 'default' }: UseJobFormOpt
     });
   };
 
+  // Network Configuration handler
+  const handleEnableNetworkChange = (groupIndex: number, enabled: boolean) => {
+    updateGroup(groupIndex, (group) => {
+      const updates: Partial<TaskGroupFormData> = {
+        enableNetwork: enabled,
+      };
+
+      // Auto-disable Service Discovery and Ingress when network is disabled
+      if (!enabled) {
+        updates.enableService = false;
+        if (group.serviceConfig?.ingress) {
+          updates.serviceConfig = {
+            ...(group.serviceConfig || defaultServiceConfig),
+            ingress: {
+              ...group.serviceConfig.ingress,
+              enabled: false,
+            },
+          };
+        }
+      }
+
+      return { ...group, ...updates };
+    });
+  };
+
   // Service Discovery & Ingress handlers
   const handleEnableServiceChange = (groupIndex: number, enabled: boolean) => {
     updateGroup(groupIndex, (group) => {
@@ -665,6 +690,8 @@ export function useJobForm({ mode, jobId, namespace = 'default' }: UseJobFormOpt
     addTaskGroup,
     removeTaskGroup,
     handleSubmit,
+    // Network Configuration
+    handleEnableNetworkChange,
     // Service Discovery & Ingress
     handleEnableServiceChange,
     handleServiceConfigChange,

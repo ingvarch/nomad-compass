@@ -16,7 +16,8 @@
     "deploy:cf": "bun run build && wrangler deploy",
     "docker:build": "bun run build:all && docker build -t nomad-compass .",
     "lint": "bunx eslint src/",
-    "typecheck": "bunx tsc --noEmit"
+    "typecheck": "bunx tsc --noEmit",
+    "test": "bun test"
   },
   "dependencies": {
     "@xterm/addon-fit": "^0.11.0",

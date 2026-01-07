@@ -52,6 +52,8 @@ export const JobForm: React.FC<JobFormProps> = ({
     addTaskGroup,
     removeTaskGroup,
     handleSubmit,
+    // Network Configuration
+    handleEnableNetworkChange,
     // Service Discovery & Ingress
     handleEnableServiceChange,
     handleServiceConfigChange,
@@ -222,6 +224,7 @@ export const JobForm: React.FC<JobFormProps> = ({
         onAddPort={addPort}
         onRemovePort={removePort}
         onHealthCheckChange={handleHealthCheckChange}
+        onEnableNetworkChange={handleEnableNetworkChange}
         onEnableServiceChange={handleEnableServiceChange}
         onServiceConfigChange={handleServiceConfigChange}
         onIngressChange={handleIngressChange}

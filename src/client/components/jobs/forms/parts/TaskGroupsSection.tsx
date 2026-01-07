@@ -40,6 +40,8 @@ interface TaskGroupsSectionProps {
   onAddPort: (groupIndex: number) => void;
   onRemovePort: (groupIndex: number, portIndex: number) => void;
   onHealthCheckChange: (groupIndex: number, field: keyof NomadHealthCheck, value: string | number) => void;
+  // Network Configuration handler
+  onEnableNetworkChange: (groupIndex: number, enabled: boolean) => void;
   // Service Discovery & Ingress handlers
   onEnableServiceChange: (groupIndex: number, enabled: boolean) => void;
   onServiceConfigChange: (groupIndex: number, config: Partial<NomadServiceConfig>) => void;
@@ -65,6 +67,7 @@ export const TaskGroupsSection: React.FC<TaskGroupsSectionProps> = ({
   onAddPort,
   onRemovePort,
   onHealthCheckChange,
+  onEnableNetworkChange,
   onEnableServiceChange,
   onServiceConfigChange,
   onIngressChange,
@@ -103,6 +106,7 @@ export const TaskGroupsSection: React.FC<TaskGroupsSectionProps> = ({
             onAddPort={() => onAddPort(index)}
             onRemovePort={(portIndex) => onRemovePort(index, portIndex)}
             onHealthCheckChange={(field, value) => onHealthCheckChange(index, field, value)}
+            onEnableNetworkChange={(enabled) => onEnableNetworkChange(index, enabled)}
             onEnableServiceChange={(enabled) => onEnableServiceChange(index, enabled)}
             onServiceConfigChange={(config) => onServiceConfigChange(index, config)}
             onIngressChange={(field, value) => onIngressChange(index, field, value)}
