@@ -47,6 +47,8 @@ interface TaskGroupFormProps {
     onAddPort: () => void;
     onRemovePort: (portIndex: number) => void;
     onHealthCheckChange: (field: keyof NomadHealthCheck, value: string | number) => void;
+    // Network Configuration handler
+    onEnableNetworkChange: (enabled: boolean) => void;
     // Service Discovery & Ingress handlers
     onEnableServiceChange: (enabled: boolean) => void;
     onServiceConfigChange: (config: Partial<NomadServiceConfig>) => void;
@@ -73,6 +75,7 @@ export const TaskGroupForm: React.FC<TaskGroupFormProps> = ({
     onAddPort,
     onRemovePort,
     onHealthCheckChange,
+    onEnableNetworkChange,
     onEnableServiceChange,
     onServiceConfigChange,
     onIngressChange,
@@ -193,7 +196,7 @@ export const TaskGroupForm: React.FC<TaskGroupFormProps> = ({
                 networkMode={group.networkMode}
                 ports={group.ports}
                 onInputChange={onInputChange}
-                onCheckboxChange={onCheckboxChange}
+                onEnableNetworkChange={onEnableNetworkChange}
                 onPortChange={onPortChange}
                 onAddPort={onAddPort}
                 onRemovePort={onRemovePort}

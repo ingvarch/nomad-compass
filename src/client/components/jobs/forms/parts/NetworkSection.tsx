@@ -8,7 +8,7 @@ interface NetworkSectionProps {
   networkMode: 'none' | 'host' | 'bridge';
   ports: NomadPort[];
   onInputChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void;
-  onCheckboxChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void;
+  onEnableNetworkChange: (enabled: boolean) => void;
   onPortChange: (portIndex: number, field: keyof NomadPort, value: string) => void;
   onAddPort: () => void;
   onRemovePort: (portIndex: number) => void;
@@ -21,7 +21,7 @@ export const NetworkSection: React.FC<NetworkSectionProps> = ({
   networkMode,
   ports,
   onInputChange,
-  onCheckboxChange,
+  onEnableNetworkChange,
   onPortChange,
   onAddPort,
   onRemovePort,
@@ -37,7 +37,7 @@ export const NetworkSection: React.FC<NetworkSectionProps> = ({
           label="Enable Network Configuration"
           type="checkbox"
           value={enableNetwork}
-          onChange={onCheckboxChange}
+          onChange={(e) => onEnableNetworkChange((e.target as HTMLInputElement).checked)}
           disabled={isLoading}
           className="mb-0"
         />
