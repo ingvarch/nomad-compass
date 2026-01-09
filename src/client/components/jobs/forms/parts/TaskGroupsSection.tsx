@@ -12,7 +12,7 @@ export const TaskGroupsSection: React.FC = () => {
 
   if (!formData) return null;
 
-  const { taskGroups, name: jobName, namespace } = formData;
+  const { taskGroups, name: jobName } = formData;
   const loading = isLoading || isSaving;
 
   const handleAddTaskGroup = () => {
@@ -44,7 +44,6 @@ export const TaskGroupsSection: React.FC = () => {
             groupIndex={index}
             isFirst={index === 0}
             jobName={jobName}
-            namespace={namespace}
           />
         ))}
       </div>

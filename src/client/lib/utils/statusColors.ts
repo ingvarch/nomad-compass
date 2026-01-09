@@ -3,6 +3,7 @@
 export type AllocationStatus = 'running' | 'pending' | 'complete' | 'failed' | 'lost';
 export type JobStatus = 'running' | 'pending' | 'dead' | 'stopped' | 'degraded';
 export type NodeStatus = 'ready' | 'down' | 'draining';
+export type ServerStatus = 'alive' | 'failed' | 'left';
 export type Severity = 'info' | 'warning' | 'error';
 export type ClusterHealth = 'healthy' | 'degraded' | 'critical';
 
@@ -84,6 +85,22 @@ export const nodeStatusColors: Record<NodeStatus, StatusColorConfig> = {
   },
 };
 
+// Server status colors (used in ServersPage)
+export const serverStatusColors: Record<ServerStatus, StatusColorConfig> = {
+  alive: {
+    bg: 'bg-green-100 dark:bg-green-900/30',
+    text: 'text-green-800 dark:text-green-300',
+  },
+  failed: {
+    bg: 'bg-red-100 dark:bg-red-900/30',
+    text: 'text-red-800 dark:text-red-300',
+  },
+  left: {
+    bg: 'bg-gray-100 dark:bg-gray-700',
+    text: 'text-gray-800 dark:text-gray-300',
+  },
+};
+
 // Event severity colors (used in ActivityPage)
 export const severityColors: Record<Severity, StatusColorConfig> = {
   info: {
@@ -156,6 +173,11 @@ export function getNodeStatusColor(status: string, isDraining?: boolean): Status
   if (isDraining) return nodeStatusColors.draining;
   const normalized = status.toLowerCase() as NodeStatus;
   return nodeStatusColors[normalized] || defaultStatusColor;
+}
+
+export function getServerStatusColor(status: string): StatusColorConfig {
+  const normalized = status.toLowerCase() as ServerStatus;
+  return serverStatusColors[normalized] || defaultStatusColor;
 }
 
 // Evaluation status colors

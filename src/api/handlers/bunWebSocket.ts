@@ -13,7 +13,6 @@ import type { ExecParams } from '../../shared/types/exec';
 interface BunWebSocketConfig {
   nomadAddr: string;
   ticketSecret: string;
-  verbose?: boolean;
 }
 
 interface WebSocketData {
@@ -29,7 +28,7 @@ interface BunServer {
 }
 
 export function createBunWebSocketHandlers(config: BunWebSocketConfig) {
-  const { nomadAddr, ticketSecret, verbose = false } = config;
+  const { nomadAddr, ticketSecret } = config;
   const wsConnections = new Map<WebSocket, WebSocket>();
 
   async function handleUpgrade(
@@ -74,18 +73,8 @@ export function createBunWebSocketHandlers(config: BunWebSocketConfig) {
 
       try {
         const nomadUrl = buildNomadExecUrl(addr!, params, token);
-        if (verbose) {
-          console.log('Connecting to Nomad exec:', nomadUrl.replace(/X-Nomad-Token=[^&]+/, 'X-Nomad-Token=***'));
-        }
-
         const nomadWs = new WebSocket(nomadUrl);
         wsConnections.set(ws, nomadWs);
-
-        if (verbose) {
-          nomadWs.onopen = () => {
-            console.log('Connected to Nomad exec endpoint');
-          };
-        }
 
         nomadWs.onmessage = (event) => {
           if (ws.readyState === WebSocket.OPEN) {
@@ -94,26 +83,17 @@ export function createBunWebSocketHandlers(config: BunWebSocketConfig) {
         };
 
         nomadWs.onclose = (event) => {
-          if (verbose) {
-            console.log('Nomad connection closed:', event.code, event.reason);
-          }
           wsConnections.delete(ws);
           if (ws.readyState === WebSocket.OPEN) {
             ws.close(event.code || 1000, event.reason || 'Nomad connection closed');
           }
         };
 
-        nomadWs.onerror = (error) => {
-          if (verbose) {
-            console.error('Nomad WebSocket error:', error);
-          }
+        nomadWs.onerror = () => {
           wsConnections.delete(ws);
           ws.close(1011, 'Nomad connection error');
         };
       } catch (error) {
-        if (verbose) {
-          console.error('Failed to connect to Nomad:', error);
-        }
         const message = error instanceof Error ? error.message : 'Connection failed';
         ws.close(1011, message);
       }

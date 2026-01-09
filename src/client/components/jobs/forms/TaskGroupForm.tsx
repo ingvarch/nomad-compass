@@ -15,7 +15,6 @@ interface TaskGroupFormProps {
   groupIndex: number;
   isFirst: boolean;
   jobName: string;
-  namespace: string;
 }
 
 /**

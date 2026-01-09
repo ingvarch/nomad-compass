@@ -19,7 +19,6 @@ console.log(`Using NOMAD_ADDR: ${nomadAddr}`);
 const { handleUpgrade, websocket } = createBunWebSocketHandlers({
   nomadAddr,
   ticketSecret,
-  verbose: false,
 });
 
 export default {

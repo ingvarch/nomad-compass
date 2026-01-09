@@ -42,8 +42,8 @@ export const JobList: React.FC = () => {
         setJobs(jobsResponse.Jobs || []);
         setError(null);
       } catch (err) {
-        console.error('Failed to fetch namespaces or jobs:', err);
-        setError('Failed to load namespaces or jobs. Please check your connection and try again.');
+        const message = err instanceof Error ? err.message : 'Unknown error';
+        setError(`Failed to load namespaces or jobs: ${message}`);
       } finally {
         setIsLoading(false);
       }

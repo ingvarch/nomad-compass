@@ -3,18 +3,16 @@
  *
  * This hook composes smaller focused hooks:
  * - useJobFormFetch: Data loading for edit/clone modes
- * - useJobFormHandlers: Form field change handlers
+ * - useJobFormHandlers: Job-level field change handlers
  * - useJobPlan: Plan preview and job submission
  *
+ * Task group handlers are in useTaskGroupHandlers.ts (used by TaskGroupForm).
  * All hooks share state via JobFormContext.
  */
 import { useJobFormContext } from '../context/JobFormContext';
 import { useJobFormFetch } from './useJobFormFetch';
 import { useJobFormHandlers } from './useJobFormHandlers';
 import { useJobPlan } from './useJobPlan';
-
-// Re-export defaults for backward compatibility
-export { defaultTaskGroupData, defaultFormValues } from '../context/JobFormContext';
 
 interface UseJobFormOptions {
   mode: 'create' | 'edit';
@@ -31,10 +29,8 @@ export function useJobForm({
   cloneFromId,
   cloneNamespace = 'default',
 }: UseJobFormOptions) {
-  // Get state from context
   const { state } = useJobFormContext();
 
-  // Initialize data fetching
   useJobFormFetch({
     mode,
     jobId,
@@ -43,13 +39,9 @@ export function useJobForm({
     cloneNamespace,
   });
 
-  // Get all handlers
-  const handlers = useJobFormHandlers({ mode });
-
-  // Get plan/submit functionality
+  const { handleInputChange, clearPermissionError } = useJobFormHandlers({ mode });
   const plan = useJobPlan({ mode, jobId });
 
-  // Return combined API (backward compatible)
   return {
     // State
     formData: state.formData,
@@ -70,7 +62,8 @@ export function useJobForm({
     planError: state.planError,
 
     // Handlers
-    ...handlers,
+    handleInputChange,
+    clearPermissionError,
 
     // Plan/Submit
     handleSubmit: plan.handleSubmit,

@@ -79,8 +79,6 @@ export const JobActions: React.FC<JobActionsProps> = ({ jobId, jobStatus, onStat
                 onStatusChange();
             }
         } catch (err) {
-            console.error('Failed to start job:', err);
-
             if (isPermissionError(err)) {
                 setPermissionError(getPermissionErrorMessage('start-job'));
             } else {
@@ -115,8 +113,6 @@ export const JobActions: React.FC<JobActionsProps> = ({ jobId, jobStatus, onStat
                 onStatusChange();
             }
         } catch (err) {
-            console.error('Failed to stop job:', err);
-
             if (isPermissionError(err)) {
                 setPermissionError(getPermissionErrorMessage('stop-job'));
             } else {
@@ -149,8 +145,6 @@ export const JobActions: React.FC<JobActionsProps> = ({ jobId, jobStatus, onStat
 
             navigate('/jobs');
         } catch (err) {
-            console.error('Failed to delete job:', err);
-
             if (isPermissionError(err)) {
                 setPermissionError(getPermissionErrorMessage('delete-job'));
             } else {

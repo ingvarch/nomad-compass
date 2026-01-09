@@ -12,6 +12,7 @@ import {
   FilterOption,
 } from '../components/ui';
 import { getAllocationStatusColor, getStatusClasses } from '../lib/utils/statusColors';
+import { formatTimestamp } from '../lib/utils/dateFormatter';
 import { Terminal } from 'lucide-react';
 
 function getFirstTask(alloc: NomadAllocation): string | null {
@@ -23,11 +24,6 @@ function getFirstTask(alloc: NomadAllocation): string | null {
 }
 
 type StatusFilter = 'all' | 'running' | 'pending' | 'complete' | 'failed';
-
-function formatTimestamp(nanoTimestamp: number): string {
-  const date = new Date(nanoTimestamp / 1000000);
-  return date.toLocaleString();
-}
 
 export default function AllocationsPage() {
   const [searchParams, setSearchParams] = useSearchParams();

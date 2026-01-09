@@ -74,7 +74,7 @@ const JobFormContent: React.FC<JobFormProps> = ({
   if (isLoading) {
     return <LoadingSpinner />;
   }
-
+/git
   // Error state (edit mode only - when job not found)
   if (error && !formData && isEditMode) {
     return (

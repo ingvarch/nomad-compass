@@ -86,9 +86,8 @@ export class NomadClient {
       const csrfToken = this.getCSRFToken();
       if (csrfToken) {
         headers['X-CSRF-Token'] = csrfToken;
-      } else {
-        console.warn('CSRF token not found for state-changing request');
       }
+      // Missing CSRF token will result in 403 from server
     }
 
     try {

@@ -24,8 +24,8 @@ export const EnvironmentVariableDisplay: React.FC<EnvironmentVariableDisplayProp
                 setCopySuccess(key);
                 setTimeout(() => setCopySuccess(null), 2000);
             })
-            .catch(err => {
-                console.error('Failed to copy:', err);
+            .catch(() => {
+                // Clipboard API not available or permission denied
             });
     };
 

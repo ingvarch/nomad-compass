@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import JobForm from '../components/jobs/JobForm';
 import { PageHeader, CancelConfirmationDialog } from '../components/ui';
+import { DEFAULT_NAMESPACE } from '../lib/constants';
 
 export default function JobEditPage() {
   const navigate = useNavigate();
@@ -10,7 +11,7 @@ export default function JobEditPage() {
   const [showCancelConfirm, setShowCancelConfirm] = useState(false);
 
   const jobId = id as string;
-  const namespace = searchParams.get('namespace') || 'default';
+  const namespace = searchParams.get('namespace') || DEFAULT_NAMESPACE;
 
   return (
     <div className="space-y-6">

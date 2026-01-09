@@ -11,7 +11,7 @@ import {
   BackLink,
   FilterOption,
 } from '../components/ui';
-import { getStatusClasses } from '../lib/utils/statusColors';
+import { getServerStatusColor, getStatusClasses } from '../lib/utils/statusColors';
 
 type StatusFilter = 'all' | 'alive' | 'failed' | 'left';
 
@@ -78,19 +78,6 @@ export default function ServersPage() {
     { value: 'failed', label: 'Failed', count: stats.failed, color: 'bg-red-500' },
     { value: 'left', label: 'Left', count: stats.left, color: 'bg-gray-500' },
   ];
-
-  const getServerStatusColor = (status: string): { bg: string; text: string } => {
-    switch (status.toLowerCase()) {
-      case 'alive':
-        return { bg: 'bg-green-100 dark:bg-green-900/30', text: 'text-green-800 dark:text-green-300' };
-      case 'failed':
-        return { bg: 'bg-red-100 dark:bg-red-900/30', text: 'text-red-800 dark:text-red-300' };
-      case 'left':
-        return { bg: 'bg-gray-100 dark:bg-gray-700', text: 'text-gray-800 dark:text-gray-300' };
-      default:
-        return { bg: 'bg-gray-100 dark:bg-gray-700', text: 'text-gray-800 dark:text-gray-300' };
-    }
-  };
 
   if (loading) {
     return (

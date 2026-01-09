@@ -86,8 +86,7 @@ export const JobLogs: React.FC<JobLogsProps> = ({ jobId, allocId, taskName, init
                         setSelectedTaskGroup(jobData.TaskGroups[0].Name);
                     }
                 }
-            } catch (err) {
-                console.error('Failed to fetch job data:', err);
+            } catch {
                 setError('Failed to load job data. Please try again.');
             }
         };
@@ -154,8 +153,7 @@ export const JobLogs: React.FC<JobLogsProps> = ({ jobId, allocId, taskName, init
 
                 setError(null);
                 setIsLoading(false);
-            } catch (err) {
-                console.error('Failed to fetch allocations:', err);
+            } catch {
                 setError('Failed to load job allocations. Please try again.');
                 setIsLoading(false);
             }
@@ -195,7 +193,6 @@ export const JobLogs: React.FC<JobLogsProps> = ({ jobId, allocId, taskName, init
             setLastRefreshed(new Date());
             setError(null);
         } catch (err) {
-            console.error('Failed to fetch logs:', err);
             if (isPermissionError(err)) {
                 setError('You do not have permission to view logs. The read-logs capability is required.');
             } else {

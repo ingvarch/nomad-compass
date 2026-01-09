@@ -56,8 +56,7 @@ authRoutes.post('/login', async (c) => {
     })
 
     return c.json({ success: true })
-  } catch (error) {
-    console.error('Login error:', error)
+  } catch {
     return c.json({ error: 'Login failed' }, 500)
   }
 })
