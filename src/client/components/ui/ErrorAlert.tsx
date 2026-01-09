@@ -37,5 +37,3 @@ export const ErrorAlert: React.FC<ErrorAlertProps> = ({
     </div>
   );
 };
-
-export default ErrorAlert;

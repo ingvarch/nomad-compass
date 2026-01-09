@@ -67,8 +67,8 @@ export default function ExecPage() {
     setSessionStarted(true);
   };
 
-  const handleExitSession = (exitCode: number) => {
-    console.log('Session exited with code:', exitCode);
+  const handleExitSession = (_exitCode: number) => {
+    // Session ended - could show notification here if needed
   };
 
   const getCommand = (): string[] => {

@@ -2,9 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { createNomadClient } from '../../lib/api/nomad';
-import { getJobStatusColor, getStatusClasses } from '../../lib/utils/statusColors';
 import { NomadJob, NomadNamespace } from '../../types/nomad';
 import { LoadingSpinner, ErrorAlert } from '../ui';
+import { StatusBadge } from './detail/StatusBadge';
 
 export const JobList: React.FC = () => {
   const [jobs, setJobs] = useState<NomadJob[]>([]);
@@ -163,9 +163,7 @@ export const JobList: React.FC = () => {
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                      <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${getStatusClasses(getJobStatusColor(job.Status, job.Stop))}`}>
-                        {job.Status} {job.Stop ? '(Stopped)' : ''}
-                      </span>
+                          <StatusBadge status={job.Status} isStopped={job.Stop} />
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="text-sm text-gray-900 dark:text-monokai-text">{job.Type}</div>

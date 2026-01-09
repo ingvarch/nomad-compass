@@ -46,31 +46,19 @@ export interface NamespaceRule {
   variables?: NamespaceVariablesPath[];
 }
 
-// Global rules
-export interface NodeRule {
-  policy: PolicyLevel;
-}
+// Global rules - simple policy-only rules share a common type
+type SimplePolicyRule = { policy: PolicyLevel };
+
+export type NodeRule = SimplePolicyRule;
+export type AgentRule = SimplePolicyRule;
+export type OperatorRule = SimplePolicyRule;
+export type QuotaRule = SimplePolicyRule;
+export type PluginRule = SimplePolicyRule;
 
 export interface NodePoolRule {
   name?: string; // pool name or glob
   policy?: PolicyLevel;
   capabilities?: NodePoolCapability[];
-}
-
-export interface AgentRule {
-  policy: PolicyLevel;
-}
-
-export interface OperatorRule {
-  policy: PolicyLevel;
-}
-
-export interface QuotaRule {
-  policy: PolicyLevel;
-}
-
-export interface PluginRule {
-  policy: PolicyLevel;
 }
 
 export interface HostVolumeRule {
@@ -153,29 +141,6 @@ export interface NomadAclTokenListItem {
   CreateTime?: string;
   CreateIndex: number;
   ModifyIndex: number;
-}
-
-// Form data types
-export interface PolicyFormData {
-  name: string;
-  description: string;
-  rules: AclPolicyRules;
-}
-
-export interface RoleFormData {
-  id?: string;
-  name: string;
-  description: string;
-  policyNames: string[];
-}
-
-export interface TokenFormData {
-  name: string;
-  type: TokenType;
-  policies: string[];
-  roles: string[];
-  expirationTTL?: string;
-  global: boolean;
 }
 
 // Preset types

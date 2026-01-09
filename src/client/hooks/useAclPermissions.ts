@@ -82,22 +82,3 @@ export function useAclPermissions(): AclPermissions {
     refetch: fetchPermissions,
   };
 }
-
-/**
- * Check if ACLs are enabled on the cluster
- */
-export async function checkAclEnabled(): Promise<boolean> {
-  const client = createNomadClient();
-  try {
-    await client.getAclTokenSelf();
-    return true;
-  } catch (err) {
-    const message = err instanceof Error ? err.message : '';
-    // ACL disabled returns specific error
-    if (message.includes('ACL support disabled') || message.includes('ACL disabled')) {
-      return false;
-    }
-    // Other errors (like 403) mean ACLs are enabled but token doesn't have access
-    return true;
-  }
-}

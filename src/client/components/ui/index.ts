@@ -1,4 +1,5 @@
 export { BackLink } from './BackLink';
+export { CancelConfirmationDialog } from './CancelConfirmationDialog';
 export { ErrorAlert } from './ErrorAlert';
 export { ErrorBoundary } from '../ErrorBoundary';
 export { ExpandIcon } from './ExpandIcon';

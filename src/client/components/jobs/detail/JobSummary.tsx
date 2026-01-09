@@ -1,5 +1,5 @@
 import React from 'react';
-import StatusBadge from './StatusBadge';
+import { StatusBadge } from './StatusBadge';
 import type { NomadAllocation } from '../../../types/nomad';
 
 interface JobSummaryProps {

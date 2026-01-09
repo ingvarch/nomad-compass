@@ -3,26 +3,10 @@
  * Relays messages between browser and Nomad exec endpoint.
  */
 
-import { validateTicket } from '../utils/crypto'
+import { validateTicket } from '../utils/crypto';
+import type { ExecParams } from '../../shared/types/exec';
 
-export interface ExecParams {
-  allocId: string;
-  task: string;
-  command: string[];
-  tty: boolean;
-}
-
-export interface ExecMessage {
-  // Client → Server (to Nomad)
-  stdin?: { data?: string; close?: boolean };
-  tty_size?: { height: number; width: number };
-
-  // Server → Client (from Nomad)
-  stdout?: { data: string };
-  stderr?: { data: string };
-  exited?: boolean;
-  result?: { exit_code: number };
-}
+export type { ExecParams, ExecMessage } from '../../shared/types/exec';
 
 /**
  * Build the Nomad exec WebSocket URL.
@@ -119,102 +103,4 @@ export async function extractTokenFromTicket(
 
   // Get real token from cookie
   return extractTokenFromCookie(request);
-}
-
-/**
- * Legacy: Validate token from cookie or query param.
- * @deprecated Use extractTokenFromTicket instead
- */
-export function extractToken(
-  request: Request,
-  searchParams: URLSearchParams
-): string | null {
-  // Try query param first (WebSocket limitation)
-  const tokenParam = searchParams.get('token');
-  if (tokenParam) {
-    return tokenParam;
-  }
-
-  // Fallback to cookie
-  return extractTokenFromCookie(request);
-}
-
-/**
- * Base64 encode string for Nomad exec protocol.
- */
-export function encodeStdin(data: string): string {
-  // Use btoa for browser compatibility
-  if (typeof btoa !== 'undefined') {
-    return btoa(data);
-  }
-  // Node/Bun Buffer
-  return Buffer.from(data).toString('base64');
-}
-
-/**
- * Base64 decode string from Nomad exec protocol.
- */
-export function decodeOutput(data: string): string {
-  // Use atob for browser compatibility
-  if (typeof atob !== 'undefined') {
-    return atob(data);
-  }
-  // Node/Bun Buffer
-  return Buffer.from(data, 'base64').toString('utf-8');
-}
-
-/**
- * Create stdin message for Nomad.
- */
-export function createStdinMessage(data: string): string {
-  return JSON.stringify({
-    stdin: { data: encodeStdin(data) }
-  });
-}
-
-/**
- * Create close stdin message for Nomad.
- */
-export function createCloseMessage(): string {
-  return JSON.stringify({
-    stdin: { close: true }
-  });
-}
-
-/**
- * Create terminal resize message for Nomad.
- */
-export function createResizeMessage(width: number, height: number): string {
-  return JSON.stringify({
-    tty_size: { width, height }
-  });
-}
-
-/**
- * Parse message from Nomad and return decoded text for stdout/stderr.
- */
-export function parseNomadMessage(data: string): {
-  type: 'stdout' | 'stderr' | 'exit' | 'unknown';
-  text?: string;
-  exitCode?: number;
-} {
-  try {
-    const msg = JSON.parse(data) as ExecMessage;
-
-    if (msg.stdout?.data) {
-      return { type: 'stdout', text: decodeOutput(msg.stdout.data) };
-    }
-
-    if (msg.stderr?.data) {
-      return { type: 'stderr', text: decodeOutput(msg.stderr.data) };
-    }
-
-    if (msg.exited) {
-      return { type: 'exit', exitCode: msg.result?.exit_code };
-    }
-
-    return { type: 'unknown' };
-  } catch {
-    return { type: 'unknown' };
-  }
 }
