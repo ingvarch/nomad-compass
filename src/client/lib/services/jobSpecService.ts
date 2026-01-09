@@ -633,4 +633,4 @@ function prepareCloneFormData(formData: NomadJobFormData): NomadJobFormData {
     };
 }
 
-export { createJobSpec, updateJobSpec, convertJobToFormData, generateCloneName, modifyIngressDomainForClone, prepareCloneFormData };
+export { createJobSpec, updateJobSpec, convertJobToFormData, prepareCloneFormData };

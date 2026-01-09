@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { JobFormProvider, defaultFormValues } from '../../context/JobFormContext';
 import { useJobForm } from '../../hooks/useJobForm';
 import BasicJobInfoForm from './forms/BasicJobInfoForm';
 import JobFormLayout from './forms/JobFormLayout';
 import TaskGroupsSection from './forms/parts/TaskGroupsSection';
 import AdvancedSettingsSection from './forms/parts/AdvancedSettingsSection';
-import AdvancedSettingsToggle from './forms/parts/AdvancedSettingsToggle';
 import FormInputField from '../ui/forms/FormInputField';
 import { ErrorAlert, LoadingSpinner } from '../ui';
 import { PermissionErrorModal } from '../ui/PermissionErrorModal';
@@ -20,7 +20,24 @@ interface JobFormProps {
   cloneNamespace?: string;
 }
 
-export const JobForm: React.FC<JobFormProps> = ({
+// Wrapper component that provides the JobFormContext
+export const JobForm: React.FC<JobFormProps> = (props) => {
+  const { mode, cloneFromId } = props;
+  const isCloneMode = mode === 'create' && !!cloneFromId;
+  const needsLoading = mode === 'edit' || isCloneMode;
+
+  return (
+    <JobFormProvider
+      initialFormData={mode === 'create' && !cloneFromId ? defaultFormValues : null}
+      initialLoading={needsLoading}
+    >
+      <JobFormContent {...props} />
+    </JobFormProvider>
+  );
+};
+
+// Inner component that uses the context
+const JobFormContent: React.FC<JobFormProps> = ({
   mode,
   jobId,
   namespace = 'default',
@@ -43,29 +60,7 @@ export const JobForm: React.FC<JobFormProps> = ({
     namespaces,
     deploymentTracker,
     handleInputChange,
-    handleGroupInputChange,
-    handleSelectChange,
-    handleGroupCheckboxChange,
-    handleEnvVarChange,
-    addEnvVar,
-    removeEnvVar,
-    handlePortChange,
-    addPort,
-    removePort,
-    handleHealthCheckChange,
-    addTaskGroup,
-    removeTaskGroup,
     handleSubmit,
-    // Network Configuration
-    handleEnableNetworkChange,
-    // Service Discovery & Ingress
-    handleEnableServiceChange,
-    handleServiceConfigChange,
-    handleIngressChange,
-    handleServiceTagChange,
-    addServiceTag,
-    removeServiceTag,
-    // Plan functionality
     handlePlan,
     handleSubmitFromPlan,
     closePlanPreview,
@@ -165,94 +160,79 @@ export const JobForm: React.FC<JobFormProps> = ({
         onPlan={handlePlan}
         isPlanning={isPlanning}
       >
-      {isEditMode ? (
-        <>
-          {/* Job Name (Readonly in edit mode) */}
-          <FormInputField
-            id="name"
-            name="name"
-            label="Job Name"
-            type="text"
-            value={formData.name}
+        {isEditMode ? (
+          <>
+            {/* Job Name (Readonly in edit mode) */}
+            <FormInputField
+              id="name"
+              name="name"
+              label="Job Name"
+              type="text"
+              value={formData.name}
+              onChange={handleInputChange}
+              disabled={true}
+              helpText="Job name cannot be changed after creation."
+              className="bg-gray-100 dark:bg-gray-700 cursor-not-allowed"
+            />
+
+            {/* Namespace (Readonly in edit mode) */}
+            <FormInputField
+              id="namespace"
+              name="namespace"
+              label="Namespace"
+              type="text"
+              value={formData.namespace}
+              onChange={handleInputChange}
+              disabled={true}
+              className="bg-gray-100 dark:bg-gray-700 cursor-not-allowed"
+            />
+          </>
+        ) : (
+          /* Basic Job Information (editable in create mode) */
+          <BasicJobInfoForm
+            name={formData.name}
+            namespace={formData.namespace}
+            count={0}
+            datacenters={formData.datacenters}
+            namespaces={namespaces}
             onChange={handleInputChange}
-            disabled={true}
-            helpText="Job name cannot be changed after creation."
-            className="bg-gray-100 dark:bg-gray-700 cursor-not-allowed"
+            isLoading={isLoading}
+            isLoadingNamespaces={isLoadingNamespaces}
+            isNameValid={isNameValid}
           />
+        )}
 
-          {/* Namespace (Readonly in edit mode) */}
-          <FormInputField
-            id="namespace"
-            name="namespace"
-            label="Namespace"
-            type="text"
-            value={formData.namespace}
-            onChange={handleInputChange}
-            disabled={true}
-            className="bg-gray-100 dark:bg-gray-700 cursor-not-allowed"
+        {/* Task Groups - uses context internally, no props needed */}
+        <TaskGroupsSection />
+
+        {/* Advanced Settings Toggle */}
+        <div className="mb-6 border-t pt-4">
+          <button
+            type="button"
+            onClick={() => setShowAdvancedSettings(!showAdvancedSettings)}
+            className="flex items-center text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100"
+          >
+            {showAdvancedSettings ? 'Hide' : 'Show'} Advanced Settings
+            <svg
+              className={`ml-2 h-4 w-4 transform transition-transform ${showAdvancedSettings ? 'rotate-180' : ''}`}
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Advanced Settings Section */}
+        {showAdvancedSettings && (
+          <AdvancedSettingsSection
+            datacenters={formData.datacenters}
+            onInputChange={handleInputChange}
+            isLoading={loadingState}
           />
-        </>
-      ) : (
-        /* Basic Job Information (editable in create mode) */
-        <BasicJobInfoForm
-          name={formData.name}
-          namespace={formData.namespace}
-          count={0}
-          datacenters={formData.datacenters}
-          namespaces={namespaces}
-          onChange={handleInputChange}
-          isLoading={isLoading}
-          isLoadingNamespaces={isLoadingNamespaces}
-          isNameValid={isNameValid}
-        />
-      )}
-
-      {/* Task Groups (Containers) */}
-      <TaskGroupsSection
-        taskGroups={formData.taskGroups}
-        jobName={formData.name}
-        namespace={formData.namespace}
-        isLoading={loadingState}
-        onAddTaskGroup={addTaskGroup}
-        onGroupInputChange={handleGroupInputChange}
-        onGroupCheckboxChange={
-          handleGroupCheckboxChange as (
-            groupIndex: number,
-            e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
-          ) => void
-        }
-        onEnvVarChange={handleEnvVarChange}
-        onAddEnvVar={addEnvVar}
-        onRemoveEnvVar={removeEnvVar}
-        onPortChange={handlePortChange}
-        onAddPort={addPort}
-        onRemovePort={removePort}
-        onHealthCheckChange={handleHealthCheckChange}
-        onEnableNetworkChange={handleEnableNetworkChange}
-        onEnableServiceChange={handleEnableServiceChange}
-        onServiceConfigChange={handleServiceConfigChange}
-        onIngressChange={handleIngressChange}
-        onTagChange={handleServiceTagChange}
-        onAddTag={addServiceTag}
-        onRemoveTag={removeServiceTag}
-        onRemoveTaskGroup={removeTaskGroup}
-      />
-
-      {/* Advanced Settings Toggle */}
-      <AdvancedSettingsToggle
-        showAdvancedSettings={showAdvancedSettings}
-        setShowAdvancedSettings={setShowAdvancedSettings}
-      />
-
-      {/* Advanced Settings Section */}
-      {showAdvancedSettings && (
-        <AdvancedSettingsSection
-          datacenters={formData.datacenters}
-          onInputChange={handleInputChange}
-          isLoading={loadingState}
-        />
-      )}
-    </JobFormLayout>
+        )}
+      </JobFormLayout>
     </>
   );
 };

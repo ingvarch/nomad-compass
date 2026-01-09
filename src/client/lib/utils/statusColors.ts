@@ -158,6 +158,42 @@ export function getNodeStatusColor(status: string, isDraining?: boolean): Status
   return nodeStatusColors[normalized] || defaultStatusColor;
 }
 
+// Evaluation status colors
+export function getEvaluationStatusColor(status: string): StatusColorConfig {
+  switch (status.toLowerCase()) {
+    case 'complete':
+      return { bg: 'bg-green-100 dark:bg-green-900/30', text: 'text-green-800 dark:text-green-300' };
+    case 'pending':
+      return { bg: 'bg-yellow-100 dark:bg-yellow-900/30', text: 'text-yellow-800 dark:text-yellow-300' };
+    case 'blocked':
+      return { bg: 'bg-orange-100 dark:bg-orange-900/30', text: 'text-orange-800 dark:text-orange-300' };
+    case 'failed':
+    case 'canceled':
+      return { bg: 'bg-red-100 dark:bg-red-900/30', text: 'text-red-800 dark:text-red-300' };
+    default:
+      return defaultStatusColor;
+  }
+}
+
+// Version status colors (for job versions)
+export function getVersionStatusColor(stable: boolean): StatusColorConfig {
+  return stable
+    ? { bg: 'bg-green-100 dark:bg-green-900/30', text: 'text-green-800 dark:text-green-300' }
+    : { bg: 'bg-gray-100 dark:bg-gray-700', text: 'text-gray-800 dark:text-gray-300' };
+}
+
+// Node eligibility colors
+export function getNodeEligibilityColor(eligible: string): StatusColorConfig {
+  switch (eligible.toLowerCase()) {
+    case 'eligible':
+      return { bg: 'bg-green-100 dark:bg-green-900/30', text: 'text-green-800 dark:text-green-300' };
+    case 'ineligible':
+      return { bg: 'bg-red-100 dark:bg-red-900/30', text: 'text-red-800 dark:text-red-300' };
+    default:
+      return defaultStatusColor;
+  }
+}
+
 // Utility to combine bg and text classes
 export function getStatusClasses(config: StatusColorConfig): string {
   return `${config.bg} ${config.text}`;
