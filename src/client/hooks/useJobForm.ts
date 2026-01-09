@@ -13,6 +13,7 @@ import { useJobFormContext } from '../context/JobFormContext';
 import { useJobFormFetch } from './useJobFormFetch';
 import { useJobFormHandlers } from './useJobFormHandlers';
 import { useJobPlan } from './useJobPlan';
+import { DEFAULT_NAMESPACE } from '../lib/constants';
 
 interface UseJobFormOptions {
   mode: 'create' | 'edit';
@@ -25,9 +26,9 @@ interface UseJobFormOptions {
 export function useJobForm({
   mode,
   jobId,
-  namespace = 'default',
+  namespace = DEFAULT_NAMESPACE,
   cloneFromId,
-  cloneNamespace = 'default',
+  cloneNamespace = DEFAULT_NAMESPACE,
 }: UseJobFormOptions) {
   const { state } = useJobFormContext();
 

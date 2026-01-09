@@ -4,6 +4,7 @@ import { useJobFormContext, jobFormActions, defaultFormValues } from '../context
 import { createNomadClient } from '../lib/api/nomad';
 import { convertJobToFormData, prepareCloneFormData } from '../lib/services/jobSpecService';
 import { useToast } from '../context/ToastContext';
+import { DEFAULT_NAMESPACE } from '../lib/constants';
 
 interface UseJobFormFetchOptions {
   mode: 'create' | 'edit';
@@ -16,9 +17,9 @@ interface UseJobFormFetchOptions {
 export function useJobFormFetch({
   mode,
   jobId,
-  namespace = 'default',
+  namespace = DEFAULT_NAMESPACE,
   cloneFromId,
-  cloneNamespace = 'default',
+  cloneNamespace = DEFAULT_NAMESPACE,
 }: UseJobFormFetchOptions) {
   const { isAuthenticated } = useAuth();
   const { addToast } = useToast();
@@ -47,10 +48,10 @@ export function useJobFormFetch({
       .then((response) => {
         if (response && Array.isArray(response)) {
           const nsNames = response.map((ns) => ns.Name);
-          dispatch(jobFormActions.setNamespaces(nsNames.length > 0 ? nsNames : ['default']));
+          dispatch(jobFormActions.setNamespaces(nsNames.length > 0 ? nsNames : [DEFAULT_NAMESPACE]));
         }
       })
-      .catch(() => dispatch(jobFormActions.setNamespaces(['default'])))
+      .catch(() => dispatch(jobFormActions.setNamespaces([DEFAULT_NAMESPACE])))
       .finally(() => dispatch(jobFormActions.setLoadingNamespaces(false)));
   }, [isAuthenticated, dispatch]);
 

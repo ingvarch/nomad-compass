@@ -2,6 +2,7 @@
  * Default values for job form data structures.
  */
 import { NomadJobFormData, TaskGroupFormData, NomadServiceConfig } from '../types/nomad';
+import { DEFAULT_NAMESPACE } from '../lib/constants';
 
 // Default service configuration
 export const defaultServiceConfig: NomadServiceConfig = {
@@ -52,7 +53,7 @@ export const defaultTaskGroupData: TaskGroupFormData = {
 
 export const defaultFormValues: NomadJobFormData = {
   name: '',
-  namespace: 'default',
+  namespace: DEFAULT_NAMESPACE,
   taskGroups: [{ ...defaultTaskGroupData }],
   serviceProvider: 'nomad',
   datacenters: ['dc1'],

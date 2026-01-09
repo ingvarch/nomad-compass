@@ -6,8 +6,7 @@ import {
   NomadAclPolicyListItem,
   NomadAclRoleListItem,
 } from '../../../types/acl';
-import { LoadingSpinner, ErrorAlert, RefreshButton } from '../../ui';
-import { Modal } from '../../ui/Modal';
+import { LoadingSpinner, ErrorAlert, RefreshButton, Modal } from '../../ui';
 import { TokenForm } from '../token/TokenForm';
 import { SecretIdDisplay } from '../token/SecretIdDisplay';
 import { useToast } from '../../../context/ToastContext';

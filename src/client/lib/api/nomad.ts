@@ -21,6 +21,7 @@ import {
   TokenType,
 } from '../../types/acl';
 import { PermissionError } from './errors';
+import { DEFAULT_NAMESPACE } from '../constants';
 
 /**
  * NomadClient - A client for interacting with Nomad API
@@ -179,7 +180,7 @@ export class NomadClient {
   /**
    * Get job details by ID
    */
-  async getJob(id: string, namespace: string = 'default'): Promise<any> {
+  async getJob(id: string, namespace: string = DEFAULT_NAMESPACE): Promise<any> {
     return this.request<any>(`/v1/job/${id}`, {
       params: { namespace }
     });
@@ -188,7 +189,7 @@ export class NomadClient {
   /**
    * Get job versions history
    */
-  async getJobVersions(id: string, namespace: string = 'default'): Promise<{ Versions: any[] }> {
+  async getJobVersions(id: string, namespace: string = DEFAULT_NAMESPACE): Promise<{ Versions: any[] }> {
     return this.request<{ Versions: any[] }>(`/v1/job/${id}/versions`, {
       params: { namespace }
     });
@@ -197,7 +198,7 @@ export class NomadClient {
   /**
    * Get job evaluations
    */
-  async getJobEvaluations(jobId: string, namespace: string = 'default'): Promise<NomadEvaluation[]> {
+  async getJobEvaluations(jobId: string, namespace: string = DEFAULT_NAMESPACE): Promise<NomadEvaluation[]> {
     return this.request<NomadEvaluation[]>(`/v1/job/${jobId}/evaluations`, {
       params: { namespace }
     });
@@ -209,7 +210,7 @@ export class NomadClient {
   async revertJob(
     jobId: string,
     version: number,
-    namespace: string = 'default'
+    namespace: string = DEFAULT_NAMESPACE
   ): Promise<{ EvalID: string; EvalCreateIndex: number; JobModifyIndex: number }> {
     return this.request(`/v1/job/${jobId}/revert`, {
       method: 'POST',
@@ -227,7 +228,7 @@ export class NomadClient {
   async planJob(
     jobId: string,
     jobSpec: any,
-    namespace: string = 'default',
+    namespace: string = DEFAULT_NAMESPACE,
     diff: boolean = true
   ): Promise<NomadJobPlanResponse> {
     return this.request<NomadJobPlanResponse>(`/v1/job/${jobId}/plan`, {
@@ -266,7 +267,7 @@ export class NomadClient {
   /**
    * Stop a job
    */
-  async stopJob(id: string, namespace: string = 'default'): Promise<any> {
+  async stopJob(id: string, namespace: string = DEFAULT_NAMESPACE): Promise<any> {
     return this.request<any>(`/v1/job/${id}`, {
       method: 'DELETE',
       params: { namespace }
@@ -276,7 +277,7 @@ export class NomadClient {
   /**
    * Delete a job (purge)
    */
-  async deleteJob(id: string, namespace: string = 'default'): Promise<any> {
+  async deleteJob(id: string, namespace: string = DEFAULT_NAMESPACE): Promise<any> {
     return this.request<any>(`/v1/job/${id}`, {
       method: 'DELETE',
       params: {
@@ -289,7 +290,7 @@ export class NomadClient {
   /**
    * Get job allocations
    */
-  async getJobAllocations(jobId: string, namespace: string = 'default'): Promise<any[]> {
+  async getJobAllocations(jobId: string, namespace: string = DEFAULT_NAMESPACE): Promise<any[]> {
     return this.request<any[]>(`/v1/job/${jobId}/allocations`, {
       params: { namespace }
     });
@@ -312,7 +313,7 @@ export class NomadClient {
   /**
    * Get service registrations for a service name
    */
-  async getServiceRegistrations(serviceName: string, namespace: string = 'default'): Promise<any[]> {
+  async getServiceRegistrations(serviceName: string, namespace: string = DEFAULT_NAMESPACE): Promise<any[]> {
     return this.request<any[]>(`/v1/service/${serviceName}`, {
       params: { namespace }
     });
@@ -340,7 +341,7 @@ export class NomadClient {
       return this.request<NomadNamespace[]>('/v1/namespaces');
     } catch {
       // Return default namespace if API fails
-      return [{ Name: 'default' }];
+      return [{ Name: DEFAULT_NAMESPACE }];
     }
   }
 

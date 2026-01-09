@@ -4,8 +4,6 @@ import React from 'react';
 interface BasicJobInfoFormProps {
     name: string;
     namespace: string;
-    count: number;
-    datacenters: string[];
     namespaces: string[];
     onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void;
     isLoading: boolean;
@@ -16,19 +14,19 @@ interface BasicJobInfoFormProps {
 export const BasicJobInfoForm: React.FC<BasicJobInfoFormProps> = ({
                                                                       name,
                                                                       namespace,
-                                                                      count,
-                                                                      datacenters,
                                                                       namespaces,
                                                                       onChange,
                                                                       isLoading,
                                                                       isLoadingNamespaces,
                                                                       isNameValid
                                                                   }) => {
+    const baseInputClasses = `w-full p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-monokai-blue bg-white dark:bg-monokai-surface text-gray-900 dark:text-monokai-text`;
+
     return (
         <>
             {/* Job Name */}
             <div className="mb-4">
-                <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-monokai-text mb-1">
                     Job Name
                 </label>
                 <input
@@ -38,12 +36,12 @@ export const BasicJobInfoForm: React.FC<BasicJobInfoFormProps> = ({
                     value={name}
                     onChange={onChange}
                     placeholder="my-service"
-                    className={`w-full p-2 border ${!isNameValid ? 'border-red-500' : 'border-gray-300'} rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500`}
+                    className={`${baseInputClasses} ${!isNameValid ? 'border-red-500 dark:border-monokai-red' : 'border-gray-300 dark:border-monokai-muted'}`}
                     disabled={isLoading}
                     required
                 />
                 {!isNameValid && (
-                    <p className="mt-1 text-sm text-red-600">
+                    <p className="mt-1 text-sm text-red-600 dark:text-monokai-red">
                         Job name must start with a letter or number and contain only letters, numbers, hyphens, underscores, and dots.
                     </p>
                 )}
@@ -51,7 +49,7 @@ export const BasicJobInfoForm: React.FC<BasicJobInfoFormProps> = ({
 
             {/* Namespace Selector */}
             <div className="mb-4">
-                <label htmlFor="namespace" className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="namespace" className="block text-sm font-medium text-gray-700 dark:text-monokai-text mb-1">
                     Namespace
                 </label>
                 <select
@@ -59,7 +57,7 @@ export const BasicJobInfoForm: React.FC<BasicJobInfoFormProps> = ({
                     name="namespace"
                     value={namespace}
                     onChange={onChange}
-                    className="w-full p-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className={`${baseInputClasses} border-gray-300 dark:border-monokai-muted`}
                     disabled={isLoading || isLoadingNamespaces}
                 >
                     {isLoadingNamespaces ? (

@@ -15,6 +15,7 @@ import {
   getJobStatusColor,
   getStatusClasses,
 } from '../lib/utils/statusColors';
+import { formatTimestamp } from '../lib/utils/dateFormatter';
 
 interface FailedAllocationInfo {
   allocation: NomadAllocation;
@@ -32,11 +33,6 @@ interface HistoricalJobInfo {
   job: NomadJob;
   failedCount: number;
   taskGroups: TaskGroupFailure[];
-}
-
-function formatTimestamp(nanoTimestamp: number): string {
-  const date = new Date(nanoTimestamp / 1000000);
-  return date.toLocaleString();
 }
 
 function getFailedTasks(alloc: NomadAllocation): string[] {

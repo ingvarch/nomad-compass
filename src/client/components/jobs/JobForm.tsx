@@ -11,6 +11,7 @@ import { ErrorAlert, LoadingSpinner } from '../ui';
 import { PermissionErrorModal } from '../ui/PermissionErrorModal';
 import DeploymentOverlay from './DeploymentOverlay';
 import { JobPlanPreview } from './JobPlanPreview';
+import { DEFAULT_NAMESPACE } from '../../lib/constants';
 
 interface JobFormProps {
   mode: 'create' | 'edit';
@@ -40,9 +41,9 @@ export const JobForm: React.FC<JobFormProps> = (props) => {
 const JobFormContent: React.FC<JobFormProps> = ({
   mode,
   jobId,
-  namespace = 'default',
+  namespace = DEFAULT_NAMESPACE,
   cloneFromId,
-  cloneNamespace = 'default',
+  cloneNamespace = DEFAULT_NAMESPACE,
 }) => {
   const [showAdvancedSettings, setShowAdvancedSettings] = useState(false);
   const isEditMode = mode === 'edit';
@@ -74,7 +75,7 @@ const JobFormContent: React.FC<JobFormProps> = ({
   if (isLoading) {
     return <LoadingSpinner />;
   }
-/git
+
   // Error state (edit mode only - when job not found)
   if (error && !formData && isEditMode) {
     return (
@@ -192,8 +193,6 @@ const JobFormContent: React.FC<JobFormProps> = ({
           <BasicJobInfoForm
             name={formData.name}
             namespace={formData.namespace}
-            count={0}
-            datacenters={formData.datacenters}
             namespaces={namespaces}
             onChange={handleInputChange}
             isLoading={isLoading}
