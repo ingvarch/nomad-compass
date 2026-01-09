@@ -16,12 +16,16 @@ interface JobFormProps {
   mode: 'create' | 'edit';
   jobId?: string;
   namespace?: string;
+  cloneFromId?: string;
+  cloneNamespace?: string;
 }
 
 export const JobForm: React.FC<JobFormProps> = ({
   mode,
   jobId,
   namespace = 'default',
+  cloneFromId,
+  cloneNamespace = 'default',
 }) => {
   const [showAdvancedSettings, setShowAdvancedSettings] = useState(false);
   const isEditMode = mode === 'edit';
@@ -69,10 +73,10 @@ export const JobForm: React.FC<JobFormProps> = ({
     showPlanPreview,
     planResult,
     planError,
-  } = useJobForm({ mode, jobId, namespace });
+  } = useJobForm({ mode, jobId, namespace, cloneFromId, cloneNamespace });
 
   // Loading state
-  if (isLoading || (!formData && mode === 'create')) {
+  if (isLoading) {
     return <LoadingSpinner />;
   }
 

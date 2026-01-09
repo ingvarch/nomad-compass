@@ -13,7 +13,7 @@ import {
   NomadServiceConfig,
   IngressConfig,
 } from '../types/nomad';
-import { createJobSpec, updateJobSpec, convertJobToFormData } from '../lib/services/jobSpecService';
+import { createJobSpec, updateJobSpec, convertJobToFormData, prepareCloneFormData } from '../lib/services/jobSpecService';
 import { validateJobName } from '../lib/services/validationService';
 import { useToast } from '../context/ToastContext';
 import { useDeploymentTracker } from './useDeploymentTracker';
@@ -77,14 +77,17 @@ interface UseJobFormOptions {
   mode: 'create' | 'edit';
   jobId?: string;
   namespace?: string;
+  cloneFromId?: string;
+  cloneNamespace?: string;
 }
 
-export function useJobForm({ mode, jobId, namespace = 'default' }: UseJobFormOptions) {
+export function useJobForm({ mode, jobId, namespace = 'default', cloneFromId, cloneNamespace = 'default' }: UseJobFormOptions) {
   const { isAuthenticated } = useAuth();
   const { addToast } = useToast();
   const deploymentTracker = useDeploymentTracker();
 
-  const [isLoading, setIsLoading] = useState(mode === 'edit');
+  const isCloneMode = mode === 'create' && !!cloneFromId;
+  const [isLoading, setIsLoading] = useState(mode === 'edit' || isCloneMode);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [permissionError, setPermissionError] = useState<string | null>(null);
@@ -94,7 +97,7 @@ export function useJobForm({ mode, jobId, namespace = 'default' }: UseJobFormOpt
   const [isNameValid, setIsNameValid] = useState(true);
   const [initialJob, setInitialJob] = useState<NomadJob | null>(null);
   const [formData, setFormData] = useState<NomadJobFormData | null>(
-    mode === 'create' ? defaultFormValues : null
+    mode === 'create' && !cloneFromId ? defaultFormValues : null
   );
 
   // Plan (dry-run) state
@@ -159,6 +162,44 @@ export function useJobForm({ mode, jobId, namespace = 'default' }: UseJobFormOpt
       fetchJobData();
     }
   }, [mode, fetchJobData]);
+
+  // Fetch source job for cloning (create mode only)
+  const fetchCloneSourceJob = useCallback(async () => {
+    if (!isCloneMode || !isAuthenticated || !cloneFromId) {
+      setIsLoading(false);
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const client = createNomadClient();
+      const jobData = await client.getJob(cloneFromId, cloneNamespace);
+
+      const formattedData = convertJobToFormData(jobData);
+      formattedData.taskGroups = formattedData.taskGroups.map((group) => ({
+        ...group,
+        envVars: group.envVars || [],
+      }));
+
+      // Apply clone transformations (modify name and ingress domain)
+      const cloneData = prepareCloneFormData(formattedData);
+      setFormData(cloneData);
+      setError(null);
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : 'Failed to load source job for cloning';
+      setError(message);
+      addToast(message, 'error');
+    } finally {
+      setIsLoading(false);
+    }
+  }, [isCloneMode, isAuthenticated, cloneFromId, cloneNamespace, addToast]);
+
+  useEffect(() => {
+    if (isCloneMode) {
+      fetchCloneSourceJob();
+    }
+  }, [isCloneMode, fetchCloneSourceJob]);
 
   // Generic group field updater
   const updateGroup = (
