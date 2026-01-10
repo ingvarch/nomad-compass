@@ -5,7 +5,9 @@ import { parseHcl, validateHcl } from '../../../lib/acl/hclParser';
 import { PolicyVisualEditor } from './PolicyVisualEditor';
 import { PolicyHclPreview } from './PolicyHclPreview';
 import { PresetSelector } from './PresetSelector';
+import { FormActions } from '../../ui/FormActions';
 import { useToast } from '../../../context/ToastContext';
+import { getErrorMessage } from '../../../lib/errors';
 
 interface PolicyFormProps {
   mode: 'create' | 'edit';
@@ -99,8 +101,7 @@ export function PolicyForm({ mode, policy, onSubmit, onCancel }: PolicyFormProps
     try {
       await onSubmit(name, description, hclText);
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to save policy';
-      addToast(message, 'error');
+      addToast(getErrorMessage(err, 'Failed to save policy'), 'error');
     } finally {
       setIsSubmitting(false);
     }
@@ -185,26 +186,12 @@ export function PolicyForm({ mode, policy, onSubmit, onCancel }: PolicyFormProps
       </div>
 
       {/* Actions */}
-      <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
-        <button
-          type="button"
-          onClick={onCancel}
-          className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600"
-        >
-          Cancel
-        </button>
-        <button
-          type="submit"
-          disabled={isSubmitting || !!hclError}
-          className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {isSubmitting
-            ? 'Saving...'
-            : mode === 'create'
-              ? 'Create Policy'
-              : 'Update Policy'}
-        </button>
-      </div>
+      <FormActions
+        onCancel={onCancel}
+        isSubmitting={isSubmitting}
+        disabled={!!hclError}
+        submitLabel={mode === 'create' ? 'Create Policy' : 'Update Policy'}
+      />
     </form>
   );
 }

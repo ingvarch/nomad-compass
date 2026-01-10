@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { createNomadClient } from '../lib/api/nomad';
+import { getErrorMessage } from '../lib/errors';
 import { NomadAllocation, NomadJob } from '../types/nomad';
 import {
   LoadingSpinner,
@@ -15,6 +16,7 @@ import {
   getJobStatusColor,
   getStatusClasses,
 } from '../lib/utils/statusColors';
+import { formatTimestamp } from '../lib/utils/dateFormatter';
 
 interface FailedAllocationInfo {
   allocation: NomadAllocation;
@@ -32,11 +34,6 @@ interface HistoricalJobInfo {
   job: NomadJob;
   failedCount: number;
   taskGroups: TaskGroupFailure[];
-}
-
-function formatTimestamp(nanoTimestamp: number): string {
-  const date = new Date(nanoTimestamp / 1000000);
-  return date.toLocaleString();
 }
 
 function getFailedTasks(alloc: NomadAllocation): string[] {
@@ -113,7 +110,7 @@ export default function FailedAllocationsPage() {
       setHistoricalJobs(historical);
       setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch data');
+      setError(getErrorMessage(err, 'Failed to fetch data'));
     } finally {
       setLoading(false);
     }
@@ -133,10 +130,7 @@ export default function FailedAllocationsPage() {
       setLoading(true);
       await fetchData();
     } catch (err) {
-      addToast(
-        `Failed to trigger GC: ${err instanceof Error ? err.message : 'Unknown error'}`,
-        'error'
-      );
+      addToast(`Failed to trigger GC: ${getErrorMessage(err)}`, 'error');
     } finally {
       setGcLoading(false);
     }

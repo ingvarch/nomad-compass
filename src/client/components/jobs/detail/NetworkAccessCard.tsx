@@ -98,8 +98,8 @@ export const NetworkAccessCard: React.FC<NetworkAccessCardProps> = ({
       await navigator.clipboard.writeText(text);
       setCopiedAddress(text);
       setTimeout(() => setCopiedAddress(null), 2000);
-    } catch (err) {
-      console.error('Failed to copy:', err);
+    } catch {
+      // Clipboard API not available or permission denied
     }
   };
 

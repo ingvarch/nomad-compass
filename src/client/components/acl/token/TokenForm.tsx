@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { NomadAclPolicyListItem, NomadAclRoleListItem, TokenType } from '../../../types/acl';
+import { FormActions } from '../../ui/FormActions';
 import { useToast } from '../../../context/ToastContext';
+import { getErrorMessage } from '../../../lib/errors';
 
 interface TokenFormProps {
   availablePolicies: NomadAclPolicyListItem[];
@@ -80,8 +82,7 @@ export function TokenForm({
         global,
       });
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to create token';
-      addToast(message, 'error');
+      addToast(getErrorMessage(err, 'Failed to create token'), 'error');
     } finally {
       setIsSubmitting(false);
     }
@@ -238,22 +239,11 @@ export function TokenForm({
       </div>
 
       {/* Actions */}
-      <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
-        <button
-          type="button"
-          onClick={onCancel}
-          className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600"
-        >
-          Cancel
-        </button>
-        <button
-          type="submit"
-          disabled={isSubmitting}
-          className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-md disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {isSubmitting ? 'Creating...' : 'Create Token'}
-        </button>
-      </div>
+      <FormActions
+        onCancel={onCancel}
+        isSubmitting={isSubmitting}
+        submitLabel="Create Token"
+      />
     </form>
   );
 }

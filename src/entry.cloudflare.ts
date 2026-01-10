@@ -42,7 +42,8 @@ async function handleExecWebSocket(
     return new Response('Missing required parameters: allocId, task', { status: 400 })
   }
 
-  const secret = env.TICKET_SECRET || 'nomad-compass-dev-secret-change-in-production'
+  // TICKET_SECRET should be set in Cloudflare Workers secrets for production
+  const secret = env.TICKET_SECRET || 'dev-only-not-for-production'
   const token = await extractTokenFromTicket(request, url.searchParams, secret)
   if (!token) {
     return new Response('Authentication required or ticket expired', { status: 401 })
@@ -50,7 +51,6 @@ async function handleExecWebSocket(
 
   // Build Nomad exec URL (without token - it goes in header)
   const nomadUrl = buildNomadExecUrlForFetch(env.NOMAD_ADDR, params)
-  console.log('Connecting to Nomad:', nomadUrl)
 
   // Connect to Nomad using fetch with Upgrade header (allows custom headers!)
   try {
@@ -64,13 +64,11 @@ async function handleExecWebSocket(
     // @ts-expect-error webSocket is Cloudflare-specific property
     const nomadWs = nomadResponse.webSocket as WebSocket | undefined
     if (!nomadWs) {
-      console.error('Failed to get WebSocket from Nomad response:', nomadResponse.status)
       return new Response('Failed to establish WebSocket with Nomad', { status: 502 })
     }
 
     // @ts-expect-error accept() is Cloudflare-specific
     nomadWs.accept()
-    console.log('Connected to Nomad exec')
 
     // Create WebSocketPair for browser connection
     // @ts-expect-error WebSocketPair is a Cloudflare global
@@ -90,7 +88,6 @@ async function handleExecWebSocket(
     })
 
     nomadWs.addEventListener('close', (event: CloseEvent) => {
-      console.log('Nomad connection closed:', event.code, event.reason)
       try {
         server.close(event.code || 1000, event.reason || '')
       } catch {
@@ -99,7 +96,6 @@ async function handleExecWebSocket(
     })
 
     nomadWs.addEventListener('error', () => {
-      console.error('Nomad WebSocket error')
       try {
         server.close(1011, 'Nomad connection error')
       } catch {
@@ -115,12 +111,10 @@ async function handleExecWebSocket(
     })
 
     server.addEventListener('close', () => {
-      console.log('Browser connection closed')
       nomadWs.close()
     })
 
     server.addEventListener('error', () => {
-      console.error('Browser WebSocket error')
       nomadWs.close()
     })
 
@@ -131,8 +125,7 @@ async function handleExecWebSocket(
       webSocket: client,
     })
 
-  } catch (error) {
-    console.error('Failed to connect to Nomad:', error)
+  } catch {
     return new Response('Failed to connect to Nomad', { status: 502 })
   }
 }

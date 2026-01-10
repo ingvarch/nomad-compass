@@ -1,34 +1,14 @@
 import { useState, useEffect, useCallback } from 'react';
 import { createNomadClient } from '../../../lib/api/nomad';
+import { getErrorMessage } from '../../../lib/errors';
 import { NomadEvaluation } from '../../../types/nomad';
 import { LoadingSpinner, ErrorAlert, RefreshButton } from '../../ui';
-import { getStatusClasses } from '../../../lib/utils/statusColors';
+import { getStatusClasses, getEvaluationStatusColor } from '../../../lib/utils/statusColors';
+import { formatTimestamp } from '../../../lib/utils/dateFormatter';
 
 interface EvaluationsTabProps {
   jobId: string;
   namespace: string;
-}
-
-function formatTimestamp(nanos: number): string {
-  if (!nanos) return '-';
-  const date = new Date(nanos / 1_000_000);
-  return date.toLocaleString();
-}
-
-function getEvalStatusColor(status: string): { bg: string; text: string } {
-  switch (status) {
-    case 'complete':
-      return { bg: 'bg-green-100 dark:bg-green-900/30', text: 'text-green-800 dark:text-green-300' };
-    case 'pending':
-      return { bg: 'bg-yellow-100 dark:bg-yellow-900/30', text: 'text-yellow-800 dark:text-yellow-300' };
-    case 'blocked':
-      return { bg: 'bg-orange-100 dark:bg-orange-900/30', text: 'text-orange-800 dark:text-orange-300' };
-    case 'failed':
-    case 'canceled':
-      return { bg: 'bg-red-100 dark:bg-red-900/30', text: 'text-red-800 dark:text-red-300' };
-    default:
-      return { bg: 'bg-gray-100 dark:bg-gray-700', text: 'text-gray-800 dark:text-gray-300' };
-  }
 }
 
 export function EvaluationsTab({ jobId, namespace }: EvaluationsTabProps) {
@@ -47,7 +27,7 @@ export function EvaluationsTab({ jobId, namespace }: EvaluationsTabProps) {
       setEvaluations(sorted);
       setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch evaluations');
+      setError(getErrorMessage(err, 'Failed to fetch evaluations'));
     } finally {
       setLoading(false);
     }
@@ -111,7 +91,7 @@ export function EvaluationsTab({ jobId, namespace }: EvaluationsTabProps) {
               </thead>
               <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
                 {evaluations.map((evaluation) => {
-                  const statusColors = getEvalStatusColor(evaluation.Status);
+                  const statusColors = getEvaluationStatusColor(evaluation.Status);
                   const isExpanded = expandedEval === evaluation.ID;
                   const hasFailures = evaluation.FailedTGAllocs && Object.keys(evaluation.FailedTGAllocs).length > 0;
 

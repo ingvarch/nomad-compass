@@ -1,7 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
 import { createNomadClient } from '../../../lib/api/nomad';
+import { getErrorMessage } from '../../../lib/errors';
 import { useToast } from '../../../context/ToastContext';
 import { LoadingSpinner, ErrorAlert, RefreshButton, Modal } from '../../ui';
+import { getVersionStatusColor } from '../../../lib/utils/statusColors';
+import { formatTimestamp } from '../../../lib/utils/dateFormatter';
 
 interface VersionsTabProps {
   jobId: string;
@@ -15,21 +18,8 @@ interface JobVersion {
   SubmitTime: number;
   Stable: boolean;
   Status: string;
-  TaskGroups?: any[];
+  TaskGroups?: unknown[];
   Meta?: Record<string, string>;
-}
-
-function formatTimestamp(nanos: number): string {
-  if (!nanos) return '-';
-  const date = new Date(nanos / 1_000_000);
-  return date.toLocaleString();
-}
-
-function getVersionStatusColor(stable: boolean): { bg: string; text: string } {
-  if (stable) {
-    return { bg: 'bg-green-100 dark:bg-green-900/30', text: 'text-green-800 dark:text-green-300' };
-  }
-  return { bg: 'bg-gray-100 dark:bg-gray-700', text: 'text-gray-800 dark:text-gray-300' };
 }
 
 export function VersionsTab({ jobId, namespace }: VersionsTabProps) {
@@ -52,7 +42,7 @@ export function VersionsTab({ jobId, namespace }: VersionsTabProps) {
       setVersions(sorted);
       setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch versions');
+      setError(getErrorMessage(err, 'Failed to fetch versions'));
     } finally {
       setLoading(false);
     }
@@ -74,7 +64,7 @@ export function VersionsTab({ jobId, namespace }: VersionsTabProps) {
       // Refresh versions
       await fetchVersions();
     } catch (err) {
-      addToast(err instanceof Error ? err.message : 'Failed to revert job', 'error');
+      addToast(getErrorMessage(err, 'Failed to revert job'), 'error');
     }
   };
 

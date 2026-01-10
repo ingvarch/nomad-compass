@@ -14,6 +14,7 @@ import {
   extractRecentEvents,
 } from '../lib/services/allocationAnalyzer';
 import { ErrorAlert, PageHeader } from '../components/ui';
+import { getErrorMessage } from '../lib/errors';
 
 interface DashboardData {
   jobs: NomadJob[];
@@ -67,7 +68,7 @@ export default function DashboardPage() {
       });
       setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch cluster data');
+      setError(getErrorMessage(err, 'Failed to fetch cluster data'));
     } finally {
       setLoading(false);
     }

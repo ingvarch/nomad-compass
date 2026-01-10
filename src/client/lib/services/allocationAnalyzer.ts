@@ -180,19 +180,5 @@ function getSeverity(eventType: string, failsTask?: boolean): 'info' | 'warning'
   return 'info';
 }
 
-/**
- * Format timestamp to relative time string
- */
-export function formatTimeAgo(timestampNs: number): string {
-  const ms = Date.now() - timestampNs / 1_000_000;
-  const seconds = Math.floor(ms / 1000);
-  const minutes = Math.floor(seconds / 60);
-  const hours = Math.floor(minutes / 60);
-  const days = Math.floor(hours / 24);
-
-  if (days > 0) return `${days}d ago`;
-  if (hours > 0) return `${hours}h ago`;
-  if (minutes > 0) return `${minutes}m ago`;
-  if (seconds > 10) return `${seconds}s ago`;
-  return 'Just now';
-}
+// Re-export formatTimeAgo from dateFormatter for backwards compatibility
+export { formatTimeAgo } from '../utils/dateFormatter';

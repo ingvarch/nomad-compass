@@ -1,9 +1,10 @@
 import React from 'react';
 import { Network, Settings2 } from 'lucide-react';
-import { NomadServiceConfig, NomadServiceTag, IngressConfig, NomadPort } from '../../../../types/nomad';
+import { NomadServiceConfig, IngressConfig, NomadPort } from '../../../../types/nomad';
 import FormInputField from '../../../ui/forms/FormInputField';
 import IngressSection from './IngressSection';
 import ServiceTagsEditor from './ServiceTagsEditor';
+import { inputStyles, selectStyles } from '../../../../lib/styles';
 
 interface ServiceSectionProps {
   enableService: boolean;
@@ -85,7 +86,7 @@ export const ServiceSection: React.FC<ServiceSectionProps> = ({
               value={serviceConfig.name}
               onChange={(e) => onServiceConfigChange({ name: e.target.value })}
               placeholder={groupName || 'my-service'}
-              className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className={inputStyles}
               disabled={isLoading}
             />
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
@@ -102,7 +103,7 @@ export const ServiceSection: React.FC<ServiceSectionProps> = ({
               <select
                 value={serviceConfig.portLabel}
                 onChange={(e) => onServiceConfigChange({ portLabel: e.target.value })}
-                className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className={selectStyles}
                 disabled={isLoading}
               >
                 {portLabels.map((label) => (
@@ -125,7 +126,7 @@ export const ServiceSection: React.FC<ServiceSectionProps> = ({
             <select
               value={serviceConfig.provider}
               onChange={(e) => onServiceConfigChange({ provider: e.target.value as 'nomad' | 'consul' })}
-              className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className={selectStyles}
               disabled={isLoading}
             >
               <option value="nomad">Nomad (Native Service Discovery)</option>

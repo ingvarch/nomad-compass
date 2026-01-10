@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { Plus } from 'lucide-react';
 import { createNomadClient } from '../../../lib/api/nomad';
 import {
   NomadAclTokenListItem,
@@ -6,11 +7,12 @@ import {
   NomadAclPolicyListItem,
   NomadAclRoleListItem,
 } from '../../../types/acl';
-import { LoadingSpinner, ErrorAlert, RefreshButton } from '../../ui';
-import { Modal } from '../../ui/Modal';
+import { LoadingSpinner, ErrorAlert, RefreshButton, Modal, Button, ConfirmationDialog } from '../../ui';
+import { DeleteButton } from '../../ui/IconButton';
 import { TokenForm } from '../token/TokenForm';
 import { SecretIdDisplay } from '../token/SecretIdDisplay';
 import { useToast } from '../../../context/ToastContext';
+import { getErrorMessage } from '../../../lib/errors';
 
 interface TokensTabProps {
   hasManagementAccess: boolean;
@@ -51,8 +53,7 @@ export function TokensTab({ hasManagementAccess }: TokensTabProps) {
         setCurrentTokenId(selfToken.AccessorID);
       }
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to fetch tokens';
-      setError(message);
+      setError(getErrorMessage(err, 'Failed to fetch tokens'));
     } finally {
       setLoading(false);
     }
@@ -118,8 +119,7 @@ export function TokensTab({ hasManagementAccess }: TokensTabProps) {
       setDeletingToken(null);
       await fetchData();
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to revoke token';
-      addToast(message, 'error');
+      addToast(getErrorMessage(err, 'Failed to revoke token'), 'error');
     } finally {
       setDeleteLoading(false);
     }
@@ -163,25 +163,10 @@ export function TokensTab({ hasManagementAccess }: TokensTabProps) {
         </div>
         <div className="flex gap-2">
           {hasManagementAccess && (
-            <button
-              onClick={() => setShowCreateModal(true)}
-              className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
-            >
-              <svg
-                className="w-4 h-4 mr-2"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 4v16m8-8H4"
-                />
-              </svg>
+            <Button onClick={() => setShowCreateModal(true)}>
+              <Plus className="w-4 h-4 mr-2" />
               Create Token
-            </button>
+            </Button>
           )}
           <RefreshButton onClick={() => fetchData()} />
         </div>
@@ -302,30 +287,11 @@ export function TokensTab({ hasManagementAccess }: TokensTabProps) {
                   </td>
                   {hasManagementAccess && (
                     <td className="px-4 py-3 whitespace-nowrap text-right">
-                      <button
+                      <DeleteButton
                         onClick={() => setDeletingToken(token)}
                         disabled={isCurrentToken(token)}
-                        className={`p-1.5 rounded transition-colors ${
-                          isCurrentToken(token)
-                            ? 'text-gray-300 dark:text-gray-600 cursor-not-allowed'
-                            : 'text-gray-500 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700'
-                        }`}
                         title={isCurrentToken(token) ? 'Cannot revoke your own token' : 'Revoke token'}
-                      >
-                        <svg
-                          className="w-4 h-4"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                          />
-                        </svg>
-                      </button>
+                      />
                     </td>
                   )}
                 </tr>
@@ -364,48 +330,35 @@ export function TokensTab({ hasManagementAccess }: TokensTabProps) {
         )}
       </Modal>
 
-      {/* Delete Confirmation Modal */}
-      <Modal
+      {/* Delete Confirmation */}
+      <ConfirmationDialog
         isOpen={deletingToken !== null}
         onClose={() => setDeletingToken(null)}
+        onConfirm={handleDeleteToken}
         title="Revoke Token"
-      >
-        {deletingToken && (
-          <div className="space-y-4">
-            <p className="text-gray-700 dark:text-gray-300">
-              Are you sure you want to revoke this token?
-            </p>
-            <div className="bg-gray-50 dark:bg-gray-700/50 p-3 rounded-lg">
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                <strong>Name:</strong> {deletingToken.Name || 'Unnamed'}
+        message={
+          deletingToken && (
+            <>
+              <p className="mb-3">Are you sure you want to revoke this token?</p>
+              <div className="bg-gray-50 dark:bg-gray-700/50 p-3 rounded-lg mb-3">
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  <strong>Name:</strong> {deletingToken.Name || 'Unnamed'}
+                </p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  <strong>Accessor ID:</strong>{' '}
+                  <code className="font-mono">{deletingToken.AccessorID}</code>
+                </p>
+              </div>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                This action cannot be undone. Anyone using this token will immediately lose access.
               </p>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                <strong>Accessor ID:</strong>{' '}
-                <code className="font-mono">{deletingToken.AccessorID}</code>
-              </p>
-            </div>
-            <p className="text-sm text-gray-500 dark:text-gray-400">
-              This action cannot be undone. Anyone using this token will immediately lose
-              access.
-            </p>
-            <div className="flex justify-end gap-3 pt-4">
-              <button
-                onClick={() => setDeletingToken(null)}
-                className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleDeleteToken}
-                disabled={deleteLoading}
-                className="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-md disabled:opacity-50"
-              >
-                {deleteLoading ? 'Revoking...' : 'Revoke Token'}
-              </button>
-            </div>
-          </div>
-        )}
-      </Modal>
+            </>
+          )
+        }
+        mode="delete"
+        confirmLabel="Revoke Token"
+        isLoading={deleteLoading}
+      />
     </div>
   );
 }

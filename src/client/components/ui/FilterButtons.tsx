@@ -1,16 +1,14 @@
-import React from 'react';
-
-export interface FilterOption<T extends string = string> {
-  value: T;
+export interface FilterOption {
+  value: string;
   label: string;
   count?: number;
   color?: string;
 }
 
-interface FilterButtonsProps<T extends string = string> {
-  options: FilterOption<T>[];
-  activeValue: T;
-  onFilterChange: (value: T) => void;
+interface FilterButtonsProps {
+  options: FilterOption[];
+  activeValue: string;
+  onFilterChange: (value: string) => void;
   showCounts?: boolean;
   size?: 'sm' | 'md';
   className?: string;
@@ -21,14 +19,14 @@ const sizeClasses = {
   md: 'px-3 py-1.5 text-sm rounded-md',
 };
 
-export function FilterButtons<T extends string = string>({
+export function FilterButtons({
   options,
   activeValue,
   onFilterChange,
   showCounts = true,
   size = 'md',
   className = '',
-}: FilterButtonsProps<T>) {
+}: FilterButtonsProps) {
   return (
     <div className={`flex flex-wrap gap-2 ${className}`}>
       {options.map((option) => (

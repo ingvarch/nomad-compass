@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { createNomadClient } from '../lib/api/nomad';
-import { isPermissionError, getPermissionErrorMessage } from '../lib/api/errors';
+import { getErrorMessage } from '../lib/errors';
 import { NomadNamespace, NomadJob } from '../types/nomad';
 import { Modal } from '../components/ui/Modal';
 import {
@@ -68,7 +68,7 @@ export default function NamespacesPage() {
       setNamespaces(namespacesWithCounts);
       setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch namespaces');
+      setError(getErrorMessage(err, 'Failed to fetch namespaces'));
     } finally {
       setLoading(false);
     }
@@ -87,10 +87,7 @@ export default function NamespacesPage() {
       setLoading(true);
       await fetchData();
     } catch (err) {
-      const message = isPermissionError(err)
-        ? getPermissionErrorMessage('create-namespace')
-        : err instanceof Error ? err.message : 'Failed to create namespace';
-      addToast(message, 'error');
+      addToast(getErrorMessage(err, 'Failed to create namespace', 'create-namespace'), 'error');
       throw err; // Re-throw so form can also handle it
     }
   };
@@ -104,10 +101,7 @@ export default function NamespacesPage() {
       setLoading(true);
       await fetchData();
     } catch (err) {
-      const message = isPermissionError(err)
-        ? getPermissionErrorMessage('update-namespace')
-        : err instanceof Error ? err.message : 'Failed to update namespace';
-      addToast(message, 'error');
+      addToast(getErrorMessage(err, 'Failed to update namespace', 'update-namespace'), 'error');
       throw err;
     }
   };
@@ -122,10 +116,7 @@ export default function NamespacesPage() {
       setLoading(true);
       await fetchData();
     } catch (err) {
-      const message = isPermissionError(err)
-        ? getPermissionErrorMessage('delete-namespace')
-        : err instanceof Error ? err.message : 'Failed to delete namespace';
-      addToast(message, 'error');
+      addToast(getErrorMessage(err, 'Failed to delete namespace', 'delete-namespace'), 'error');
       throw err;
     }
   };

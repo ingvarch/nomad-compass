@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { createNomadClient } from '../lib/api/nomad';
+import { getErrorMessage } from '../lib/errors';
 import type { NomadNode, NomadAllocation } from '../types/nomad';
 import { LoadingSpinner, ErrorAlert, PageHeader, RefreshButton, BackLink } from '../components/ui';
 
@@ -36,7 +37,7 @@ export default function TopologyPage() {
       setAllocations(allocsData);
       setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch topology data');
+      setError(getErrorMessage(err, 'Failed to fetch topology data'));
     } finally {
       setLoading(false);
     }

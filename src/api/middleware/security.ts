@@ -15,8 +15,10 @@ export const securityHeaders = createMiddleware<{ Bindings: Env }>(
     // CSP is the modern approach for XSS protection
 
     // Set Strict-Transport-Security when using HTTPS
-    // Works in both Node.js and Cloudflare Workers
-    if (c.req.url.startsWith('https://')) {
+    // Check X-Forwarded-Proto header for proxy setups, then fall back to URL scheme
+    const forwardedProto = c.req.header('x-forwarded-proto')
+    const isHttps = forwardedProto === 'https' || c.req.url.startsWith('https://')
+    if (isHttps) {
       c.res.headers.set(
         'Strict-Transport-Security',
         'max-age=63072000; includeSubDomains; preload'

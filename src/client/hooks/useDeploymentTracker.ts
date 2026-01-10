@@ -229,8 +229,7 @@ export function useDeploymentTracker(options: UseDeploymentTrackerOptions = {}) 
           data.currentStep = 'pulling';
         }
       }
-    } catch (error) {
-      console.error('Polling error:', error);
+    } catch {
       // Don't fail on polling errors, continue polling
     }
   }, [handleComplete, handleError, handleTimeout, updateState]);

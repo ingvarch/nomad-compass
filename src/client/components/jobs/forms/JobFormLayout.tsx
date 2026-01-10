@@ -11,6 +11,7 @@ interface JobFormLayoutProps {
   submitButtonText: string;
   children: ReactNode;
   cancelHref?: string;
+  onCancel?: () => void;
   onPlan?: () => void;
   isPlanning?: boolean;
 }
@@ -24,6 +25,7 @@ export const JobFormLayout: React.FC<JobFormLayoutProps> = ({
   submitButtonText,
   children,
   cancelHref,
+  onCancel,
   onPlan,
   isPlanning,
 }) => {
@@ -73,14 +75,22 @@ export const JobFormLayout: React.FC<JobFormLayoutProps> = ({
               </button>
             </div>
 
-            {cancelHref && (
+            {cancelHref ? (
               <Link
                 to={cancelHref}
                 className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 shadow-sm text-sm font-medium rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
               >
                 Cancel
               </Link>
-            )}
+            ) : onCancel ? (
+              <button
+                type="button"
+                onClick={onCancel}
+                className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 shadow-sm text-sm font-medium rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+              >
+                Cancel
+              </button>
+            ) : null}
           </div>
         </form>
       </div>

@@ -1,16 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
-
-interface ExecMessage {
-  // From Nomad
-  stdout?: { data: string };
-  stderr?: { data: string };
-  exited?: boolean;
-  result?: { exit_code: number };
-
-  // To Nomad
-  stdin?: { data?: string; close?: boolean };
-  tty_size?: { height: number; width: number };
-}
+import type { ExecMessage } from '../../shared/types/exec';
 
 interface UseExecSessionOptions {
   allocId: string;
@@ -224,5 +213,3 @@ export function useExecSession({
     sendResize,
   };
 }
-
-export default useExecSession;

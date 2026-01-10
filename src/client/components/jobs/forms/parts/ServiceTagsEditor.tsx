@@ -1,6 +1,7 @@
 import React from 'react';
 import { Trash, Plus } from 'lucide-react';
 import { NomadServiceTag } from '../../../../types/nomad';
+import { inputFlexStyles, inputMonoStyles } from '../../../../lib/styles';
 
 interface ServiceTagsEditorProps {
   tags: NomadServiceTag[];
@@ -60,7 +61,7 @@ export const ServiceTagsEditor: React.FC<ServiceTagsEditorProps> = ({
             value=""
             onChange={(e) => onTagChange(0, 'key', e.target.value)}
             placeholder="traefik.enable"
-            className="flex-1 p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className={inputFlexStyles}
             disabled={isLoading}
           />
           <span className="text-gray-500">=</span>
@@ -69,7 +70,7 @@ export const ServiceTagsEditor: React.FC<ServiceTagsEditorProps> = ({
             value=""
             onChange={(e) => onTagChange(0, 'value', e.target.value)}
             placeholder="true"
-            className="flex-1 p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className={inputFlexStyles}
             disabled={isLoading}
           />
           <button
@@ -89,7 +90,7 @@ export const ServiceTagsEditor: React.FC<ServiceTagsEditorProps> = ({
               value={tag.key}
               onChange={(e) => onTagChange(index, 'key', e.target.value)}
               placeholder="traefik.enable"
-              className="flex-1 p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm"
+              className={inputMonoStyles}
               disabled={isLoading}
             />
             <span className="text-gray-500">=</span>
@@ -98,7 +99,7 @@ export const ServiceTagsEditor: React.FC<ServiceTagsEditorProps> = ({
               value={tag.value}
               onChange={(e) => onTagChange(index, 'value', e.target.value)}
               placeholder="true"
-              className="flex-1 p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm"
+              className={inputMonoStyles}
               disabled={isLoading}
             />
             {index === tags.length - 1 ? (

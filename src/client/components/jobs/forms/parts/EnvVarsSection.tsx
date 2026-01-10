@@ -1,6 +1,9 @@
-import React, { useState } from 'react';
-import { Eye, EyeOff, Trash, Plus } from 'lucide-react';
+import React from 'react';
+import { Trash, Plus } from 'lucide-react';
 import { NomadEnvVar } from '../../../../types/nomad';
+import { useToggleState } from '../../../../hooks/useToggleState';
+import { VisibilityToggleButton } from '../../../ui/VisibilityToggleButton';
+import { inputBaseStyles } from '../../../../lib/styles';
 
 interface EnvVarsSectionProps {
   envVars: NomadEnvVar[];
@@ -18,15 +21,7 @@ export const EnvVarsSection: React.FC<EnvVarsSectionProps> = ({
   isLoading
 }) => {
   // Track which environment variables have visible values
-  const [visibleEnvValues, setVisibleEnvValues] = useState<Record<number, boolean>>({});
-
-  // Toggle visibility for a specific env var
-  const toggleEnvValueVisibility = (index: number) => {
-    setVisibleEnvValues(prev => ({
-      ...prev,
-      [index]: !prev[index]
-    }));
-  };
+  const { isActive: isVisible, toggle: toggleVisibility } = useToggleState<number>();
 
   return (
     <div className="mb-4">
@@ -42,26 +37,24 @@ export const EnvVarsSection: React.FC<EnvVarsSectionProps> = ({
             value={envVar.key}
             onChange={(e) => onEnvVarChange(index, 'key', e.target.value)}
             placeholder="KEY"
-            className="flex-1 min-w-0 p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className={`flex-1 min-w-0 p-2 ${inputBaseStyles}`}
             disabled={isLoading}
           />
           <div className="relative flex-1 min-w-0">
             <input
-              type={visibleEnvValues[index] ? "text" : "password"}
+              type={isVisible(index) ? "text" : "password"}
               value={envVar.value}
               onChange={(e) => onEnvVarChange(index, 'value', e.target.value)}
               placeholder="value"
-              className="w-full p-2 pr-10 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className={`w-full p-2 pr-10 ${inputBaseStyles}`}
               disabled={isLoading}
             />
-            <button
-              type="button"
-              onClick={() => toggleEnvValueVisibility(index)}
-              className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 focus:outline-none"
+            <VisibilityToggleButton
+              isVisible={isVisible(index)}
+              onToggle={() => toggleVisibility(index)}
               disabled={isLoading}
-            >
-              {visibleEnvValues[index] ? <EyeOff size={16} /> : <Eye size={16} />}
-            </button>
+              className="absolute right-2 top-1/2 transform -translate-y-1/2"
+            />
           </div>
           <button
             type="button"

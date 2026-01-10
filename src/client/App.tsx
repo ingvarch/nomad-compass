@@ -4,6 +4,7 @@ import { AuthProvider } from './context/AuthContext';
 import { ToastProvider } from './context/ToastContext';
 import { ThemeProvider } from './context/ThemeContext';
 import { ErrorBoundary } from './components/ui';
+import { ToastContainer } from './components/ui/Toast';
 import ProtectedLayout from './components/layout/ProtectedLayout';
 
 // Pages
@@ -105,6 +106,7 @@ export function App() {
     <ThemeProvider>
       <AuthProvider>
         <ToastProvider>
+          <ToastContainer />
           <ErrorBoundary>
             <RouterProvider router={router} />
           </ErrorBoundary>

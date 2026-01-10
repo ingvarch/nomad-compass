@@ -1,7 +1,8 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useMemo } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { createNomadClient } from '../lib/api/nomad';
 import { NomadAllocation, NomadJob } from '../types/nomad';
+import { useFetch } from '../hooks/useFetch';
 import {
   LoadingSpinner,
   ErrorAlert,
@@ -12,6 +13,7 @@ import {
   FilterOption,
 } from '../components/ui';
 import { getAllocationStatusColor, getStatusClasses } from '../lib/utils/statusColors';
+import { formatTimestamp } from '../lib/utils/dateFormatter';
 import { Terminal } from 'lucide-react';
 
 function getFirstTask(alloc: NomadAllocation): string | null {
@@ -24,44 +26,35 @@ function getFirstTask(alloc: NomadAllocation): string | null {
 
 type StatusFilter = 'all' | 'running' | 'pending' | 'complete' | 'failed';
 
-function formatTimestamp(nanoTimestamp: number): string {
-  const date = new Date(nanoTimestamp / 1000000);
-  return date.toLocaleString();
+interface AllocationsData {
+  allocations: NomadAllocation[];
+  jobs: Map<string, NomadJob>;
 }
 
 export default function AllocationsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const [allocations, setAllocations] = useState<NomadAllocation[]>([]);
-  const [jobs, setJobs] = useState<Map<string, NomadJob>>(new Map());
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
-  const statusFilter = (searchParams.get('status') as StatusFilter) || 'all';
-
-  const fetchData = useCallback(async () => {
-    const client = createNomadClient();
-
-    try {
+  const { data, loading, error, refetch } = useFetch(
+    async (): Promise<AllocationsData> => {
+      const client = createNomadClient();
       const [allocationsData, jobsResponse] = await Promise.all([
         client.getAllocations(),
         client.getJobs(),
       ]);
-
       const jobsMap = new Map((jobsResponse.Jobs || []).map((j) => [j.ID, j]));
+      return {
+        allocations: allocationsData,
+        jobs: jobsMap,
+      };
+    },
+    [],
+    { initialData: { allocations: [], jobs: new Map() }, errorMessage: 'Failed to fetch allocations' }
+  );
 
-      setAllocations(allocationsData);
-      setJobs(jobsMap);
-      setError(null);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch allocations');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const allocations = useMemo(() => data?.allocations || [], [data]);
+  const jobs = useMemo(() => data?.jobs || new Map<string, NomadJob>(), [data]);
 
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+  const statusFilter = (searchParams.get('status') as StatusFilter) || 'all';
 
   const filteredAllocations = allocations.filter((alloc) => {
     if (statusFilter === 'all') return true;
@@ -78,7 +71,7 @@ export default function AllocationsPage() {
     failed: allocations.filter((a) => a.ClientStatus === 'failed' || a.ClientStatus === 'lost').length,
   }), [allocations]);
 
-  const setFilter = (filter: StatusFilter) => {
+  const setFilter = (filter: string) => {
     if (filter === 'all') {
       searchParams.delete('status');
     } else {
@@ -87,7 +80,7 @@ export default function AllocationsPage() {
     setSearchParams(searchParams);
   };
 
-  const filterOptions: FilterOption<StatusFilter>[] = [
+  const filterOptions: FilterOption[] = [
     { value: 'all', label: 'All', count: allocations.length },
     { value: 'running', label: 'Running', count: stats.running, color: 'bg-green-500' },
     { value: 'pending', label: 'Pending', count: stats.pending, color: 'bg-yellow-500' },
@@ -109,9 +102,7 @@ export default function AllocationsPage() {
       <PageHeader
         title="Allocations"
         description="View all cluster allocations"
-        actions={
-          <RefreshButton onClick={() => { setLoading(true); fetchData(); }} />
-        }
+        actions={<RefreshButton onClick={refetch} />}
       />
 
       {error && <ErrorAlert message={error} />}

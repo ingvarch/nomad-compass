@@ -1,8 +1,12 @@
 export { BackLink } from './BackLink';
+export { Button } from './Button';
+export { ConfirmationDialog } from './ConfirmationDialog';
 export { ErrorAlert } from './ErrorAlert';
 export { ErrorBoundary } from '../ErrorBoundary';
 export { ExpandIcon } from './ExpandIcon';
 export { FilterButtons, type FilterOption } from './FilterButtons';
+export { FormActions } from './FormActions';
+export { IconButton, EditButton, DeleteButton, ViewButton } from './IconButton';
 export { InfoBox } from './InfoBox';
 export { LoadingSpinner } from './LoadingSpinner';
 export { Modal } from './Modal';
@@ -10,3 +14,4 @@ export { PageHeader } from './PageHeader';
 export { RefreshButton } from './RefreshButton';
 export { ThemeToggle } from './ThemeToggle';
 export { ToastContainer } from './Toast';
+export { VisibilityToggleButton } from './VisibilityToggleButton';

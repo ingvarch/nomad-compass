@@ -1,7 +1,8 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { createNomadClient } from '../lib/api/nomad';
 import { NomadAgentMember } from '../types/nomad';
+import { useFetch } from '../hooks/useFetch';
 import {
   LoadingSpinner,
   ErrorAlert,
@@ -11,43 +12,38 @@ import {
   BackLink,
   FilterOption,
 } from '../components/ui';
-import { getStatusClasses } from '../lib/utils/statusColors';
+import { getServerStatusColor, getStatusClasses } from '../lib/utils/statusColors';
 
 type StatusFilter = 'all' | 'alive' | 'failed' | 'left';
 
+interface ServerData {
+  members: NomadAgentMember[];
+  serverInfo: { region: string; datacenter: string } | null;
+}
+
 export default function ServersPage() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const [members, setMembers] = useState<NomadAgentMember[]>([]);
-  const [serverInfo, setServerInfo] = useState<{
-    region: string;
-    datacenter: string;
-  } | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+
+  const { data, loading, error, refetch } = useFetch(
+    async (): Promise<ServerData> => {
+      const client = createNomadClient();
+      const response = await client.getAgentMembers();
+      return {
+        members: response.Members || [],
+        serverInfo: {
+          region: response.ServerRegion,
+          datacenter: response.ServerDC,
+        },
+      };
+    },
+    [],
+    { initialData: { members: [], serverInfo: null }, errorMessage: 'Failed to fetch servers' }
+  );
+
+  const members = useMemo(() => data?.members || [], [data]);
+  const serverInfo = data?.serverInfo || null;
 
   const statusFilter = (searchParams.get('status') as StatusFilter) || 'all';
-
-  const fetchData = useCallback(async () => {
-    const client = createNomadClient();
-
-    try {
-      const data = await client.getAgentMembers();
-      setMembers(data.Members || []);
-      setServerInfo({
-        region: data.ServerRegion,
-        datacenter: data.ServerDC,
-      });
-      setError(null);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch servers');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
 
   const filteredMembers = members.filter((member) => {
     if (statusFilter === 'all') return true;
@@ -63,7 +59,7 @@ export default function ServersPage() {
     [members]
   );
 
-  const setFilter = (filter: StatusFilter) => {
+  const setFilter = (filter: string) => {
     if (filter === 'all') {
       searchParams.delete('status');
     } else {
@@ -72,25 +68,12 @@ export default function ServersPage() {
     setSearchParams(searchParams);
   };
 
-  const filterOptions: FilterOption<StatusFilter>[] = [
+  const filterOptions: FilterOption[] = [
     { value: 'all', label: 'All', count: members.length },
     { value: 'alive', label: 'Alive', count: stats.alive, color: 'bg-green-500' },
     { value: 'failed', label: 'Failed', count: stats.failed, color: 'bg-red-500' },
     { value: 'left', label: 'Left', count: stats.left, color: 'bg-gray-500' },
   ];
-
-  const getServerStatusColor = (status: string): { bg: string; text: string } => {
-    switch (status.toLowerCase()) {
-      case 'alive':
-        return { bg: 'bg-green-100 dark:bg-green-900/30', text: 'text-green-800 dark:text-green-300' };
-      case 'failed':
-        return { bg: 'bg-red-100 dark:bg-red-900/30', text: 'text-red-800 dark:text-red-300' };
-      case 'left':
-        return { bg: 'bg-gray-100 dark:bg-gray-700', text: 'text-gray-800 dark:text-gray-300' };
-      default:
-        return { bg: 'bg-gray-100 dark:bg-gray-700', text: 'text-gray-800 dark:text-gray-300' };
-    }
-  };
 
   if (loading) {
     return (
@@ -110,14 +93,7 @@ export default function ServersPage() {
             ? `Region: ${serverInfo.region} | Datacenter: ${serverInfo.datacenter}`
             : 'View cluster server nodes'
         }
-        actions={
-          <RefreshButton
-            onClick={() => {
-              setLoading(true);
-              fetchData();
-            }}
-          />
-        }
+        actions={<RefreshButton onClick={refetch} />}
       />
 
       {error && <ErrorAlert message={error} />}

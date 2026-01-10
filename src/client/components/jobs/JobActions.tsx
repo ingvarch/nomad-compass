@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { createNomadClient } from '../../lib/api/nomad';
-import { isPermissionError, getPermissionErrorMessage } from '../../lib/api/errors';
+import { isPermissionError, getPermissionErrorMessage, getErrorMessage } from '../../lib/errors';
 import { useToast } from '../../context/ToastContext';
 import { PermissionErrorModal } from '../ui/PermissionErrorModal';
 import { X, Check } from 'lucide-react';
@@ -79,14 +79,10 @@ export const JobActions: React.FC<JobActionsProps> = ({ jobId, jobStatus, onStat
                 onStatusChange();
             }
         } catch (err) {
-            console.error('Failed to start job:', err);
-
             if (isPermissionError(err)) {
                 setPermissionError(getPermissionErrorMessage('start-job'));
             } else {
-                const errorMessage = typeof err === 'object' && err !== null && 'message' in err
-                    ? (err as Error).message
-                    : 'Failed to start job. Please try again.';
+                const errorMessage = getErrorMessage(err, 'Failed to start job. Please try again.');
                 setError(errorMessage);
                 addToast(errorMessage, 'error');
             }
@@ -115,14 +111,10 @@ export const JobActions: React.FC<JobActionsProps> = ({ jobId, jobStatus, onStat
                 onStatusChange();
             }
         } catch (err) {
-            console.error('Failed to stop job:', err);
-
             if (isPermissionError(err)) {
                 setPermissionError(getPermissionErrorMessage('stop-job'));
             } else {
-                const errorMessage = typeof err === 'object' && err !== null && 'message' in err
-                    ? (err as Error).message
-                    : 'Failed to stop job. Please try again.';
+                const errorMessage = getErrorMessage(err, 'Failed to stop job. Please try again.');
                 setError(errorMessage);
                 addToast(errorMessage, 'error');
             }
@@ -149,14 +141,10 @@ export const JobActions: React.FC<JobActionsProps> = ({ jobId, jobStatus, onStat
 
             navigate('/jobs');
         } catch (err) {
-            console.error('Failed to delete job:', err);
-
             if (isPermissionError(err)) {
                 setPermissionError(getPermissionErrorMessage('delete-job'));
             } else {
-                const errorMessage = typeof err === 'object' && err !== null && 'message' in err
-                    ? (err as Error).message
-                    : 'Failed to delete job. Please try again.';
+                const errorMessage = getErrorMessage(err, 'Failed to delete job. Please try again.');
                 setError(errorMessage);
                 addToast(errorMessage, 'error');
             }

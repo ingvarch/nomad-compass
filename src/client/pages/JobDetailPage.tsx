@@ -1,7 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { DEFAULT_NAMESPACE } from '../lib/constants';
 import { createNomadClient } from '../lib/api/nomad';
+import { getErrorMessage } from '../lib/errors';
 import { useToast } from '../context/ToastContext';
 import { LoadingSpinner, ErrorAlert } from '../components/ui';
 import {
@@ -34,7 +36,7 @@ export default function JobDetailPage() {
   const [selectedGroupForLogs, setSelectedGroupForLogs] = useState<string | null>(null);
 
   const jobId = id as string;
-  const namespace = searchParams.get('namespace') || 'default';
+  const namespace = searchParams.get('namespace') || DEFAULT_NAMESPACE;
 
   const fetchJobDetail = useCallback(async () => {
     if (!isAuthenticated) {
@@ -100,8 +102,7 @@ export default function JobDetailPage() {
 
       setError(null);
     } catch (err) {
-      console.error('Failed to fetch job details:', err);
-      setError('Failed to load job details. Please check your connection and try again.');
+      setError(`Failed to load job details: ${getErrorMessage(err)}`);
       addToast('Failed to load job details', 'error');
     } finally {
       setIsLoading(false);
@@ -184,7 +185,7 @@ export default function JobDetailPage() {
       <JobHeader
         jobName={job.Name || job.ID}
         jobId={job.ID}
-        namespace={job.Namespace || 'default'}
+        namespace={job.Namespace || DEFAULT_NAMESPACE}
       />
 
       <JobDetailTabs namespace={namespace} />
