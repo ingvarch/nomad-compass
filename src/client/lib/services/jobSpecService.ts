@@ -7,7 +7,13 @@ import {
     NomadEnvVar,
     NomadServiceConfig,
     NomadServiceTag,
-    IngressConfig
+    IngressConfig,
+    NomadServiceCheck,
+    NomadServiceDefinition,
+    NomadConstraint,
+    NomadTaskDriverConfig,
+    NomadJob,
+    NomadTaskGroup,
 } from '../../types/nomad';
 
 /**
@@ -100,8 +106,8 @@ function parseTraefikTagsToIngress(tags: NomadServiceTag[]): IngressConfig {
  */
 function createServiceForTaskGroup(
     groupData: TaskGroupFormData,
-    healthCheckConfig: any | null
-): any | null {
+    healthCheckConfig: NomadServiceCheck | null
+): NomadServiceDefinition | null {
     // Determine if we need a service
     const needsService = groupData.enableService || groupData.enableHealthCheck;
     if (!needsService) {
@@ -129,7 +135,7 @@ function createServiceForTaskGroup(
         }
     }
 
-    const service: any = {
+    const service: NomadServiceDefinition = {
         Name: serviceConfig?.name || groupData.name,
         TaskName: groupData.name,
         AddressMode: serviceConfig?.addressMode || 'alloc',
@@ -159,7 +165,7 @@ interface NetworkConfig {
 interface TaskConfig {
     Name: string;
     Driver: string;
-    Config: any;
+    Config: NomadTaskDriverConfig;
     Env: Record<string, string>;
     Resources: {
         CPU: number;
@@ -173,9 +179,9 @@ interface TaskGroupConfig {
     Count: number;
     Tasks: Array<TaskConfig>;
     Networks?: Array<NetworkConfig>;
-    Services?: Array<any>;
+    Services?: Array<NomadServiceDefinition>;
     Meta?: Record<string, string>;
-    Constraints?: any[];
+    Constraints?: NomadConstraint[];
 }
 
 interface JobSpec {
@@ -187,7 +193,7 @@ interface JobSpec {
         Datacenters: string[];
         TaskGroups: TaskGroupConfig[];
         Meta?: Record<string, string>;
-        Constraints?: any[];
+        Constraints?: NomadConstraint[];
         Priority?: number;
     };
 }
@@ -209,7 +215,7 @@ function createTaskConfig(groupData: TaskGroupFormData): TaskConfig {
     }
 
     // Base task configuration
-    const taskConfig: any = {
+    const taskConfig: NomadTaskDriverConfig = {
         image: groupData.image,
     };
 
@@ -262,18 +268,19 @@ function createJobSpec(formData: NomadJobFormData): JobSpec {
             groupData.ports.forEach(port => {
                 if (port.label.trim() === '') return;
 
-                const portConfig: any = {
-                    Label: port.label,
-                    ...(port.to ? {To: port.to} : {})
-                };
-
                 if (port.static) {
                     // For static ports, include the host port value
-                    portConfig.Value = port.value;
-                    network!.ReservedPorts.push(portConfig);
+                    network!.ReservedPorts.push({
+                        Label: port.label,
+                        Value: port.value,
+                        ...(port.to ? { To: port.to } : {})
+                    });
                 } else {
                     // For dynamic ports, don't include a specific value
-                    network!.DynamicPorts.push(portConfig);
+                    network!.DynamicPorts.push({
+                        Label: port.label,
+                        To: port.to || 0
+                    });
                 }
             });
         }
@@ -296,7 +303,7 @@ function createJobSpec(formData: NomadJobFormData): JobSpec {
         }
 
         // Build health check config if enabled
-        let healthCheckConfig: any | null = null;
+        let healthCheckConfig: NomadServiceCheck | null = null;
         if (groupData.enableHealthCheck && groupData.healthCheck) {
             const healthCheck = groupData.healthCheck;
             healthCheckConfig = {
@@ -339,7 +346,7 @@ function createJobSpec(formData: NomadJobFormData): JobSpec {
  * Updates an existing Nomad job specification with form data
  * This preserves important job metadata
  */
-function updateJobSpec(originalJob: any, formData: NomadJobFormData): JobSpec {
+function updateJobSpec(originalJob: NomadJob | null, formData: NomadJobFormData): JobSpec {
     // Create a new job spec from the form data
     const newJobSpec = createJobSpec(formData);
 
@@ -367,7 +374,7 @@ function updateJobSpec(originalJob: any, formData: NomadJobFormData): JobSpec {
         // Attempt to preserve metadata for task groups that still exist with the same name
         if (originalJob.TaskGroups && originalJob.TaskGroups.length > 0) {
             newJobSpec.Job.TaskGroups.forEach(newTG => {
-                const originalTG = originalJob.TaskGroups.find((tg: any) => tg.Name === newTG.Name);
+                const originalTG = originalJob.TaskGroups!.find((tg: NomadTaskGroup) => tg.Name === newTG.Name);
                 if (originalTG) {
                     if (originalTG.Meta) {
                         newTG.Meta = originalTG.Meta;
@@ -386,9 +393,9 @@ function updateJobSpec(originalJob: any, formData: NomadJobFormData): JobSpec {
 /**
  * Converts a job from the API to our form data structure
  */
-function convertJobToFormData(job: any): NomadJobFormData {
+function convertJobToFormData(job: NomadJob): NomadJobFormData {
     // Extract task groups
-    const taskGroups = job.TaskGroups.map((group: any) => {
+    const taskGroups = (job.TaskGroups || []).map((group: NomadTaskGroup) => {
         // In our new model, each group has exactly one task
         const task = group.Tasks[0];
         const config = task.Config || {};
@@ -416,7 +423,7 @@ function convertJobToFormData(job: any): NomadJobFormData {
             if (networkConfig.DynamicPorts && networkConfig.DynamicPorts.length > 0) {
                 ports = [
                     ...ports,
-                    ...networkConfig.DynamicPorts.map((port: any) => ({
+                    ...networkConfig.DynamicPorts.map((port) => ({
                         label: port.Label,
                         value: 0, // Dynamic ports don't have a specific value
                         to: port.To || 0,
@@ -429,7 +436,7 @@ function convertJobToFormData(job: any): NomadJobFormData {
             if (networkConfig.ReservedPorts && networkConfig.ReservedPorts.length > 0) {
                 ports = [
                     ...ports,
-                    ...networkConfig.ReservedPorts.map((port: any) => ({
+                    ...networkConfig.ReservedPorts.map((port) => ({
                         label: port.Label,
                         value: port.Value,
                         to: port.To || port.Value,
@@ -503,7 +510,7 @@ function convertJobToFormData(job: any): NomadJobFormData {
             },
             envVars: envVars,
             usePrivateRegistry,
-            dockerAuth: usePrivateRegistry ? {
+            dockerAuth: usePrivateRegistry && config.auth ? {
                 username: config.auth.username,
                 password: config.auth.password
             } : undefined,

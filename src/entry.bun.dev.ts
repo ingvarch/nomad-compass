@@ -3,8 +3,10 @@ import { createBunWebSocketHandlers } from './api/handlers/bunWebSocket';
 
 // Development server - API only, Vite handles frontend
 const nomadAddr = process.env.NOMAD_ADDR || 'http://localhost:4646';
-const ticketSecret = process.env.TICKET_SECRET || 'nomad-compass-dev-secret-change-in-production';
 const port = Number(process.env.PORT) || 3000;
+
+// Dev-only fallback secret - NEVER use in production
+const ticketSecret = process.env.TICKET_SECRET || 'dev-only-not-for-production';
 
 const app = createApp({
   envInjector: (c) => {

@@ -3,8 +3,13 @@ import { createApp } from './api/app';
 import { createBunWebSocketHandlers } from './api/handlers/bunWebSocket';
 
 const nomadAddr = process.env.NOMAD_ADDR || 'http://localhost:4646';
-const ticketSecret = process.env.TICKET_SECRET || 'nomad-compass-dev-secret-change-in-production';
 const port = Number(process.env.PORT) || 3000;
+
+// TICKET_SECRET is required in production for secure WebSocket ticket validation
+const ticketSecret = process.env.TICKET_SECRET;
+if (!ticketSecret) {
+  throw new Error('TICKET_SECRET environment variable is required. Generate with: openssl rand -hex 32');
+}
 
 const app = createApp({
   envInjector: (c) => {

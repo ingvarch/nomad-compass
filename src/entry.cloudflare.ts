@@ -42,7 +42,8 @@ async function handleExecWebSocket(
     return new Response('Missing required parameters: allocId, task', { status: 400 })
   }
 
-  const secret = env.TICKET_SECRET || 'nomad-compass-dev-secret-change-in-production'
+  // TICKET_SECRET should be set in Cloudflare Workers secrets for production
+  const secret = env.TICKET_SECRET || 'dev-only-not-for-production'
   const token = await extractTokenFromTicket(request, url.searchParams, secret)
   if (!token) {
     return new Response('Authentication required or ticket expired', { status: 401 })

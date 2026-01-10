@@ -14,3 +14,4 @@ export { PageHeader } from './PageHeader';
 export { RefreshButton } from './RefreshButton';
 export { ThemeToggle } from './ThemeToggle';
 export { ToastContainer } from './Toast';
+export { VisibilityToggleButton } from './VisibilityToggleButton';
