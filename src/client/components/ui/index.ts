@@ -5,6 +5,8 @@ export { ErrorAlert } from './ErrorAlert';
 export { ErrorBoundary } from '../ErrorBoundary';
 export { ExpandIcon } from './ExpandIcon';
 export { FilterButtons, type FilterOption } from './FilterButtons';
+export { FormActions } from './FormActions';
+export { IconButton, EditButton, DeleteButton, ViewButton } from './IconButton';
 export { InfoBox } from './InfoBox';
 export { LoadingSpinner } from './LoadingSpinner';
 export { Modal } from './Modal';

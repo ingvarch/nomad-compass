@@ -3,16 +3,11 @@ import { Link } from 'react-router-dom';
 import { NomadAllocation, NomadTaskEvent } from '../../../types/nomad';
 import ExpandIcon from '../../ui/ExpandIcon';
 import { Terminal } from 'lucide-react';
+import { formatTimestamp } from '../../../lib/utils/dateFormatter';
 
 interface TaskEventsTableProps {
   allocations: NomadAllocation[];
   taskGroupName?: string;
-}
-
-function formatTimestamp(nanos: number): string {
-  if (!nanos) return '-';
-  const date = new Date(nanos / 1_000_000);
-  return date.toLocaleString();
 }
 
 function getEventTypeColor(type: string, failsTask?: boolean): string {

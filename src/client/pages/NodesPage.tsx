@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useMemo } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { createNomadClient } from '../lib/api/nomad';
 import { NomadNode } from '../types/nomad';
@@ -12,6 +12,7 @@ import {
   FilterOption,
 } from '../components/ui';
 import { getNodeStatusColor, getStatusClasses } from '../lib/utils/statusColors';
+import { useFetch } from '../hooks/useFetch';
 
 type StatusFilter = 'all' | 'ready' | 'down' | 'draining';
 
@@ -23,43 +24,33 @@ function formatResources(cpu: number, memoryMB: number): string {
 export default function NodesPage() {
   const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
-  const [nodes, setNodes] = useState<NomadNode[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+
+  const { data: nodes, loading, error, refetch } = useFetch(
+    async () => {
+      const client = createNomadClient();
+      return client.getNodes();
+    },
+    [],
+    { initialData: [], errorMessage: 'Failed to fetch nodes' }
+  );
 
   const statusFilter = (searchParams.get('status') as StatusFilter) || 'all';
 
-  const fetchData = useCallback(async () => {
-    const client = createNomadClient();
+  const nodesList = useMemo(() => nodes || [], [nodes]);
 
-    try {
-      const nodesData = await client.getNodes();
-      setNodes(nodesData);
-      setError(null);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch nodes');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
-
-  const filteredNodes = nodes.filter((node) => {
+  const filteredNodes = useMemo(() => nodesList.filter((node) => {
     if (statusFilter === 'all') return true;
     if (statusFilter === 'draining') return node.Drain;
     if (statusFilter === 'ready') return node.Status === 'ready' && !node.Drain;
     if (statusFilter === 'down') return node.Status === 'down';
     return true;
-  });
+  }), [nodesList, statusFilter]);
 
   const stats = useMemo(() => ({
-    ready: nodes.filter((n) => n.Status === 'ready' && !n.Drain).length,
-    down: nodes.filter((n) => n.Status === 'down').length,
-    draining: nodes.filter((n) => n.Drain).length,
-  }), [nodes]);
+    ready: nodesList.filter((n) => n.Status === 'ready' && !n.Drain).length,
+    down: nodesList.filter((n) => n.Status === 'down').length,
+    draining: nodesList.filter((n) => n.Drain).length,
+  }), [nodesList]);
 
   const setFilter = (filter: StatusFilter) => {
     if (filter === 'all') {
@@ -71,7 +62,7 @@ export default function NodesPage() {
   };
 
   const filterOptions: FilterOption<StatusFilter>[] = [
-    { value: 'all', label: 'All', count: nodes.length },
+    { value: 'all', label: 'All', count: nodesList.length },
     { value: 'ready', label: 'Ready', count: stats.ready, color: 'bg-green-500' },
     { value: 'down', label: 'Down', count: stats.down, color: 'bg-red-500' },
     { value: 'draining', label: 'Draining', count: stats.draining, color: 'bg-yellow-500' },
@@ -92,7 +83,7 @@ export default function NodesPage() {
         title="Nodes"
         description="View and manage cluster nodes"
         actions={
-          <RefreshButton onClick={() => { setLoading(true); fetchData(); }} />
+          <RefreshButton onClick={refetch} />
         }
       />
 

@@ -1,7 +1,8 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { createNomadClient } from '../lib/api/nomad';
 import { NomadAllocation, NomadNamespace } from '../types/nomad';
+import { useFetch } from '../hooks/useFetch';
 import { LoadingSpinner, ErrorAlert, PageHeader, RefreshButton, BackLink } from '../components/ui';
 import { extractRecentEvents, formatTimeAgo } from '../lib/services/allocationAnalyzer';
 import { severityColors, getStatusClasses } from '../lib/utils/statusColors';
@@ -17,12 +18,12 @@ const timeRangeMs: Record<TimeRangeFilter, number> = {
   '7d': 7 * 24 * 60 * 60 * 1000,
 };
 
-export default function ActivityPage() {
-  const [allocations, setAllocations] = useState<NomadAllocation[]>([]);
-  const [namespaces, setNamespaces] = useState<NomadNamespace[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+interface ActivityData {
+  allocations: NomadAllocation[];
+  namespaces: NomadNamespace[];
+}
 
+export default function ActivityPage() {
   // Filters
   const [namespaceFilter, setNamespaceFilter] = useState<string>('*');
   const [severityFilter, setSeverityFilter] = useState<SeverityFilter>('all');
@@ -30,28 +31,24 @@ export default function ActivityPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [eventTypeFilter, setEventTypeFilter] = useState<string>('all');
 
-  const fetchData = useCallback(async () => {
-    const client = createNomadClient();
-
-    try {
+  const { data, loading, error, refetch } = useFetch(
+    async (): Promise<ActivityData> => {
+      const client = createNomadClient();
       const [allocationsData, namespacesData] = await Promise.all([
         client.getAllocations(),
         client.getNamespaces(),
       ]);
+      return {
+        allocations: allocationsData,
+        namespaces: namespacesData,
+      };
+    },
+    [],
+    { initialData: { allocations: [], namespaces: [] }, errorMessage: 'Failed to fetch activity data' }
+  );
 
-      setAllocations(allocationsData);
-      setNamespaces(namespacesData);
-      setError(null);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch activity data');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+  const allocations = useMemo(() => data?.allocations || [], [data]);
+  const namespaces = useMemo(() => data?.namespaces || [], [data]);
 
   // Extract all events (no limit)
   const allEvents = useMemo(
@@ -156,14 +153,7 @@ export default function ActivityPage() {
             )}
           </>
         }
-        actions={
-          <RefreshButton
-            onClick={() => {
-              setLoading(true);
-              fetchData();
-            }}
-          />
-        }
+        actions={<RefreshButton onClick={refetch} />}
       />
 
       {error && <ErrorAlert message={error} />}

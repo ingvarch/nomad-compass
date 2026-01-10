@@ -1,19 +1,25 @@
 /**
  * useJobForm - Main hook for job form management
  *
- * This hook composes smaller focused hooks:
- * - useJobFormFetch: Data loading for edit/clone modes
- * - useJobFormHandlers: Job-level field change handlers
- * - useJobPlan: Plan preview and job submission
+ * This hook handles:
+ * - Data loading for edit/clone modes
+ * - Job-level field change handlers
+ * - Uses useJobPlan for plan preview and job submission
  *
  * Task group handlers are in useTaskGroupHandlers.ts (used by TaskGroupForm).
  * All hooks share state via JobFormContext.
  */
-import { useJobFormContext } from '../context/JobFormContext';
-import { useJobFormFetch } from './useJobFormFetch';
-import { useJobFormHandlers } from './useJobFormHandlers';
+import { useEffect, useCallback } from 'react';
+import { useAuth } from '../context/AuthContext';
+import { useJobFormContext, jobFormActions, defaultFormValues } from '../context/JobFormContext';
+import { createNomadClient } from '../lib/api/nomad';
+import { convertJobToFormData, prepareCloneFormData } from '../lib/services/jobSpecService';
+import { useToast } from '../context/ToastContext';
 import { useJobPlan } from './useJobPlan';
 import { DEFAULT_NAMESPACE } from '../lib/constants';
+
+// Job name validation: must start with letter/number, then letters/numbers/underscores/hyphens/dots
+const JOB_NAME_REGEX = /^[a-zA-Z0-9][a-zA-Z0-9_.-]*$/;
 
 interface UseJobFormOptions {
   mode: 'create' | 'edit';
@@ -30,17 +36,137 @@ export function useJobForm({
   cloneFromId,
   cloneNamespace = DEFAULT_NAMESPACE,
 }: UseJobFormOptions) {
-  const { state } = useJobFormContext();
+  const { isAuthenticated } = useAuth();
+  const { addToast } = useToast();
+  const { state, dispatch } = useJobFormContext();
+  const { formData } = state;
 
-  useJobFormFetch({
-    mode,
-    jobId,
-    namespace,
-    cloneFromId,
-    cloneNamespace,
-  });
+  const isCloneMode = mode === 'create' && !!cloneFromId;
 
-  const { handleInputChange, clearPermissionError } = useJobFormHandlers({ mode });
+  // Initialize form data for create mode
+  useEffect(() => {
+    if (mode === 'create' && !cloneFromId) {
+      dispatch(jobFormActions.setFormData(defaultFormValues));
+      dispatch(jobFormActions.setLoading(false));
+    }
+  }, [mode, cloneFromId, dispatch]);
+
+  // Fetch namespaces
+  useEffect(() => {
+    if (!isAuthenticated) {
+      dispatch(jobFormActions.setLoadingNamespaces(false));
+      return;
+    }
+
+    const client = createNomadClient();
+    client
+      .getNamespaces()
+      .then((response) => {
+        if (response && Array.isArray(response)) {
+          const nsNames = response.map((ns) => ns.Name);
+          dispatch(jobFormActions.setNamespaces(nsNames.length > 0 ? nsNames : [DEFAULT_NAMESPACE]));
+        }
+      })
+      .catch(() => dispatch(jobFormActions.setNamespaces([DEFAULT_NAMESPACE])))
+      .finally(() => dispatch(jobFormActions.setLoadingNamespaces(false)));
+  }, [isAuthenticated, dispatch]);
+
+  // Fetch job data for edit mode
+  const fetchJobData = useCallback(async () => {
+    if (mode !== 'edit' || !isAuthenticated || !jobId) {
+      dispatch(jobFormActions.setLoading(false));
+      return;
+    }
+
+    dispatch(jobFormActions.setLoading(true));
+    try {
+      const client = createNomadClient();
+      const jobData = await client.getJob(jobId, namespace);
+      dispatch(jobFormActions.setInitialJob(jobData));
+
+      const formattedData = convertJobToFormData(jobData);
+      formattedData.taskGroups = formattedData.taskGroups.map((group) => ({
+        ...group,
+        envVars: group.envVars || [],
+      }));
+
+      dispatch(jobFormActions.setFormData(formattedData));
+      dispatch(jobFormActions.setError(null));
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to load job details';
+      dispatch(jobFormActions.setError(message));
+      addToast(message, 'error');
+    } finally {
+      dispatch(jobFormActions.setLoading(false));
+    }
+  }, [mode, isAuthenticated, jobId, namespace, dispatch, addToast]);
+
+  useEffect(() => {
+    if (mode === 'edit') {
+      fetchJobData();
+    }
+  }, [mode, fetchJobData]);
+
+  // Fetch source job for cloning
+  const fetchCloneSourceJob = useCallback(async () => {
+    if (!isCloneMode || !isAuthenticated || !cloneFromId) {
+      dispatch(jobFormActions.setLoading(false));
+      return;
+    }
+
+    dispatch(jobFormActions.setLoading(true));
+    try {
+      const client = createNomadClient();
+      const jobData = await client.getJob(cloneFromId, cloneNamespace);
+
+      const formattedData = convertJobToFormData(jobData);
+      formattedData.taskGroups = formattedData.taskGroups.map((group) => ({
+        ...group,
+        envVars: group.envVars || [],
+      }));
+
+      const cloneData = prepareCloneFormData(formattedData);
+      dispatch(jobFormActions.setFormData(cloneData));
+      dispatch(jobFormActions.setError(null));
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Failed to load source job for cloning';
+      dispatch(jobFormActions.setError(message));
+      addToast(message, 'error');
+    } finally {
+      dispatch(jobFormActions.setLoading(false));
+    }
+  }, [isCloneMode, isAuthenticated, cloneFromId, cloneNamespace, dispatch, addToast]);
+
+  useEffect(() => {
+    if (isCloneMode) {
+      fetchCloneSourceJob();
+    }
+  }, [isCloneMode, fetchCloneSourceJob]);
+
+  // Job-level input changes
+  const handleInputChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+      if (!formData) return;
+      const { name, value, type } = e.target;
+
+      if (name === 'name' && mode === 'create') {
+        dispatch(jobFormActions.setNameValid(JOB_NAME_REGEX.test(value)));
+      }
+
+      if (name === 'datacenters') {
+        dispatch(jobFormActions.updateField('datacenters', value.split(',').map((dc) => dc.trim())));
+      } else {
+        dispatch(jobFormActions.updateField(name as keyof typeof formData, type === 'number' ? Number(value) : value));
+      }
+    },
+    [formData, mode, dispatch]
+  );
+
+  // Permission error
+  const clearPermissionError = useCallback(() => {
+    dispatch(jobFormActions.setPermissionError(null));
+  }, [dispatch]);
+
   const plan = useJobPlan({ mode, jobId });
 
   return {

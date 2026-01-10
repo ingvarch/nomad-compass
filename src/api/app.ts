@@ -39,14 +39,18 @@ export function createApp(options: CreateAppOptions = {}) {
 
   // Restrictive CORS configuration - only allow necessary origins and methods
   const defaultHeaders = ['Content-Type', 'X-CSRF-Token']
-  const corsOptions = {
-    origin: process.env.ALLOWED_ORIGINS?.split(',') || ['http://localhost:5173', 'http://localhost:3000'],
-    allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowHeaders: [...defaultHeaders, ...(options.additionalCorsHeaders || [])],
-    credentials: true,
-  }
+  const defaultOrigins = ['http://localhost:5173', 'http://localhost:3000']
 
-  app.use('*', cors(corsOptions))
+  // Dynamic CORS middleware to access env from context (works in CF Workers)
+  app.use('*', async (c, next) => {
+    const allowedOrigins = c.env.ALLOWED_ORIGINS?.split(',') || defaultOrigins
+    return cors({
+      origin: allowedOrigins,
+      allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+      allowHeaders: [...defaultHeaders, ...(options.additionalCorsHeaders || [])],
+      credentials: true,
+    })(c, next)
+  })
 
   // Rate limiting for auth login - strict limit to prevent brute force
   // Note: /api/auth/validate is excluded as it's called on every page load

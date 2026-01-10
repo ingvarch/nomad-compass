@@ -1,7 +1,8 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { createNomadClient } from '../lib/api/nomad';
 import { NomadAgentMember } from '../types/nomad';
+import { useFetch } from '../hooks/useFetch';
 import {
   LoadingSpinner,
   ErrorAlert,
@@ -15,39 +16,34 @@ import { getServerStatusColor, getStatusClasses } from '../lib/utils/statusColor
 
 type StatusFilter = 'all' | 'alive' | 'failed' | 'left';
 
+interface ServerData {
+  members: NomadAgentMember[];
+  serverInfo: { region: string; datacenter: string } | null;
+}
+
 export default function ServersPage() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const [members, setMembers] = useState<NomadAgentMember[]>([]);
-  const [serverInfo, setServerInfo] = useState<{
-    region: string;
-    datacenter: string;
-  } | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+
+  const { data, loading, error, refetch } = useFetch(
+    async (): Promise<ServerData> => {
+      const client = createNomadClient();
+      const response = await client.getAgentMembers();
+      return {
+        members: response.Members || [],
+        serverInfo: {
+          region: response.ServerRegion,
+          datacenter: response.ServerDC,
+        },
+      };
+    },
+    [],
+    { initialData: { members: [], serverInfo: null }, errorMessage: 'Failed to fetch servers' }
+  );
+
+  const members = useMemo(() => data?.members || [], [data]);
+  const serverInfo = data?.serverInfo || null;
 
   const statusFilter = (searchParams.get('status') as StatusFilter) || 'all';
-
-  const fetchData = useCallback(async () => {
-    const client = createNomadClient();
-
-    try {
-      const data = await client.getAgentMembers();
-      setMembers(data.Members || []);
-      setServerInfo({
-        region: data.ServerRegion,
-        datacenter: data.ServerDC,
-      });
-      setError(null);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch servers');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
 
   const filteredMembers = members.filter((member) => {
     if (statusFilter === 'all') return true;
@@ -97,14 +93,7 @@ export default function ServersPage() {
             ? `Region: ${serverInfo.region} | Datacenter: ${serverInfo.datacenter}`
             : 'View cluster server nodes'
         }
-        actions={
-          <RefreshButton
-            onClick={() => {
-              setLoading(true);
-              fetchData();
-            }}
-          />
-        }
+        actions={<RefreshButton onClick={refetch} />}
       />
 
       {error && <ErrorAlert message={error} />}

@@ -3,6 +3,20 @@
  * Nomad uses nanosecond timestamps, so we need to convert them.
  */
 
+/** Nanoseconds to milliseconds conversion factor */
+export const NANOSECONDS_TO_MS = 1_000_000;
+
+/** Reusable date formatter for long format */
+const longDateFormatter = new Intl.DateTimeFormat('en-GB', {
+  day: '2-digit',
+  month: 'short',
+  year: 'numeric',
+  hour: '2-digit',
+  minute: '2-digit',
+  second: '2-digit',
+  hour12: false,
+});
+
 /**
  * Format a nanosecond timestamp to a localized date string.
  * @param nanos - Timestamp in nanoseconds
@@ -10,8 +24,19 @@
  */
 export function formatTimestamp(nanos: number): string {
   if (!nanos) return '-';
-  const date = new Date(nanos / 1_000_000);
+  const date = new Date(nanos / NANOSECONDS_TO_MS);
   return date.toLocaleString();
+}
+
+/**
+ * Format a nanosecond timestamp to a detailed date string (e.g., "01 Jan 2024, 14:30:00").
+ * @param nanos - Timestamp in nanoseconds
+ * @returns Formatted date string or 'Unknown' if invalid
+ */
+export function formatDateLong(nanos: number): string {
+  if (!nanos) return 'Unknown';
+  const date = new Date(nanos / NANOSECONDS_TO_MS);
+  return longDateFormatter.format(date);
 }
 
 /**

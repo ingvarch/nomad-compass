@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { NomadNamespace } from '../../types/nomad';
 import { isPermissionError, getPermissionErrorMessage } from '../../lib/api/errors';
+import { FormActions } from '../ui/FormActions';
 
 interface MetaEntry {
   key: string;
@@ -357,29 +358,11 @@ export const NamespaceForm: React.FC<NamespaceFormProps> = ({
       </div>
 
       {/* Actions */}
-      <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
-        <button
-          type="button"
-          onClick={onCancel}
-          className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-md transition-colors"
-          disabled={isSubmitting}
-        >
-          Cancel
-        </button>
-        <button
-          type="submit"
-          className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 dark:bg-monokai-blue dark:hover:bg-blue-600 rounded-md transition-colors disabled:opacity-50"
-          disabled={isSubmitting}
-        >
-          {isSubmitting
-            ? mode === 'create'
-              ? 'Creating...'
-              : 'Saving...'
-            : mode === 'create'
-              ? 'Create Namespace'
-              : 'Save Changes'}
-        </button>
-      </div>
+      <FormActions
+        onCancel={onCancel}
+        isSubmitting={isSubmitting}
+        submitLabel={mode === 'create' ? 'Create Namespace' : 'Save Changes'}
+      />
     </form>
   );
 };

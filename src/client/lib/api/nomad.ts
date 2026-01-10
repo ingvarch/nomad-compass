@@ -452,19 +452,6 @@ export class NomadClient {
     });
   }
 
-  /**
-   * Validate connection to Nomad with the provided token
-   */
-  async validateConnection(): Promise<boolean> {
-    try {
-      // Using the /v1/agent/self endpoint to check connectivity and authentication
-      await this.request<any>('/v1/agent/self');
-      return true;
-    } catch (error) {
-      return false;
-    }
-  }
-
   // ==================== ACL Policies ====================
 
   /**
@@ -521,13 +508,6 @@ export class NomadClient {
    */
   async getAclRole(id: string): Promise<NomadAclRole> {
     return this.request<NomadAclRole>(`/v1/acl/role/${encodeURIComponent(id)}`);
-  }
-
-  /**
-   * Get a single ACL role by name
-   */
-  async getAclRoleByName(name: string): Promise<NomadAclRole> {
-    return this.request<NomadAclRole>(`/v1/acl/role/name/${encodeURIComponent(name)}`);
   }
 
   /**

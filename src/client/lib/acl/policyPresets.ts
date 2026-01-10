@@ -109,13 +109,6 @@ export const POLICY_PRESETS: PolicyPreset[] = [
 ];
 
 /**
- * Get a preset by name
- */
-export function getPreset(name: string): PolicyPreset | undefined {
-  return POLICY_PRESETS.find((p) => p.name === name);
-}
-
-/**
  * Apply a preset with a custom namespace (for developer/operator presets)
  */
 export function applyPresetWithNamespace(preset: PolicyPreset, namespace: string): AclPolicyRules {

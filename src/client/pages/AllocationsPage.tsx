@@ -1,7 +1,8 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
+import { useMemo } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { createNomadClient } from '../lib/api/nomad';
 import { NomadAllocation, NomadJob } from '../types/nomad';
+import { useFetch } from '../hooks/useFetch';
 import {
   LoadingSpinner,
   ErrorAlert,
@@ -25,39 +26,35 @@ function getFirstTask(alloc: NomadAllocation): string | null {
 
 type StatusFilter = 'all' | 'running' | 'pending' | 'complete' | 'failed';
 
+interface AllocationsData {
+  allocations: NomadAllocation[];
+  jobs: Map<string, NomadJob>;
+}
+
 export default function AllocationsPage() {
   const [searchParams, setSearchParams] = useSearchParams();
-  const [allocations, setAllocations] = useState<NomadAllocation[]>([]);
-  const [jobs, setJobs] = useState<Map<string, NomadJob>>(new Map());
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
-  const statusFilter = (searchParams.get('status') as StatusFilter) || 'all';
-
-  const fetchData = useCallback(async () => {
-    const client = createNomadClient();
-
-    try {
+  const { data, loading, error, refetch } = useFetch(
+    async (): Promise<AllocationsData> => {
+      const client = createNomadClient();
       const [allocationsData, jobsResponse] = await Promise.all([
         client.getAllocations(),
         client.getJobs(),
       ]);
-
       const jobsMap = new Map((jobsResponse.Jobs || []).map((j) => [j.ID, j]));
+      return {
+        allocations: allocationsData,
+        jobs: jobsMap,
+      };
+    },
+    [],
+    { initialData: { allocations: [], jobs: new Map() }, errorMessage: 'Failed to fetch allocations' }
+  );
 
-      setAllocations(allocationsData);
-      setJobs(jobsMap);
-      setError(null);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch allocations');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+  const allocations = useMemo(() => data?.allocations || [], [data]);
+  const jobs = useMemo(() => data?.jobs || new Map<string, NomadJob>(), [data]);
 
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+  const statusFilter = (searchParams.get('status') as StatusFilter) || 'all';
 
   const filteredAllocations = allocations.filter((alloc) => {
     if (statusFilter === 'all') return true;
@@ -105,9 +102,7 @@ export default function AllocationsPage() {
       <PageHeader
         title="Allocations"
         description="View all cluster allocations"
-        actions={
-          <RefreshButton onClick={() => { setLoading(true); fetchData(); }} />
-        }
+        actions={<RefreshButton onClick={refetch} />}
       />
 
       {error && <ErrorAlert message={error} />}

@@ -3,8 +3,8 @@ import { createBrowserRouter, RouterProvider, Navigate } from 'react-router-dom'
 import { AuthProvider } from './context/AuthContext';
 import { ToastProvider } from './context/ToastContext';
 import { ThemeProvider } from './context/ThemeContext';
-import { NomadClientProvider } from './context/NomadClientContext';
 import { ErrorBoundary } from './components/ui';
+import { ToastContainer } from './components/ui/Toast';
 import ProtectedLayout from './components/layout/ProtectedLayout';
 
 // Pages
@@ -105,13 +105,12 @@ export function App() {
   return (
     <ThemeProvider>
       <AuthProvider>
-        <NomadClientProvider>
-          <ToastProvider>
-            <ErrorBoundary>
-              <RouterProvider router={router} />
-            </ErrorBoundary>
-          </ToastProvider>
-        </NomadClientProvider>
+        <ToastProvider>
+          <ToastContainer />
+          <ErrorBoundary>
+            <RouterProvider router={router} />
+          </ErrorBoundary>
+        </ToastProvider>
       </AuthProvider>
     </ThemeProvider>
   );
