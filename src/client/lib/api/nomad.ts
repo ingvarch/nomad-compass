@@ -20,7 +20,7 @@ import {
   NomadAclTokenListItem,
   TokenType,
 } from '../../types/acl';
-import { PermissionError } from './errors';
+import { PermissionError } from '../errors';
 import { DEFAULT_NAMESPACE } from '../constants';
 
 /**

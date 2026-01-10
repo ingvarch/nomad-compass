@@ -7,6 +7,7 @@ import { PolicyHclPreview } from './PolicyHclPreview';
 import { PresetSelector } from './PresetSelector';
 import { FormActions } from '../../ui/FormActions';
 import { useToast } from '../../../context/ToastContext';
+import { getErrorMessage } from '../../../lib/errors';
 
 interface PolicyFormProps {
   mode: 'create' | 'edit';
@@ -100,8 +101,7 @@ export function PolicyForm({ mode, policy, onSubmit, onCancel }: PolicyFormProps
     try {
       await onSubmit(name, description, hclText);
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to save policy';
-      addToast(message, 'error');
+      addToast(getErrorMessage(err, 'Failed to save policy'), 'error');
     } finally {
       setIsSubmitting(false);
     }

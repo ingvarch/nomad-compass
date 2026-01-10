@@ -13,6 +13,7 @@ import { useEffect, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useJobFormContext, jobFormActions, defaultFormValues } from '../context/JobFormContext';
 import { createNomadClient } from '../lib/api/nomad';
+import { getErrorMessage } from '../lib/errors';
 import { convertJobToFormData, prepareCloneFormData } from '../lib/services/jobSpecService';
 import { useToast } from '../context/ToastContext';
 import { useJobPlan } from './useJobPlan';
@@ -90,7 +91,7 @@ export function useJobForm({
       dispatch(jobFormActions.setFormData(formattedData));
       dispatch(jobFormActions.setError(null));
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to load job details';
+      const message = getErrorMessage(err, 'Failed to load job details');
       dispatch(jobFormActions.setError(message));
       addToast(message, 'error');
     } finally {
@@ -126,7 +127,7 @@ export function useJobForm({
       dispatch(jobFormActions.setFormData(cloneData));
       dispatch(jobFormActions.setError(null));
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to load source job for cloning';
+      const message = getErrorMessage(err, 'Failed to load source job for cloning');
       dispatch(jobFormActions.setError(message));
       addToast(message, 'error');
     } finally {

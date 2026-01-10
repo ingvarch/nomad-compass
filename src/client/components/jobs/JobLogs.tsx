@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { createNomadClient } from '../../lib/api/nomad';
-import { isPermissionError } from '../../lib/api/errors';
+import { isPermissionError, getErrorMessage } from '../../lib/errors';
 import { LoadingSpinner, ErrorAlert } from '../ui';
 import { RefreshCw, Radio } from 'lucide-react';
 import { useLogStream } from '../../hooks/useLogStream';
@@ -196,7 +196,7 @@ export const JobLogs: React.FC<JobLogsProps> = ({ jobId, allocId, taskName, init
             if (isPermissionError(err)) {
                 setError('You do not have permission to view logs. The read-logs capability is required.');
             } else {
-                const message = err instanceof Error ? err.message : 'Failed to load logs';
+                const message = getErrorMessage(err, 'Failed to load logs');
                 // Check if this might be a permission issue disguised as 500
                 if (message.includes('500') || message.includes('Internal Server Error')) {
                     setError('Unable to fetch logs. This may be due to insufficient permissions (read-logs capability required) or the allocation may no longer be available.');

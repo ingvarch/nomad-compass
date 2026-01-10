@@ -2,6 +2,7 @@ import React from 'react';
 import { Globe, Lock, Route } from 'lucide-react';
 import { IngressConfig } from '../../../../types/nomad';
 import FormInputField from '../../../ui/forms/FormInputField';
+import { inputStyles, checkboxStyles } from '../../../../lib/styles';
 
 interface IngressSectionProps {
   ingress: IngressConfig;
@@ -72,7 +73,7 @@ export const IngressSection: React.FC<IngressSectionProps> = ({
               value={ingress.domain}
               onChange={(e) => onChange('domain', e.target.value)}
               placeholder="myapp.example.com"
-              className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className={inputStyles}
               disabled={isLoading}
             />
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
@@ -88,7 +89,7 @@ export const IngressSection: React.FC<IngressSectionProps> = ({
               checked={ingress.enableHttps}
               onChange={(e) => onChange('enableHttps', e.target.checked)}
               disabled={isLoading}
-              className="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+              className={checkboxStyles}
             />
             <label
               htmlFor={`group-${groupIndex}-ingress-https`}
@@ -110,7 +111,7 @@ export const IngressSection: React.FC<IngressSectionProps> = ({
               value={ingress.pathPrefix || ''}
               onChange={(e) => onChange('pathPrefix', e.target.value)}
               placeholder="/api"
-              className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className={inputStyles}
               disabled={isLoading}
             />
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">

@@ -2,7 +2,7 @@ import { useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useJobFormContext, jobFormActions } from '../context/JobFormContext';
 import { createNomadClient } from '../lib/api/nomad';
-import { isPermissionError, getPermissionErrorMessage } from '../lib/api/errors';
+import { isPermissionError, getPermissionErrorMessage, getErrorMessage } from '../lib/errors';
 import { createJobSpec, updateJobSpec } from '../lib/services/jobSpecService';
 import { useToast } from '../context/ToastContext';
 import { useDeploymentTracker } from './useDeploymentTracker';
@@ -108,8 +108,7 @@ export function useJobPlan({ mode, jobId }: UseJobPlanOptions) {
       const result = await client.planJob(targetJobId, jobSpec, formData.namespace);
       dispatch(jobFormActions.setPlanResult(result));
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to plan job';
-      dispatch(jobFormActions.setPlanError(message));
+      dispatch(jobFormActions.setPlanError(getErrorMessage(err, 'Failed to plan job')));
     } finally {
       dispatch(jobFormActions.setPlanning(false));
     }
@@ -172,7 +171,7 @@ export function useJobPlan({ mode, jobId }: UseJobPlanOptions) {
             )
           );
         } else {
-          const message = err instanceof Error ? err.message : `Failed to ${mode} job`;
+          const message = getErrorMessage(err, `Failed to ${mode} job`);
           dispatch(jobFormActions.setError(message));
           addToast(message, 'error');
         }

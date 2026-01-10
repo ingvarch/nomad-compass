@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { createNomadClient } from '../lib/api/nomad';
+import { getErrorMessage } from '../lib/errors';
 import { NomadAllocation, NomadJob } from '../types/nomad';
 import {
   LoadingSpinner,
@@ -109,7 +110,7 @@ export default function FailedAllocationsPage() {
       setHistoricalJobs(historical);
       setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch data');
+      setError(getErrorMessage(err, 'Failed to fetch data'));
     } finally {
       setLoading(false);
     }
@@ -129,10 +130,7 @@ export default function FailedAllocationsPage() {
       setLoading(true);
       await fetchData();
     } catch (err) {
-      addToast(
-        `Failed to trigger GC: ${err instanceof Error ? err.message : 'Unknown error'}`,
-        'error'
-      );
+      addToast(`Failed to trigger GC: ${getErrorMessage(err)}`, 'error');
     } finally {
       setGcLoading(false);
     }

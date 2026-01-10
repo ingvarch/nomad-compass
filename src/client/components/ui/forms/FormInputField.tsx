@@ -1,4 +1,5 @@
 import React from 'react';
+import { inputStyles, inputErrorStyles, checkboxStyles } from '../../../lib/styles';
 
 interface FormInputFieldProps {
   id: string;
@@ -37,8 +38,7 @@ export const FormInputField: React.FC<FormInputFieldProps> = ({
   errorMessage,
   options = []
 }) => {
-  const baseInputClasses = `w-full p-2 border ${isInvalid ? 'border-red-500 dark:border-monokai-red' : 'border-gray-300 dark:border-monokai-muted'} rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-monokai-blue bg-white dark:bg-monokai-surface text-gray-900 dark:text-monokai-text`;
-  const checkboxClasses = 'h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded dark:border-monokai-muted dark:bg-monokai-surface';
+  const baseInputClasses = isInvalid ? inputErrorStyles : inputStyles;
 
   if (type === 'checkbox') {
     return (
@@ -50,7 +50,7 @@ export const FormInputField: React.FC<FormInputFieldProps> = ({
             type="checkbox"
             checked={value as boolean}
             onChange={onChange}
-            className={checkboxClasses}
+            className={checkboxStyles}
             disabled={disabled}
             required={required}
           />

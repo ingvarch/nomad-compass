@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { createNomadClient } from '../../../lib/api/nomad';
+import { getErrorMessage } from '../../../lib/errors';
 import { useToast } from '../../../context/ToastContext';
 import { LoadingSpinner, ErrorAlert, RefreshButton, Modal } from '../../ui';
 import { getVersionStatusColor } from '../../../lib/utils/statusColors';
@@ -41,7 +42,7 @@ export function VersionsTab({ jobId, namespace }: VersionsTabProps) {
       setVersions(sorted);
       setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch versions');
+      setError(getErrorMessage(err, 'Failed to fetch versions'));
     } finally {
       setLoading(false);
     }
@@ -63,7 +64,7 @@ export function VersionsTab({ jobId, namespace }: VersionsTabProps) {
       // Refresh versions
       await fetchVersions();
     } catch (err) {
-      addToast(err instanceof Error ? err.message : 'Failed to revert job', 'error');
+      addToast(getErrorMessage(err, 'Failed to revert job'), 'error');
     }
   };
 

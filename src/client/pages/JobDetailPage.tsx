@@ -3,6 +3,7 @@ import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { DEFAULT_NAMESPACE } from '../lib/constants';
 import { createNomadClient } from '../lib/api/nomad';
+import { getErrorMessage } from '../lib/errors';
 import { useToast } from '../context/ToastContext';
 import { LoadingSpinner, ErrorAlert } from '../components/ui';
 import {
@@ -101,8 +102,7 @@ export default function JobDetailPage() {
 
       setError(null);
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Unknown error';
-      setError(`Failed to load job details: ${message}`);
+      setError(`Failed to load job details: ${getErrorMessage(err)}`);
       addToast('Failed to load job details', 'error');
     } finally {
       setIsLoading(false);

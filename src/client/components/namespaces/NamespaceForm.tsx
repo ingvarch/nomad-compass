@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { NomadNamespace } from '../../types/nomad';
-import { isPermissionError, getPermissionErrorMessage } from '../../lib/api/errors';
+import { getErrorMessage } from '../../lib/errors';
 import { FormActions } from '../ui/FormActions';
 
 interface MetaEntry {
@@ -135,12 +135,8 @@ export const NamespaceForm: React.FC<NamespaceFormProps> = ({
     try {
       await onSubmit(namespaceData);
     } catch (err) {
-      if (isPermissionError(err)) {
-        const operation = mode === 'create' ? 'create-namespace' : 'update-namespace';
-        setError(getPermissionErrorMessage(operation));
-      } else {
-        setError(err instanceof Error ? err.message : 'Failed to save namespace');
-      }
+      const operation = mode === 'create' ? 'create-namespace' : 'update-namespace';
+      setError(getErrorMessage(err, 'Failed to save namespace', operation));
     } finally {
       setIsSubmitting(false);
     }

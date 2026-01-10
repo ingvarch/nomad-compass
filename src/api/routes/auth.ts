@@ -3,6 +3,24 @@ import { setCookie, deleteCookie, getCookie } from 'hono/cookie'
 import type { Env } from '../types'
 import { generateCSRFToken, createTicket, timingSafeEqual } from '../utils/crypto'
 
+/**
+ * Validates a Nomad token against the Nomad API
+ * @returns true if token is valid, false otherwise
+ */
+async function validateNomadToken(nomadAddr: string, token: string): Promise<boolean> {
+  try {
+    const response = await fetch(`${nomadAddr}/v1/agent/self`, {
+      headers: {
+        'X-Nomad-Token': token,
+        'Content-Type': 'application/json',
+      },
+    })
+    return response.ok
+  } catch {
+    return false
+  }
+}
+
 export const authRoutes = new Hono<{ Bindings: Env }>()
 
 /**
@@ -24,14 +42,8 @@ authRoutes.post('/login', async (c) => {
     }
 
     // Validate token against Nomad API
-    const response = await fetch(`${nomadAddr}/v1/agent/self`, {
-      headers: {
-        'X-Nomad-Token': token.trim(),
-        'Content-Type': 'application/json',
-      },
-    })
-
-    if (!response.ok) {
+    const isValid = await validateNomadToken(nomadAddr, token.trim())
+    if (!isValid) {
       return c.json({ error: 'Invalid token or failed to connect to Nomad' }, 401)
     }
 
@@ -105,7 +117,6 @@ authRoutes.post('/ws-ticket', async (c) => {
  */
 authRoutes.get('/validate', async (c) => {
   const token = getCookie(c, 'nomad-token')
-
   if (!token) {
     return c.json({ authenticated: false })
   }
@@ -115,16 +126,6 @@ authRoutes.get('/validate', async (c) => {
     return c.json({ authenticated: false })
   }
 
-  try {
-    const response = await fetch(`${nomadAddr}/v1/agent/self`, {
-      headers: {
-        'X-Nomad-Token': token,
-        'Content-Type': 'application/json',
-      },
-    })
-
-    return c.json({ authenticated: response.ok })
-  } catch {
-    return c.json({ authenticated: false })
-  }
+  const isValid = await validateNomadToken(nomadAddr, token)
+  return c.json({ authenticated: isValid })
 })

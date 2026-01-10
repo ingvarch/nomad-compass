@@ -10,7 +10,7 @@ import { LoadingSpinner, ErrorAlert, RefreshButton, Modal, Button, ConfirmationD
 import { EditButton, DeleteButton } from '../../ui/IconButton';
 import { RoleForm } from '../role/RoleForm';
 import { useToast } from '../../../context/ToastContext';
-import { getErrorMessage } from '../../../lib/constants';
+import { getErrorMessage } from '../../../lib/errors';
 
 interface RolesTabProps {
   hasManagementAccess: boolean;

@@ -12,7 +12,7 @@ import { DeleteButton } from '../../ui/IconButton';
 import { TokenForm } from '../token/TokenForm';
 import { SecretIdDisplay } from '../token/SecretIdDisplay';
 import { useToast } from '../../../context/ToastContext';
-import { getErrorMessage } from '../../../lib/constants';
+import { getErrorMessage } from '../../../lib/errors';
 
 interface TokensTabProps {
   hasManagementAccess: boolean;

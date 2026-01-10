@@ -6,7 +6,7 @@ import { LoadingSpinner, ErrorAlert, RefreshButton, Modal, Button, ConfirmationD
 import { EditButton, DeleteButton } from '../../ui/IconButton';
 import { PolicyForm } from '../policy/PolicyForm';
 import { useToast } from '../../../context/ToastContext';
-import { getErrorMessage } from '../../../lib/constants';
+import { getErrorMessage } from '../../../lib/errors';
 
 interface PoliciesTabProps {
   hasManagementAccess: boolean;

@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { createNomadClient } from '../lib/api/nomad';
+import { getErrorMessage } from '../lib/errors';
 import { NomadAclToken } from '../types/acl';
 
 interface AclPermissions {
@@ -54,7 +55,7 @@ export function useAclPermissions(): AclPermissions {
       }
     } catch (err) {
       // If ACLs are disabled or token is invalid
-      const message = err instanceof Error ? err.message : 'Failed to check ACL permissions';
+      const message = getErrorMessage(err, 'Failed to check ACL permissions');
 
       // Check if ACLs are disabled (403 with specific message or 500)
       if (message.includes('ACL support disabled') || message.includes('ACL disabled')) {

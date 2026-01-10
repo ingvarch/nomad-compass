@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback, DependencyList } from 'react';
+import { getErrorMessage } from '../lib/errors';
 
 export interface UseFetchResult<T> {
   data: T | null;
@@ -40,10 +41,7 @@ export function useFetch<T>(
       const result = await fetchFn();
       setData(result);
     } catch (err) {
-      const message = err instanceof Error
-        ? err.message
-        : options.errorMessage || 'An error occurred';
-      setError(message);
+      setError(getErrorMessage(err, options.errorMessage));
     } finally {
       setLoading(false);
     }

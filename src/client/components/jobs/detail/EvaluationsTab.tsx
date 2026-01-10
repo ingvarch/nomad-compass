@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { createNomadClient } from '../../../lib/api/nomad';
+import { getErrorMessage } from '../../../lib/errors';
 import { NomadEvaluation } from '../../../types/nomad';
 import { LoadingSpinner, ErrorAlert, RefreshButton } from '../../ui';
 import { getStatusClasses, getEvaluationStatusColor } from '../../../lib/utils/statusColors';
@@ -26,7 +27,7 @@ export function EvaluationsTab({ jobId, namespace }: EvaluationsTabProps) {
       setEvaluations(sorted);
       setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch evaluations');
+      setError(getErrorMessage(err, 'Failed to fetch evaluations'));
     } finally {
       setLoading(false);
     }

@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../context/AuthContext';
 import { createNomadClient } from '../../../lib/api/nomad';
 import { useToast } from '../../../context/ToastContext';
-import { isPermissionError, getPermissionErrorMessage } from '../../../lib/api/errors';
+import { isPermissionError, getPermissionErrorMessage, getErrorMessage } from '../../../lib/errors';
 import { PermissionErrorModal } from '../../ui/PermissionErrorModal';
 
 interface JobHeaderProps {
@@ -36,8 +36,7 @@ export const JobHeader: React.FC<JobHeaderProps> = ({ jobName, jobId, namespace 
       if (isPermissionError(err)) {
         setPermissionError(getPermissionErrorMessage('delete-job'));
       } else {
-        const message = err instanceof Error ? err.message : 'Failed to delete job';
-        addToast(message, 'error');
+        addToast(getErrorMessage(err, 'Failed to delete job'), 'error');
       }
     } finally {
       setIsDeleting(false);

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { createNomadClient } from '../../lib/api/nomad';
+import { getErrorMessage } from '../../lib/errors';
 import { NomadJob, NomadNamespace } from '../../types/nomad';
 import { LoadingSpinner, ErrorAlert } from '../ui';
 import { StatusBadge } from './detail/StatusBadge';
@@ -42,8 +43,7 @@ export const JobList: React.FC = () => {
         setJobs(jobsResponse.Jobs || []);
         setError(null);
       } catch (err) {
-        const message = err instanceof Error ? err.message : 'Unknown error';
-        setError(`Failed to load namespaces or jobs: ${message}`);
+        setError(`Failed to load namespaces or jobs: ${getErrorMessage(err)}`);
       } finally {
         setIsLoading(false);
       }

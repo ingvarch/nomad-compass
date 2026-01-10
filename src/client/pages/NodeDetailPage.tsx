@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { createNomadClient } from '../lib/api/nomad';
+import { getErrorMessage } from '../lib/errors';
 import { NomadNodeDetail, NomadAllocation } from '../types/nomad';
 import { LoadingSpinner, ErrorAlert, BackLink, RefreshButton } from '../components/ui';
 import { NodeAttributes } from '../components/nodes/NodeAttributes';
@@ -31,7 +32,7 @@ export default function NodeDetailPage() {
       setAllocations(allocData || []);
       setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch node details');
+      setError(getErrorMessage(err, 'Failed to fetch node details'));
     } finally {
       setLoading(false);
     }

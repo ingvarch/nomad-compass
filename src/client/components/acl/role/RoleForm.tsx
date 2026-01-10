@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { NomadAclRole, NomadAclPolicyListItem } from '../../../types/acl';
 import { FormActions } from '../../ui/FormActions';
 import { useToast } from '../../../context/ToastContext';
+import { getErrorMessage } from '../../../lib/errors';
 
 interface RoleFormProps {
   mode: 'create' | 'edit';
@@ -52,8 +53,7 @@ export function RoleForm({
     try {
       await onSubmit(name, description, selectedPolicies);
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to save role';
-      addToast(message, 'error');
+      addToast(getErrorMessage(err, 'Failed to save role'), 'error');
     } finally {
       setIsSubmitting(false);
     }

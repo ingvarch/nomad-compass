@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { NomadAclPolicyListItem, NomadAclRoleListItem, TokenType } from '../../../types/acl';
 import { FormActions } from '../../ui/FormActions';
 import { useToast } from '../../../context/ToastContext';
+import { getErrorMessage } from '../../../lib/errors';
 
 interface TokenFormProps {
   availablePolicies: NomadAclPolicyListItem[];
@@ -81,8 +82,7 @@ export function TokenForm({
         global,
       });
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to create token';
-      addToast(message, 'error');
+      addToast(getErrorMessage(err, 'Failed to create token'), 'error');
     } finally {
       setIsSubmitting(false);
     }
