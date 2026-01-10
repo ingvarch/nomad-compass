@@ -1,14 +1,16 @@
 import { useState, useEffect, useCallback } from 'react';
+import { Plus } from 'lucide-react';
 import { createNomadClient } from '../../../lib/api/nomad';
 import {
   NomadAclRoleListItem,
   NomadAclRole,
   NomadAclPolicyListItem,
 } from '../../../types/acl';
-import { LoadingSpinner, ErrorAlert, RefreshButton, Modal, DeleteConfirmationModal } from '../../ui';
+import { LoadingSpinner, ErrorAlert, RefreshButton, Modal, Button, ConfirmationDialog } from '../../ui';
 import { EditButton, DeleteButton } from '../../ui/IconButton';
 import { RoleForm } from '../role/RoleForm';
 import { useToast } from '../../../context/ToastContext';
+import { getErrorMessage } from '../../../lib/constants';
 
 interface RolesTabProps {
   hasManagementAccess: boolean;
@@ -41,8 +43,7 @@ export function RolesTab({ hasManagementAccess }: RolesTabProps) {
       setRoles(rolesData || []);
       setPolicies(policiesData || []);
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to fetch roles';
-      setError(message);
+      setError(getErrorMessage(err, 'Failed to fetch roles'));
     } finally {
       setLoading(false);
     }
@@ -114,8 +115,7 @@ export function RolesTab({ hasManagementAccess }: RolesTabProps) {
       setDeletingRole(null);
       await fetchData();
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to delete role';
-      addToast(message, 'error');
+      addToast(getErrorMessage(err, 'Failed to delete role'), 'error');
     } finally {
       setDeleteLoading(false);
     }
@@ -141,25 +141,10 @@ export function RolesTab({ hasManagementAccess }: RolesTabProps) {
         </div>
         <div className="flex gap-2">
           {hasManagementAccess && (
-            <button
-              onClick={() => setShowCreateModal(true)}
-              className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
-            >
-              <svg
-                className="w-4 h-4 mr-2"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 4v16m8-8H4"
-                />
-              </svg>
+            <Button onClick={() => setShowCreateModal(true)}>
+              <Plus className="w-4 h-4 mr-2" />
               Create Role
-            </button>
+            </Button>
           )}
           <RefreshButton onClick={() => fetchData()} />
         </div>
@@ -287,15 +272,23 @@ export function RolesTab({ hasManagementAccess }: RolesTabProps) {
         )}
       </Modal>
 
-      {/* Delete Confirmation Modal */}
-      <DeleteConfirmationModal
+      {/* Delete Confirmation */}
+      <ConfirmationDialog
         isOpen={deletingRole !== null}
         onClose={() => setDeletingRole(null)}
         onConfirm={handleDeleteRole}
         title="Delete Role"
-        itemName={deletingRole?.Name || ''}
-        itemType="role"
-        warningText="This action cannot be undone. Any tokens using this role will lose the associated permissions."
+        message={
+          <>
+            Are you sure you want to delete the role{' '}
+            <strong className="text-gray-900 dark:text-white">{deletingRole?.Name}</strong>?
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
+              This action cannot be undone. Any tokens using this role will lose the associated permissions.
+            </p>
+          </>
+        }
+        mode="delete"
+        confirmLabel="Delete Role"
         isLoading={deleteLoading}
       />
     </div>

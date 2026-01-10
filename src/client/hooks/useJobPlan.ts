@@ -7,9 +7,7 @@ import { createJobSpec, updateJobSpec } from '../lib/services/jobSpecService';
 import { useToast } from '../context/ToastContext';
 import { useDeploymentTracker } from './useDeploymentTracker';
 import { NomadJobFormData, TaskGroupFormData, NomadEnvVar } from '../types/nomad';
-
-// Job name validation: must start with letter/number, then letters/numbers/underscores/hyphens/dots
-const JOB_NAME_REGEX = /^[a-zA-Z0-9][a-zA-Z0-9_.-]*$/;
+import { JOB_NAME_REGEX, JOB_NAME_ERROR } from '../lib/constants';
 
 interface UseJobPlanOptions {
   mode: 'create' | 'edit';
@@ -36,7 +34,7 @@ function validateForm(formData: NomadJobFormData | null, mode: 'create' | 'edit'
   if (mode === 'create') {
     if (!formData.name.trim()) return 'Job name is required';
     if (!JOB_NAME_REGEX.test(formData.name)) {
-      return 'Job name must start with a letter or number and contain only letters, numbers, hyphens, underscores, and dots';
+      return JOB_NAME_ERROR;
     }
   }
 

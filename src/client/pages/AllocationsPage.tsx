@@ -71,7 +71,7 @@ export default function AllocationsPage() {
     failed: allocations.filter((a) => a.ClientStatus === 'failed' || a.ClientStatus === 'lost').length,
   }), [allocations]);
 
-  const setFilter = (filter: StatusFilter) => {
+  const setFilter = (filter: string) => {
     if (filter === 'all') {
       searchParams.delete('status');
     } else {
@@ -80,7 +80,7 @@ export default function AllocationsPage() {
     setSearchParams(searchParams);
   };
 
-  const filterOptions: FilterOption<StatusFilter>[] = [
+  const filterOptions: FilterOption[] = [
     { value: 'all', label: 'All', count: allocations.length },
     { value: 'running', label: 'Running', count: stats.running, color: 'bg-green-500' },
     { value: 'pending', label: 'Pending', count: stats.pending, color: 'bg-yellow-500' },

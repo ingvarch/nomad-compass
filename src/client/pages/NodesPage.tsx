@@ -52,7 +52,7 @@ export default function NodesPage() {
     draining: nodesList.filter((n) => n.Drain).length,
   }), [nodesList]);
 
-  const setFilter = (filter: StatusFilter) => {
+  const setFilter = (filter: string) => {
     if (filter === 'all') {
       searchParams.delete('status');
     } else {
@@ -61,7 +61,7 @@ export default function NodesPage() {
     setSearchParams(searchParams);
   };
 
-  const filterOptions: FilterOption<StatusFilter>[] = [
+  const filterOptions: FilterOption[] = [
     { value: 'all', label: 'All', count: nodesList.length },
     { value: 'ready', label: 'Ready', count: stats.ready, color: 'bg-green-500' },
     { value: 'down', label: 'Down', count: stats.down, color: 'bg-red-500' },

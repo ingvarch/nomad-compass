@@ -59,7 +59,7 @@ export default function ServersPage() {
     [members]
   );
 
-  const setFilter = (filter: StatusFilter) => {
+  const setFilter = (filter: string) => {
     if (filter === 'all') {
       searchParams.delete('status');
     } else {
@@ -68,7 +68,7 @@ export default function ServersPage() {
     setSearchParams(searchParams);
   };
 
-  const filterOptions: FilterOption<StatusFilter>[] = [
+  const filterOptions: FilterOption[] = [
     { value: 'all', label: 'All', count: members.length },
     { value: 'alive', label: 'Alive', count: stats.alive, color: 'bg-green-500' },
     { value: 'failed', label: 'Failed', count: stats.failed, color: 'bg-red-500' },

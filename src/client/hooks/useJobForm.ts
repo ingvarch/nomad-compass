@@ -16,10 +16,7 @@ import { createNomadClient } from '../lib/api/nomad';
 import { convertJobToFormData, prepareCloneFormData } from '../lib/services/jobSpecService';
 import { useToast } from '../context/ToastContext';
 import { useJobPlan } from './useJobPlan';
-import { DEFAULT_NAMESPACE } from '../lib/constants';
-
-// Job name validation: must start with letter/number, then letters/numbers/underscores/hyphens/dots
-const JOB_NAME_REGEX = /^[a-zA-Z0-9][a-zA-Z0-9_.-]*$/;
+import { DEFAULT_NAMESPACE, JOB_NAME_REGEX } from '../lib/constants';
 
 interface UseJobFormOptions {
   mode: 'create' | 'edit';

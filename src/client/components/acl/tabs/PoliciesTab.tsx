@@ -1,10 +1,12 @@
 import { useState, useEffect, useCallback } from 'react';
+import { Plus } from 'lucide-react';
 import { createNomadClient } from '../../../lib/api/nomad';
 import { NomadAclPolicyListItem, NomadAclPolicy } from '../../../types/acl';
-import { LoadingSpinner, ErrorAlert, RefreshButton, Modal, DeleteConfirmationModal } from '../../ui';
+import { LoadingSpinner, ErrorAlert, RefreshButton, Modal, Button, ConfirmationDialog } from '../../ui';
 import { EditButton, DeleteButton } from '../../ui/IconButton';
 import { PolicyForm } from '../policy/PolicyForm';
 import { useToast } from '../../../context/ToastContext';
+import { getErrorMessage } from '../../../lib/constants';
 
 interface PoliciesTabProps {
   hasManagementAccess: boolean;
@@ -32,8 +34,7 @@ export function PoliciesTab({ hasManagementAccess }: PoliciesTabProps) {
       const data = await client.getAclPolicies();
       setPolicies(data || []);
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to fetch policies';
-      setError(message);
+      setError(getErrorMessage(err, 'Failed to fetch policies'));
     } finally {
       setLoading(false);
     }
@@ -85,8 +86,7 @@ export function PoliciesTab({ hasManagementAccess }: PoliciesTabProps) {
       setDeletingPolicy(null);
       await fetchPolicies();
     } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to delete policy';
-      addToast(message, 'error');
+      addToast(getErrorMessage(err, 'Failed to delete policy'), 'error');
     } finally {
       setDeleteLoading(false);
     }
@@ -114,25 +114,10 @@ export function PoliciesTab({ hasManagementAccess }: PoliciesTabProps) {
         </div>
         <div className="flex gap-2">
           {hasManagementAccess && (
-            <button
-              onClick={() => setShowCreateModal(true)}
-              className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
-            >
-              <svg
-                className="w-4 h-4 mr-2"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 4v16m8-8H4"
-                />
-              </svg>
+            <Button onClick={() => setShowCreateModal(true)}>
+              <Plus className="w-4 h-4 mr-2" />
               Create Policy
-            </button>
+            </Button>
           )}
           <RefreshButton onClick={() => fetchPolicies()} />
         </div>
@@ -240,15 +225,23 @@ export function PoliciesTab({ hasManagementAccess }: PoliciesTabProps) {
         )}
       </Modal>
 
-      {/* Delete Confirmation Modal */}
-      <DeleteConfirmationModal
+      {/* Delete Confirmation */}
+      <ConfirmationDialog
         isOpen={deletingPolicy !== null}
         onClose={() => setDeletingPolicy(null)}
         onConfirm={handleDeletePolicy}
         title="Delete Policy"
-        itemName={deletingPolicy?.Name || ''}
-        itemType="policy"
-        warningText="This action cannot be undone. Any tokens or roles using this policy will lose the associated permissions."
+        message={
+          <>
+            Are you sure you want to delete the policy{' '}
+            <strong className="text-gray-900 dark:text-white">{deletingPolicy?.Name}</strong>?
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
+              This action cannot be undone. Any tokens or roles using this policy will lose the associated permissions.
+            </p>
+          </>
+        }
+        mode="delete"
+        confirmLabel="Delete Policy"
         isLoading={deleteLoading}
       />
     </div>

@@ -1,6 +1,6 @@
 export { BackLink } from './BackLink';
-export { CancelConfirmationDialog } from './CancelConfirmationDialog';
-export { DeleteConfirmationModal } from './DeleteConfirmationModal';
+export { Button } from './Button';
+export { ConfirmationDialog } from './ConfirmationDialog';
 export { ErrorAlert } from './ErrorAlert';
 export { ErrorBoundary } from '../ErrorBoundary';
 export { ExpandIcon } from './ExpandIcon';
