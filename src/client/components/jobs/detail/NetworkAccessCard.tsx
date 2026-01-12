@@ -58,7 +58,7 @@ function extractIngressInfo(tags: string[]): IngressInfo | null {
   return { domain, url, https: hasHttps, pathPrefix };
 }
 
-export const NetworkAccessCard: React.FC<NetworkAccessCardProps> = ({
+const NetworkAccessCard: React.FC<NetworkAccessCardProps> = ({
   job,
   serviceRegistrations
 }) => {

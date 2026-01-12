@@ -1,5 +1,5 @@
-import React from 'react';
-import { Modal } from './Modal';
+import { ReactNode } from 'react';
+import Modal from './Modal';
 import { Button } from './Button';
 
 type DialogMode = 'delete' | 'discard' | 'confirm';
@@ -9,7 +9,7 @@ interface ConfirmationDialogProps {
   onClose: () => void;
   onConfirm: () => void;
   title: string;
-  message: React.ReactNode;
+  message: ReactNode;
   mode?: DialogMode;
   confirmLabel?: string;
   cancelLabel?: string;

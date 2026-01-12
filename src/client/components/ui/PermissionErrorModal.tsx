@@ -1,6 +1,5 @@
-import React from 'react';
 import { ShieldX } from 'lucide-react';
-import { Modal } from './Modal';
+import Modal from './Modal';
 
 interface PermissionErrorModalProps {
   isOpen: boolean;
@@ -9,12 +8,12 @@ interface PermissionErrorModalProps {
   title?: string;
 }
 
-export const PermissionErrorModal: React.FC<PermissionErrorModalProps> = ({
+function PermissionErrorModal({
   isOpen,
   onClose,
   message,
   title = 'Permission Denied',
-}) => {
+}: PermissionErrorModalProps) {
   return (
     <Modal isOpen={isOpen} onClose={onClose} title={title} size="sm">
       {/* Icon */}
@@ -43,6 +42,6 @@ export const PermissionErrorModal: React.FC<PermissionErrorModalProps> = ({
       </div>
     </Modal>
   );
-};
+}
 
 export default PermissionErrorModal;

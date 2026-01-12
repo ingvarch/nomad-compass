@@ -8,7 +8,7 @@ interface JobSummaryProps {
     Status: string;
     Stop?: boolean;
     Type: string;
-    Priority: number;
+    Priority?: number;
     Datacenters?: string[];
     SubmitTime?: number;
     Namespace?: string;
@@ -18,7 +18,7 @@ interface JobSummaryProps {
   createTime?: number | null;
 }
 
-export const JobSummary: React.FC<JobSummaryProps> = ({ job, allocations, createTime }) => {
+const JobSummary: React.FC<JobSummaryProps> = ({ job, allocations, createTime }) => {
   return (
     <div className="bg-white dark:bg-gray-800 shadow rounded-lg overflow-hidden">
       <div className="px-6 py-5 border-b border-gray-200 dark:border-gray-700">
@@ -50,7 +50,7 @@ export const JobSummary: React.FC<JobSummaryProps> = ({ job, allocations, create
                 Priority
               </dt>
               <dd className="mt-1 text-sm text-gray-900 dark:text-white sm:mt-0 sm:col-span-2">
-                {job.Priority}
+                {job.Priority ?? 50}
               </dd>
             </div>
             <div className="px-4 py-3 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">

@@ -1,11 +1,9 @@
-import React from 'react';
-
 interface ExpandIconProps {
   isExpanded: boolean;
   className?: string;
 }
 
-export const ExpandIcon: React.FC<ExpandIconProps> = ({ isExpanded, className = '' }) => {
+function ExpandIcon({ isExpanded, className = '' }: ExpandIconProps) {
   return (
     <svg
       className={`h-5 w-5 text-gray-500 dark:text-gray-400 transition-transform ${isExpanded ? 'transform rotate-90' : ''} ${className}`}
@@ -20,6 +18,6 @@ export const ExpandIcon: React.FC<ExpandIconProps> = ({ isExpanded, className = 
       />
     </svg>
   );
-};
+}
 
 export default ExpandIcon;

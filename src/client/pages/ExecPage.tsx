@@ -3,7 +3,7 @@ import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { createNomadClient } from '../lib/api/nomad';
 import { getErrorMessage } from '../lib/errors';
 import { PageHeader, BackLink, LoadingSpinner, ErrorAlert } from '../components/ui';
-import { ExecTerminal } from '../components/exec/ExecTerminal';
+import ExecTerminal from '../components/exec/ExecTerminal';
 
 interface AllocationInfo {
   ID: string;

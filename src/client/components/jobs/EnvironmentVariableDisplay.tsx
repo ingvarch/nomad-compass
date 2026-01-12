@@ -7,7 +7,7 @@ interface EnvironmentVariableDisplayProps {
     envVars: Record<string, string>;
 }
 
-export const EnvironmentVariableDisplay: React.FC<EnvironmentVariableDisplayProps> = ({ envVars }) => {
+const EnvironmentVariableDisplay: React.FC<EnvironmentVariableDisplayProps> = ({ envVars }) => {
     const { isActive: isRevealed, toggle: toggleReveal } = useToggleState<string>();
     const [copySuccess, setCopySuccess] = useState<string | null>(null);
 

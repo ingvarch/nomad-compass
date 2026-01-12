@@ -11,7 +11,7 @@ interface BasicJobInfoFormProps {
     isNameValid: boolean;
 }
 
-export const BasicJobInfoForm: React.FC<BasicJobInfoFormProps> = ({
+const BasicJobInfoForm: React.FC<BasicJobInfoFormProps> = ({
                                                                       name,
                                                                       namespace,
                                                                       namespaces,

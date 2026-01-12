@@ -11,7 +11,7 @@ interface HealthCheckSectionProps {
   groupIndex: number;
 }
 
-export const HealthCheckSection: React.FC<HealthCheckSectionProps> = ({
+const HealthCheckSection: React.FC<HealthCheckSectionProps> = ({
   enableHealthCheck,
   healthCheck,
   onCheckboxChange,

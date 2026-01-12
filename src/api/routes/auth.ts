@@ -47,11 +47,13 @@ authRoutes.post('/login', async (c) => {
       return c.json({ error: 'Invalid token or failed to connect to Nomad' }, 401)
     }
 
+    // Detect secure context from request protocol (works in both Bun and CF Workers)
+    const isSecure = new URL(c.req.url).protocol === 'https:';
+
     // Set nomad-token with httpOnly flag for security
-    const isProduction = process.env.NODE_ENV === 'production'
     setCookie(c, 'nomad-token', token.trim(), {
       httpOnly: true,
-      secure: isProduction,
+      secure: isSecure,
       sameSite: 'Strict',
       path: '/',
       maxAge: 7 * 24 * 60 * 60, // 7 days
@@ -61,7 +63,7 @@ authRoutes.post('/login', async (c) => {
     const csrfToken = generateCSRFToken()
     setCookie(c, 'csrf-token', csrfToken, {
       httpOnly: false, // Needs to be accessible by JavaScript for API calls
-      secure: isProduction,
+      secure: isSecure,
       sameSite: 'Strict',
       path: '/',
       maxAge: 7 * 24 * 60 * 60, // 7 days
@@ -104,8 +106,11 @@ authRoutes.post('/ws-ticket', async (c) => {
     return c.json({ error: 'Not authenticated' }, 401)
   }
 
-  // Generate ticket (default secret for dev, should be set via env in production)
-  const secret = c.env.TICKET_SECRET || 'nomad-compass-dev-secret-change-in-production'
+  // TICKET_SECRET must be set - no fallbacks for security
+  const secret = c.env.TICKET_SECRET
+  if (!secret) {
+    return c.json({ error: 'Server misconfigured: TICKET_SECRET not set' }, 500)
+  }
   const ticket = await createTicket(secret)
 
   return c.json({ ticket })

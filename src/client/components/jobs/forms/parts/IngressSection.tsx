@@ -12,7 +12,7 @@ interface IngressSectionProps {
   groupIndex: number;
 }
 
-export const IngressSection: React.FC<IngressSectionProps> = ({
+const IngressSection: React.FC<IngressSectionProps> = ({
   ingress,
   serviceName,
   onChange,

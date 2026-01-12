@@ -13,7 +13,7 @@ interface EnvVarsSectionProps {
   isLoading: boolean;
 }
 
-export const EnvVarsSection: React.FC<EnvVarsSectionProps> = ({
+const EnvVarsSection: React.FC<EnvVarsSectionProps> = ({
   envVars,
   onEnvVarChange,
   onAddEnvVar,

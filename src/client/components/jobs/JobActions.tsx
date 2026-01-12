@@ -4,7 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import { createNomadClient } from '../../lib/api/nomad';
 import { isPermissionError, getPermissionErrorMessage, getErrorMessage } from '../../lib/errors';
 import { useToast } from '../../context/ToastContext';
-import { PermissionErrorModal } from '../ui/PermissionErrorModal';
+import PermissionErrorModal from '../ui/PermissionErrorModal';
 import { X, Check } from 'lucide-react';
 
 interface JobActionsProps {
@@ -13,7 +13,7 @@ interface JobActionsProps {
     onStatusChange?: () => void;
 }
 
-export const JobActions: React.FC<JobActionsProps> = ({ jobId, jobStatus, onStatusChange }) => {
+const JobActions: React.FC<JobActionsProps> = ({ jobId, jobStatus, onStatusChange }) => {
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
     const { isAuthenticated } = useAuth();

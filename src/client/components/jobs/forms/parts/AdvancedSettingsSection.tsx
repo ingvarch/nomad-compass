@@ -7,7 +7,7 @@ interface AdvancedSettingsSectionProps {
   isLoading: boolean;
 }
 
-export const AdvancedSettingsSection: React.FC<AdvancedSettingsSectionProps> = ({
+const AdvancedSettingsSection: React.FC<AdvancedSettingsSectionProps> = ({
   datacenters,
   onInputChange,
   isLoading

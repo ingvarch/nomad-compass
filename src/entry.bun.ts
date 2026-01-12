@@ -2,7 +2,6 @@ import { serveStatic } from 'hono/bun';
 import { createBunServer, createBunServerExport } from './lib/createBunServer';
 
 const config = createBunServer({
-  requireTicketSecret: true,
   addMiddleware: (app) => {
     // Serve static files from dist directory
     app.use('/*', serveStatic({ root: './dist' }));

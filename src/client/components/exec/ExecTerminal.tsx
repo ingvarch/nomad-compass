@@ -11,7 +11,7 @@ interface ExecTerminalProps {
   onExit?: (exitCode: number) => void;
 }
 
-export function ExecTerminal({
+function ExecTerminal({
   allocId,
   task,
   command = ['/bin/sh'],

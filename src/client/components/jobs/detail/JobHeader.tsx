@@ -4,7 +4,7 @@ import { useAuth } from '../../../context/AuthContext';
 import { createNomadClient } from '../../../lib/api/nomad';
 import { useToast } from '../../../context/ToastContext';
 import { isPermissionError, getPermissionErrorMessage, getErrorMessage } from '../../../lib/errors';
-import { PermissionErrorModal } from '../../ui/PermissionErrorModal';
+import PermissionErrorModal from '../../ui/PermissionErrorModal';
 
 interface JobHeaderProps {
   jobName: string;
@@ -12,7 +12,7 @@ interface JobHeaderProps {
   namespace: string;
 }
 
-export const JobHeader: React.FC<JobHeaderProps> = ({ jobName, jobId, namespace }) => {
+const JobHeader: React.FC<JobHeaderProps> = ({ jobName, jobId, namespace }) => {
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
   const { addToast } = useToast();

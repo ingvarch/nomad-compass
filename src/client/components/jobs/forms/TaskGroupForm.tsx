@@ -21,7 +21,7 @@ interface TaskGroupFormProps {
  * TaskGroupForm - Form for a single task group.
  * Uses useTaskGroupHandlers for all handlers, eliminating props drilling.
  */
-export const TaskGroupForm: React.FC<TaskGroupFormProps> = ({
+const TaskGroupForm: React.FC<TaskGroupFormProps> = ({
   groupIndex,
   isFirst,
   jobName,

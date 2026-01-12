@@ -3,9 +3,10 @@ import ExpandIcon from '../../ui/ExpandIcon';
 import NetworkTable from './NetworkTable';
 import HealthCheckTable from './HealthCheckTable';
 import EnvironmentVariableDisplay from '../EnvironmentVariableDisplay';
+import type { NomadTaskGroup } from '../../../types/nomad';
 
 interface TaskGroupCardProps {
-  taskGroup: any;
+  taskGroup: NomadTaskGroup;
   isExpanded: boolean;
   isContainerExpanded: boolean;
   onToggle: () => void;
@@ -13,7 +14,7 @@ interface TaskGroupCardProps {
   onViewLogs: () => void;
 }
 
-export const TaskGroupCard: React.FC<TaskGroupCardProps> = ({
+const TaskGroupCard: React.FC<TaskGroupCardProps> = ({
   taskGroup,
   isExpanded,
   isContainerExpanded,

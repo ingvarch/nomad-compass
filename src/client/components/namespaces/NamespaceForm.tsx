@@ -15,7 +15,7 @@ interface NamespaceFormProps {
   onCancel: () => void;
 }
 
-export const NamespaceForm: React.FC<NamespaceFormProps> = ({
+const NamespaceForm: React.FC<NamespaceFormProps> = ({
   mode,
   namespace,
   onSubmit,

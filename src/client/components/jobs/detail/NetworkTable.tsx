@@ -16,7 +16,7 @@ interface NetworkTableProps {
   networks: Network[];
 }
 
-export const NetworkTable: React.FC<NetworkTableProps> = ({ networks }) => {
+const NetworkTable: React.FC<NetworkTableProps> = ({ networks }) => {
   if (!networks?.length) {
     return null;
   }

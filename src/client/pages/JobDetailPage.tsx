@@ -17,7 +17,7 @@ import {
   ExecTab,
 } from '../components/jobs/detail';
 import JobActions from '../components/jobs/JobActions';
-import type { NomadAllocation, NomadServiceRegistration } from '../types/nomad';
+import type { NomadAllocation, NomadServiceRegistration, NomadJob, NomadTaskGroup } from '../types/nomad';
 
 export default function JobDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -26,7 +26,7 @@ export default function JobDetailPage() {
   const { isAuthenticated } = useAuth();
   const { addToast } = useToast();
   const activeTab = useActiveJobTab();
-  const [job, setJob] = useState<any>(null);
+  const [job, setJob] = useState<NomadJob | null>(null);
   const [allocations, setAllocations] = useState<NomadAllocation[]>([]);
   const [serviceRegistrations, setServiceRegistrations] = useState<NomadServiceRegistration[]>([]);
   const [createTime, setCreateTime] = useState<number | null>(null);
@@ -59,7 +59,7 @@ export default function JobDetailPage() {
 
       // Get creation time from the oldest available version
       if (jobVersions?.Versions?.length > 0) {
-        const oldestVersion = jobVersions.Versions.reduce((oldest: any, current: any) =>
+        const oldestVersion = jobVersions.Versions.reduce((oldest, current) =>
           current.Version < oldest.Version ? current : oldest
         );
         setCreateTime(oldestVersion?.SubmitTime || null);
@@ -67,7 +67,7 @@ export default function JobDetailPage() {
 
       if (jobDetail.TaskGroups && jobDetail.TaskGroups.length > 0) {
         const initialExpandedState: Record<string, boolean> = {};
-        jobDetail.TaskGroups.forEach((group: any) => {
+        jobDetail.TaskGroups.forEach((group: NomadTaskGroup) => {
           initialExpandedState[group.Name] = false;
           initialExpandedState[`${group.Name}-container`] = false;
         });

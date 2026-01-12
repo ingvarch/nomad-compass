@@ -8,9 +8,9 @@ import TaskGroupsSection from './forms/parts/TaskGroupsSection';
 import AdvancedSettingsSection from './forms/parts/AdvancedSettingsSection';
 import FormInputField from '../ui/forms/FormInputField';
 import { ErrorAlert, LoadingSpinner } from '../ui';
-import { PermissionErrorModal } from '../ui/PermissionErrorModal';
+import PermissionErrorModal from '../ui/PermissionErrorModal';
 import DeploymentOverlay from './DeploymentOverlay';
-import { JobPlanPreview } from './JobPlanPreview';
+import JobPlanPreview from './JobPlanPreview';
 import { DEFAULT_NAMESPACE } from '../../lib/constants';
 
 interface JobFormProps {
@@ -22,7 +22,7 @@ interface JobFormProps {
 }
 
 // Wrapper component that provides the JobFormContext
-export const JobForm: React.FC<JobFormProps> = (props) => {
+const JobForm: React.FC<JobFormProps> = (props) => {
   const { mode, cloneFromId } = props;
   const isCloneMode = mode === 'create' && !!cloneFromId;
   const needsLoading = mode === 'edit' || isCloneMode;

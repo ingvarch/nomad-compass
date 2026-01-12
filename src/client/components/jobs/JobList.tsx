@@ -7,7 +7,7 @@ import { NomadJob, NomadNamespace } from '../../types/nomad';
 import { LoadingSpinner, ErrorAlert } from '../ui';
 import { StatusBadge } from './detail/StatusBadge';
 
-export const JobList: React.FC = () => {
+const JobList: React.FC = () => {
   const [jobs, setJobs] = useState<NomadJob[]>([]);
   const [namespaces, setNamespaces] = useState<NomadNamespace[]>([]);
   const [isLoading, setIsLoading] = useState(true);

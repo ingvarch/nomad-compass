@@ -36,7 +36,7 @@ const defaultServiceConfig: NomadServiceConfig = {
   useAdvancedMode: false,
 };
 
-export const ServiceSection: React.FC<ServiceSectionProps> = ({
+const ServiceSection: React.FC<ServiceSectionProps> = ({
   enableService,
   serviceConfig = defaultServiceConfig,
   ports,

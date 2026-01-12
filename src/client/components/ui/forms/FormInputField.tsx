@@ -1,4 +1,4 @@
-import React from 'react';
+import { ChangeEvent } from 'react';
 import { inputStyles, inputErrorStyles, checkboxStyles } from '../../../lib/styles';
 
 interface FormInputFieldProps {
@@ -7,7 +7,7 @@ interface FormInputFieldProps {
   label: string;
   type: 'text' | 'number' | 'password' | 'select' | 'checkbox';
   value: string | number | boolean;
-  onChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void;
+  onChange: (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void;
   disabled?: boolean;
   required?: boolean;
   placeholder?: string;
@@ -20,7 +20,7 @@ interface FormInputFieldProps {
   options?: Array<{ value: string; label: string }>;
 }
 
-export const FormInputField: React.FC<FormInputFieldProps> = ({
+function FormInputField({
   id,
   name,
   label,
@@ -37,7 +37,7 @@ export const FormInputField: React.FC<FormInputFieldProps> = ({
   isInvalid = false,
   errorMessage,
   options = []
-}) => {
+}: FormInputFieldProps) {
   const baseInputClasses = isInvalid ? inputErrorStyles : inputStyles;
 
   if (type === 'checkbox') {
@@ -116,6 +116,6 @@ export const FormInputField: React.FC<FormInputFieldProps> = ({
       )}
     </div>
   );
-};
+}
 
 export default FormInputField; 

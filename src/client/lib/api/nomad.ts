@@ -10,6 +10,14 @@ import {
   NomadAllocation,
   NomadEvaluation,
   NomadJobPlanResponse,
+  NomadJob,
+  NomadJobInput,
+  NomadJobVersion,
+  JobSubmission,
+  JobSubmitResponse,
+  JobStopResponse,
+  LogResponse,
+  NomadServiceRegistration,
 } from '../../types/nomad';
 import {
   NomadAclPolicy,
@@ -53,7 +61,7 @@ export class NomadClient {
    */
   private async request<T>(
       endpoint: string,
-      options: RequestInit & { params?: Record<string, any> } = {}
+      options: RequestInit & { params?: Record<string, string | boolean> } = {}
   ): Promise<T> {
     // Extract and remove params from options if they exist
     const { params, ...fetchOptions } = options;
@@ -169,7 +177,7 @@ export class NomadClient {
       namespace: namespace || '*'
     };
 
-    const response = await this.request<any>('/v1/jobs', {
+    const response = await this.request<NomadJob[]>('/v1/jobs', {
       method: 'GET',
       params
     });
@@ -180,8 +188,8 @@ export class NomadClient {
   /**
    * Get job details by ID
    */
-  async getJob(id: string, namespace: string = DEFAULT_NAMESPACE): Promise<any> {
-    return this.request<any>(`/v1/job/${id}`, {
+  async getJob(id: string, namespace: string = DEFAULT_NAMESPACE): Promise<NomadJob> {
+    return this.request<NomadJob>(`/v1/job/${id}`, {
       params: { namespace }
     });
   }
@@ -189,8 +197,8 @@ export class NomadClient {
   /**
    * Get job versions history
    */
-  async getJobVersions(id: string, namespace: string = DEFAULT_NAMESPACE): Promise<{ Versions: any[] }> {
-    return this.request<{ Versions: any[] }>(`/v1/job/${id}/versions`, {
+  async getJobVersions(id: string, namespace: string = DEFAULT_NAMESPACE): Promise<{ Versions: NomadJobVersion[] }> {
+    return this.request<{ Versions: NomadJobVersion[] }>(`/v1/job/${id}/versions`, {
       params: { namespace }
     });
   }
@@ -227,15 +235,16 @@ export class NomadClient {
    */
   async planJob(
     jobId: string,
-    jobSpec: any,
+    jobSpec: JobSubmission | NomadJob | NomadJobInput,
     namespace: string = DEFAULT_NAMESPACE,
     diff: boolean = true
   ): Promise<NomadJobPlanResponse> {
+    const job = 'Job' in jobSpec ? jobSpec.Job : jobSpec;
     return this.request<NomadJobPlanResponse>(`/v1/job/${jobId}/plan`, {
       method: 'POST',
       params: { namespace },
       body: JSON.stringify({
-        Job: jobSpec.Job || jobSpec,
+        Job: job,
         Diff: diff,
       }),
     });
@@ -247,8 +256,8 @@ export class NomadClient {
    * Nomad API uses the same endpoint for both create and update operations.
    * If the job ID already exists, the job will be updated.
    */
-  async createJob(jobSpec: any): Promise<any> {
-    return this.request<any>('/v1/jobs', {
+  async createJob(jobSpec: JobSubmission): Promise<JobSubmitResponse> {
+    return this.request<JobSubmitResponse>('/v1/jobs', {
       method: 'POST',
       body: JSON.stringify(jobSpec),
     });
@@ -260,15 +269,15 @@ export class NomadClient {
    * This is a wrapper around createJob but makes the semantic intention clearer.
    * In Nomad's API, updating a job is just creating a job with an existing ID.
    */
-  async updateJob(jobSpec: any): Promise<any> {
+  async updateJob(jobSpec: JobSubmission): Promise<JobSubmitResponse> {
     return this.createJob(jobSpec);
   }
 
   /**
    * Stop a job
    */
-  async stopJob(id: string, namespace: string = DEFAULT_NAMESPACE): Promise<any> {
-    return this.request<any>(`/v1/job/${id}`, {
+  async stopJob(id: string, namespace: string = DEFAULT_NAMESPACE): Promise<JobStopResponse> {
+    return this.request<JobStopResponse>(`/v1/job/${id}`, {
       method: 'DELETE',
       params: { namespace }
     });
@@ -277,8 +286,8 @@ export class NomadClient {
   /**
    * Delete a job (purge)
    */
-  async deleteJob(id: string, namespace: string = DEFAULT_NAMESPACE): Promise<any> {
-    return this.request<any>(`/v1/job/${id}`, {
+  async deleteJob(id: string, namespace: string = DEFAULT_NAMESPACE): Promise<JobStopResponse> {
+    return this.request<JobStopResponse>(`/v1/job/${id}`, {
       method: 'DELETE',
       params: {
         namespace,
@@ -290,8 +299,8 @@ export class NomadClient {
   /**
    * Get job allocations
    */
-  async getJobAllocations(jobId: string, namespace: string = DEFAULT_NAMESPACE): Promise<any[]> {
-    return this.request<any[]>(`/v1/job/${jobId}/allocations`, {
+  async getJobAllocations(jobId: string, namespace: string = DEFAULT_NAMESPACE): Promise<NomadAllocation[]> {
+    return this.request<NomadAllocation[]>(`/v1/job/${jobId}/allocations`, {
       params: { namespace }
     });
   }
@@ -299,22 +308,22 @@ export class NomadClient {
   /**
    * Get allocation info
    */
-  async getAllocation(allocId: string): Promise<any> {
-    return this.request<any>(`/v1/allocation/${allocId}`);
+  async getAllocation(allocId: string): Promise<NomadAllocation> {
+    return this.request<NomadAllocation>(`/v1/allocation/${allocId}`);
   }
 
   /**
    * Get evaluation info
    */
-  async getEvaluation(evalId: string): Promise<any> {
-    return this.request<any>(`/v1/evaluation/${evalId}`);
+  async getEvaluation(evalId: string): Promise<NomadEvaluation> {
+    return this.request<NomadEvaluation>(`/v1/evaluation/${evalId}`);
   }
 
   /**
    * Get service registrations for a service name
    */
-  async getServiceRegistrations(serviceName: string, namespace: string = DEFAULT_NAMESPACE): Promise<any[]> {
-    return this.request<any[]>(`/v1/service/${serviceName}`, {
+  async getServiceRegistrations(serviceName: string, namespace: string = DEFAULT_NAMESPACE): Promise<NomadServiceRegistration[]> {
+    return this.request<NomadServiceRegistration[]>(`/v1/service/${serviceName}`, {
       params: { namespace }
     });
   }
@@ -322,8 +331,8 @@ export class NomadClient {
   /**
    * Get logs for an allocation
    */
-  async getAllocationLogs(allocId: string, taskName: string, logType: string, plain: boolean = true): Promise<any> {
-    return this.request<any>(`/v1/client/fs/logs/${allocId}`, {
+  async getAllocationLogs(allocId: string, taskName: string, logType: string, plain: boolean = true): Promise<LogResponse> {
+    return this.request<LogResponse>(`/v1/client/fs/logs/${allocId}`, {
       method: 'GET',
       params: {
         task: taskName,

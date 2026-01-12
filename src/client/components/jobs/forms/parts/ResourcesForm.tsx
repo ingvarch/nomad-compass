@@ -9,7 +9,7 @@ interface ResourcesFormProps {
   groupIndex: number;
 }
 
-export const ResourcesForm: React.FC<ResourcesFormProps> = ({
+const ResourcesForm: React.FC<ResourcesFormProps> = ({
   resources,
   onInputChange,
   isLoading,

@@ -2,29 +2,13 @@ import { createApp } from './api/app'
 import {
   parseExecParams,
   extractTokenFromTicket,
+  buildNomadExecUrl,
 } from './api/handlers/execWebSocket'
 
 const app = createApp()
 
 // Serve static assets for non-API routes
 app.get('*', (c) => c.env.ASSETS!.fetch(c.req.raw))
-
-/**
- * Build Nomad exec URL without token (token goes in header).
- * Uses https:// because fetch() with Upgrade header handles the WebSocket upgrade.
- */
-function buildNomadExecUrlForFetch(
-  nomadAddr: string,
-  params: { allocId: string; task: string; command: string[]; tty: boolean }
-): string {
-  const { allocId, task, command, tty } = params
-  // Keep https:// - fetch with Upgrade header will upgrade to WebSocket
-  const url = new URL(`${nomadAddr}/v1/client/allocation/${allocId}/exec`)
-  url.searchParams.set('task', task)
-  url.searchParams.set('command', JSON.stringify(command))
-  url.searchParams.set('tty', String(tty))
-  return url.toString()
-}
 
 /**
  * Handle WebSocket upgrade for exec endpoint.
@@ -42,15 +26,21 @@ async function handleExecWebSocket(
     return new Response('Missing required parameters: allocId, task', { status: 400 })
   }
 
-  // TICKET_SECRET should be set in Cloudflare Workers secrets for production
-  const secret = env.TICKET_SECRET || 'dev-only-not-for-production'
+  // TICKET_SECRET must be set in Cloudflare Workers secrets
+  const secret = env.TICKET_SECRET
+  if (!secret) {
+    return new Response('Server misconfigured: TICKET_SECRET not set', { status: 500 })
+  }
   const token = await extractTokenFromTicket(request, url.searchParams, secret)
   if (!token) {
     return new Response('Authentication required or ticket expired', { status: 401 })
   }
 
-  // Build Nomad exec URL (without token - it goes in header)
-  const nomadUrl = buildNomadExecUrlForFetch(env.NOMAD_ADDR, params)
+  // Build Nomad exec URL (without token - it goes in header via fetch)
+  const nomadUrl = buildNomadExecUrl(env.NOMAD_ADDR, params, undefined, {
+    convertToWebSocket: false, // Keep https:// - fetch with Upgrade header handles it
+    tokenPlacement: 'none',    // Token goes in X-Nomad-Token header
+  })
 
   // Connect to Nomad using fetch with Upgrade header (allows custom headers!)
   try {

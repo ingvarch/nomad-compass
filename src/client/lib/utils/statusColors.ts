@@ -198,8 +198,8 @@ export function getEvaluationStatusColor(status: string): StatusColorConfig {
 }
 
 // Version status colors (for job versions)
-export function getVersionStatusColor(stable: boolean): StatusColorConfig {
-  return stable
+export function getVersionStatusColor(stable?: boolean): StatusColorConfig {
+  return stable === true
     ? { bg: 'bg-green-100 dark:bg-green-900/30', text: 'text-green-800 dark:text-green-300' }
     : { bg: 'bg-gray-100 dark:bg-gray-700', text: 'text-gray-800 dark:text-gray-300' };
 }

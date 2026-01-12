@@ -19,11 +19,14 @@ export const authMiddleware = createMiddleware<{ Bindings: Env }>(
 
     // Generate CSRF token if not present
     const csrfToken = getCookie(c, 'csrf-token') || generateCSRFToken();
+    // Detect secure context from request protocol (works in both Bun and CF Workers)
+    const isSecure = new URL(c.req.url).protocol === 'https:';
     setCookie(c, 'csrf-token', csrfToken, {
       httpOnly: false, // Needs to be accessible by JavaScript for API calls
-      secure: process.env.NODE_ENV === 'production',
+      secure: isSecure,
       sameSite: 'Strict',
       path: '/',
+      maxAge: 7 * 24 * 60 * 60, // 7 days - consistent with login route
     });
 
     await next()

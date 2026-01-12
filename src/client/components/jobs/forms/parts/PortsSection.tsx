@@ -10,7 +10,7 @@ interface PortsSectionProps {
   isLoading: boolean;
 }
 
-export const PortsSection: React.FC<PortsSectionProps> = ({
+const PortsSection: React.FC<PortsSectionProps> = ({
   ports,
   onPortChange,
   onAddPort,

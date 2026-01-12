@@ -6,7 +6,7 @@ import TaskGroupForm from '../TaskGroupForm';
  * TaskGroupsSection - Manages the list of task groups in the job form.
  * Uses JobFormContext for state, eliminating props drilling.
  */
-export const TaskGroupsSection: React.FC = () => {
+const TaskGroupsSection: React.FC = () => {
   const { state, dispatch } = useJobFormContext();
   const { formData, isLoading, isSaving } = state;
 

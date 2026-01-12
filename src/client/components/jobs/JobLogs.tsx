@@ -5,6 +5,7 @@ import { isPermissionError, getErrorMessage } from '../../lib/errors';
 import { LoadingSpinner, ErrorAlert } from '../ui';
 import { RefreshCw, Radio } from 'lucide-react';
 import { useLogStream } from '../../hooks/useLogStream';
+import type { NomadAllocation, NomadTaskGroup } from '../../types/nomad';
 
 interface JobLogsProps {
     jobId: string;
@@ -13,18 +14,18 @@ interface JobLogsProps {
     initialTaskGroup?: string | null;
 }
 
-export const JobLogs: React.FC<JobLogsProps> = ({ jobId, allocId, taskName, initialTaskGroup }) => {    const { isAuthenticated } = useAuth();
+const JobLogs: React.FC<JobLogsProps> = ({ jobId, allocId, taskName, initialTaskGroup }) => {    const { isAuthenticated } = useAuth();
     const [logs, setLogs] = useState<string>('');
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [allocations, setAllocations] = useState<any[]>([]);
+    const [allocations, setAllocations] = useState<NomadAllocation[]>([]);
     const [selectedAlloc, setSelectedAlloc] = useState<string | null>(null);
     const [selectedTask, setSelectedTask] = useState<string | null>(null);
     const [logType, setLogType] = useState<'stdout' | 'stderr'>('stdout');
-    const [taskGroups, setTaskGroups] = useState<any[]>([]);
+    const [taskGroups, setTaskGroups] = useState<NomadTaskGroup[]>([]);
     const [selectedTaskGroup, setSelectedTaskGroup] = useState<string | null>(null);
     const [statusFilter, setStatusFilter] = useState<'all' | 'running' | 'failed' | 'complete'>('all');
-    const [allAllocations, setAllAllocations] = useState<any[]>([]);
+    const [allAllocations, setAllAllocations] = useState<NomadAllocation[]>([]);
 
     const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
     const [showNomadTimestamp, setShowNomadTimestamp] = useState<boolean>(false);
@@ -109,7 +110,7 @@ export const JobLogs: React.FC<JobLogsProps> = ({ jobId, allocId, taskName, init
                 const allocs = await client.getJobAllocations(jobId, namespace);
 
                 // Filter by task group first
-                const groupFilteredAllocs = allocs.filter((alloc: any) => {
+                const groupFilteredAllocs = allocs.filter((alloc) => {
                     if (selectedTaskGroup) {
                         return alloc.TaskGroup === selectedTaskGroup;
                     }
@@ -120,7 +121,7 @@ export const JobLogs: React.FC<JobLogsProps> = ({ jobId, allocId, taskName, init
                 setAllAllocations(groupFilteredAllocs);
 
                 // Apply status filter
-                const filteredAllocs = groupFilteredAllocs.filter((alloc: any) => {
+                const filteredAllocs = groupFilteredAllocs.filter((alloc) => {
                     if (statusFilter === 'all') return true;
                     if (statusFilter === 'failed') {
                         return alloc.ClientStatus === 'failed' || alloc.ClientStatus === 'lost';
@@ -129,7 +130,7 @@ export const JobLogs: React.FC<JobLogsProps> = ({ jobId, allocId, taskName, init
                 });
 
                 // Sort by ModifyTime descending (most recent first)
-                filteredAllocs.sort((a: any, b: any) => b.ModifyTime - a.ModifyTime);
+                filteredAllocs.sort((a, b) => b.ModifyTime - a.ModifyTime);
 
                 setAllocations(filteredAllocs);
 

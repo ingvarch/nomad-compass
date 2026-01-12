@@ -16,7 +16,7 @@ interface JobFormLayoutProps {
   isPlanning?: boolean;
 }
 
-export const JobFormLayout: React.FC<JobFormLayoutProps> = ({
+const JobFormLayout: React.FC<JobFormLayoutProps> = ({
   title,
   error,
   success,

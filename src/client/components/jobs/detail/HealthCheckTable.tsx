@@ -21,7 +21,7 @@ interface HealthCheckTableProps {
   services: Service[];
 }
 
-export const HealthCheckTable: React.FC<HealthCheckTableProps> = ({ services }) => {
+const HealthCheckTable: React.FC<HealthCheckTableProps> = ({ services }) => {
   if (!services?.length) {
     return null;
   }

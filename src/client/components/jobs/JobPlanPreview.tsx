@@ -110,7 +110,7 @@ function HclDiffDisplay({ diff }: { diff: NomadJobDiff }) {
   );
 }
 
-export function JobPlanPreview({
+function JobPlanPreview({
   isOpen,
   onClose,
   onConfirm,

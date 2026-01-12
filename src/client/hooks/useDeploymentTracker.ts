@@ -1,12 +1,8 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { createNomadClient } from '../lib/api/nomad';
-import {
-  DeploymentState,
-  DeploymentStep,
-  STEP_PROGRESS,
-  DEPLOYMENT_STEPS,
-} from '../types/deployment';
+import type { DeploymentState, DeploymentStep } from '../types/deployment';
+import { STEP_PROGRESS, DEPLOYMENT_STEPS } from '../lib/constants/deployment';
 
 interface TaskEvent {
   Type: string;

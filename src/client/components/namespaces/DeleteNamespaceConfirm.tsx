@@ -8,7 +8,7 @@ interface DeleteNamespaceConfirmProps {
   onCancel: () => void;
 }
 
-export const DeleteNamespaceConfirm: React.FC<DeleteNamespaceConfirmProps> = ({
+const DeleteNamespaceConfirm: React.FC<DeleteNamespaceConfirmProps> = ({
   namespace,
   onConfirm,
   onCancel,

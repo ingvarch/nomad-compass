@@ -19,7 +19,7 @@ const TRAEFIK_TAG_TEMPLATES = [
   { key: 'traefik.http.routers.{name}.tls.certresolver', value: 'letsencrypt', description: 'Let\'s Encrypt SSL' },
 ];
 
-export const ServiceTagsEditor: React.FC<ServiceTagsEditorProps> = ({
+const ServiceTagsEditor: React.FC<ServiceTagsEditorProps> = ({
   tags,
   onTagChange,
   onAddTag,

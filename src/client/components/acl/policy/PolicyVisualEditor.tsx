@@ -1,10 +1,6 @@
 import { useCallback } from 'react';
-import {
-  AclPolicyRules,
-  NamespaceRule,
-  PolicyLevel,
-  GLOBAL_POLICY_OPTIONS,
-} from '../../../types/acl';
+import type { AclPolicyRules, NamespaceRule, PolicyLevel } from '../../../types/acl';
+import { GLOBAL_POLICY_OPTIONS } from '../../../lib/constants/acl';
 import { NamespaceRuleRow } from './rules/NamespaceRuleRow';
 import { GlobalRuleRow } from './rules/GlobalRuleRow';
 import { createNamespaceRule } from '../../../lib/acl/hclGenerator';

@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { createNomadClient } from '../lib/api/nomad';
 import { getErrorMessage } from '../lib/errors';
 import { NomadNamespace, NomadJob } from '../types/nomad';
-import { Modal } from '../components/ui/Modal';
+import Modal from '../components/ui/Modal';
 import {
   LoadingSpinner,
   ErrorAlert,
@@ -11,8 +11,8 @@ import {
   RefreshButton,
   BackLink,
 } from '../components/ui';
-import { NamespaceForm } from '../components/namespaces/NamespaceForm';
-import { DeleteNamespaceConfirm } from '../components/namespaces/DeleteNamespaceConfirm';
+import NamespaceForm from '../components/namespaces/NamespaceForm';
+import DeleteNamespaceConfirm from '../components/namespaces/DeleteNamespaceConfirm';
 import { useToast } from '../context/ToastContext';
 
 interface NamespaceInfo {

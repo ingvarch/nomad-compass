@@ -557,3 +557,55 @@ export interface NomadServiceRegistration {
     ServiceName: string;
     Tags?: string[];
 }
+
+// Job version from history
+export interface NomadJobVersion extends NomadJob {
+    CreateIndex?: number;
+    ModifyIndex?: number;
+    JobModifyIndex?: number;
+    Stable?: boolean;
+}
+
+// Job input type for submission (without server-assigned fields)
+// TaskGroups can be any task group format (response or submission format)
+export interface NomadJobInput {
+    ID: string;
+    Name: string;
+    Namespace: string;
+    Type: string;
+    Datacenters: string[];
+    TaskGroups?: NomadTaskGroup[] | unknown[];
+    Meta?: Record<string, string>;
+    Constraints?: NomadConstraint[];
+    Priority?: number;
+}
+
+// Job submission wrapper (for create/update)
+export interface JobSubmission {
+    Job: NomadJobInput | NomadJob;
+    EnforceIndex?: boolean;
+    JobModifyIndex?: number;
+    PolicyOverride?: boolean;
+}
+
+// Job submit response
+export interface JobSubmitResponse {
+    EvalID: string;
+    EvalCreateIndex: number;
+    JobModifyIndex: number;
+    Warnings?: string;
+}
+
+// Job stop/delete response
+export interface JobStopResponse {
+    EvalID: string;
+    EvalCreateIndex: number;
+    JobModifyIndex: number;
+}
+
+// Log response from allocation logs endpoint
+export interface LogResponse {
+    Data: string;
+    File?: string;
+    Offset?: number;
+}

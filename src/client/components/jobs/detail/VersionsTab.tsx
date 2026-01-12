@@ -5,26 +5,16 @@ import { useToast } from '../../../context/ToastContext';
 import { LoadingSpinner, ErrorAlert, RefreshButton, Modal } from '../../ui';
 import { getVersionStatusColor } from '../../../lib/utils/statusColors';
 import { formatTimestamp } from '../../../lib/utils/dateFormatter';
+import type { NomadJobVersion, NomadTaskGroup, NomadTask } from '../../../types/nomad';
 
 interface VersionsTabProps {
   jobId: string;
   namespace: string;
 }
 
-interface JobVersion {
-  ID: string;
-  Name: string;
-  Version: number;
-  SubmitTime: number;
-  Stable: boolean;
-  Status: string;
-  TaskGroups?: unknown[];
-  Meta?: Record<string, string>;
-}
-
 export function VersionsTab({ jobId, namespace }: VersionsTabProps) {
   const { addToast } = useToast();
-  const [versions, setVersions] = useState<JobVersion[]>([]);
+  const [versions, setVersions] = useState<NomadJobVersion[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [selectedVersions, setSelectedVersions] = useState<[number | null, number | null]>([null, null]);
@@ -83,7 +73,7 @@ export function VersionsTab({ jobId, namespace }: VersionsTabProps) {
     }
   };
 
-  const getVersionById = (version: number): JobVersion | undefined => {
+  const getVersionById = (version: number): NomadJobVersion | undefined => {
     return versions.find((v) => v.Version === version);
   };
 
@@ -280,10 +270,10 @@ export function VersionsTab({ jobId, namespace }: VersionsTabProps) {
                         Version: version.Version,
                         Stable: version.Stable,
                         SubmitTime: formatTimestamp(version.SubmitTime),
-                        TaskGroups: version.TaskGroups?.map((tg: any) => ({
+                        TaskGroups: version.TaskGroups?.map((tg: NomadTaskGroup) => ({
                           Name: tg.Name,
                           Count: tg.Count,
-                          Tasks: tg.Tasks?.map((t: any) => ({
+                          Tasks: tg.Tasks?.map((t: NomadTask) => ({
                             Name: t.Name,
                             Driver: t.Driver,
                             Image: t.Config?.image,

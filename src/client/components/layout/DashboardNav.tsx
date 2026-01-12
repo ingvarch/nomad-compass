@@ -5,7 +5,7 @@ import { useAclPermissions } from '../../hooks/useAclPermissions';
 import { ThemeToggle } from '../ui/ThemeToggle';
 import { UserMenu } from '../ui/UserMenu';
 
-export const DashboardNav: React.FC = () => {
+const DashboardNav: React.FC = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [nomadAddr, setNomadAddr] = useState<string | null>(null);
   const location = useLocation();

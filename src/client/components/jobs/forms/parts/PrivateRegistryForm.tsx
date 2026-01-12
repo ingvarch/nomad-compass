@@ -11,7 +11,7 @@ interface PrivateRegistryFormProps {
   groupIndex: number;
 }
 
-export const PrivateRegistryForm: React.FC<PrivateRegistryFormProps> = ({
+const PrivateRegistryForm: React.FC<PrivateRegistryFormProps> = ({
   dockerAuth,
   onInputChange,
   isLoading,

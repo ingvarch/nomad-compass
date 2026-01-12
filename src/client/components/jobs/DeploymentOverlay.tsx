@@ -1,10 +1,6 @@
 import React from 'react';
-import {
-  DeploymentState,
-  DeploymentStep,
-  DEPLOYMENT_STEPS,
-  STEP_LABELS,
-} from '../../types/deployment';
+import type { DeploymentState, DeploymentStep } from '../../types/deployment';
+import { DEPLOYMENT_STEPS, STEP_LABELS } from '../../lib/constants/deployment';
 
 interface DeploymentOverlayProps {
   state: DeploymentState;
@@ -83,7 +79,7 @@ function StepIcon({ status }: { status: 'completed' | 'current' | 'pending' | 'f
   );
 }
 
-export const DeploymentOverlay: React.FC<DeploymentOverlayProps> = ({
+const DeploymentOverlay: React.FC<DeploymentOverlayProps> = ({
   state,
   onClose,
   onViewJob,
