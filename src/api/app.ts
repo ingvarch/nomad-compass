@@ -41,28 +41,16 @@ export function createApp(options: CreateAppOptions = {}) {
   const defaultHeaders = ['Content-Type', 'X-CSRF-Token']
   const defaultOrigins = ['http://localhost:5173', 'http://localhost:3000']
 
-  // Cache CORS middleware instances to avoid recreation on each request
-  const corsMiddlewareCache = new Map<string, ReturnType<typeof cors>>()
-
-  function getCorsMiddleware(origins: string[]) {
-    const cacheKey = origins.join(',')
-    let middleware = corsMiddlewareCache.get(cacheKey)
-    if (!middleware) {
-      middleware = cors({
-        origin: origins,
-        allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-        allowHeaders: [...defaultHeaders, ...(options.additionalCorsHeaders || [])],
-        credentials: true,
-      })
-      corsMiddlewareCache.set(cacheKey, middleware)
-    }
-    return middleware
-  }
-
   // Dynamic CORS middleware to access env from context (works in CF Workers)
   app.use('*', async (c, next) => {
     const allowedOrigins = c.env.ALLOWED_ORIGINS?.split(',') || defaultOrigins
-    return getCorsMiddleware(allowedOrigins)(c, next)
+    const corsMiddleware = cors({
+      origin: allowedOrigins,
+      allowMethods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+      allowHeaders: [...defaultHeaders, ...(options.additionalCorsHeaders || [])],
+      credentials: true,
+    })
+    return corsMiddleware(c, next)
   })
 
   // Rate limiting for auth login - strict limit to prevent brute force

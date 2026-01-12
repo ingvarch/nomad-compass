@@ -1,8 +1,9 @@
 import { Hono } from 'hono'
-import { setCookie, deleteCookie, getCookie } from 'hono/cookie'
+import { deleteCookie, getCookie } from 'hono/cookie'
 import type { Env } from '../types'
 import { generateCSRFToken, createTicket, timingSafeEqual } from '../utils/crypto'
 import { badRequestResponse, unauthorizedResponse, forbiddenResponse, errorResponse } from '../utils/responses'
+import { setCSRFCookie, setNomadTokenCookie } from '../utils/cookies'
 
 /**
  * Validates a Nomad token against the Nomad API
@@ -48,27 +49,12 @@ authRoutes.post('/login', async (c) => {
       return unauthorizedResponse(c, 'Invalid token or failed to connect to Nomad')
     }
 
-    // Detect secure context from request protocol (works in both Bun and CF Workers)
-    const isSecure = new URL(c.req.url).protocol === 'https:';
-
     // Set nomad-token with httpOnly flag for security
-    setCookie(c, 'nomad-token', token.trim(), {
-      httpOnly: true,
-      secure: isSecure,
-      sameSite: 'Strict',
-      path: '/',
-      maxAge: 7 * 24 * 60 * 60, // 7 days
-    })
+    setNomadTokenCookie(c, token.trim());
 
     // Generate and set CSRF token (non-httpOnly so JS can access it)
-    const csrfToken = generateCSRFToken()
-    setCookie(c, 'csrf-token', csrfToken, {
-      httpOnly: false, // Needs to be accessible by JavaScript for API calls
-      secure: isSecure,
-      sameSite: 'Strict',
-      path: '/',
-      maxAge: 7 * 24 * 60 * 60, // 7 days
-    })
+    const csrfToken = generateCSRFToken();
+    setCSRFCookie(c, csrfToken);
 
     return c.json({ success: true })
   } catch {

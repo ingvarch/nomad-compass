@@ -1,4 +1,5 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
+import { decodeBase64Utf8 } from '../lib/utils/encoding';
 
 interface LogFrame {
   Data?: string;
@@ -20,19 +21,6 @@ interface UseLogStreamReturn {
   startStream: () => void;
   stopStream: () => void;
   clearLogs: () => void;
-}
-
-/**
- * Decode base64 string to UTF-8 text.
- * atob() decodes to Latin-1, so we need to convert to UTF-8.
- */
-function decodeBase64Utf8(base64: string): string {
-  const binaryString = atob(base64);
-  const bytes = new Uint8Array(binaryString.length);
-  for (let i = 0; i < binaryString.length; i++) {
-    bytes[i] = binaryString.charCodeAt(i);
-  }
-  return new TextDecoder('utf-8').decode(bytes);
 }
 
 function parseLogFrames(text: string): LogFrame[] {

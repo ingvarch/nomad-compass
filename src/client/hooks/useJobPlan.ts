@@ -63,6 +63,11 @@ function validateForm(formData: NomadJobFormData | null, mode: 'create' | 'edit'
   return null;
 }
 
+interface ValidationResult {
+  isValid: boolean;
+  formData: NomadJobFormData | null;
+}
+
 export function useJobPlan({ mode, jobId }: UseJobPlanOptions) {
   const { isAuthenticated } = useAuth();
   const { addToast } = useToast();
@@ -70,30 +75,38 @@ export function useJobPlan({ mode, jobId }: UseJobPlanOptions) {
   const { formData, initialJob } = state;
   const deploymentTracker = useDeploymentTracker();
 
-  // Plan (dry-run)
-  const handlePlan = useCallback(async () => {
-    dispatch(jobFormActions.setPlanError(null));
-    dispatch(jobFormActions.setPlanResult(null));
-
+  // Shared validation logic
+  const validateAndCheckAuth = useCallback((): ValidationResult => {
     const validationError = validateForm(formData, mode);
     if (validationError) {
       dispatch(jobFormActions.setError(validationError));
       if (mode === 'create' && validationError.includes('Job name')) {
         dispatch(jobFormActions.setNameValid(false));
       }
-      return;
+      return { isValid: false, formData: null };
     }
 
     if (!isAuthenticated || !formData) {
       dispatch(jobFormActions.setError('Authentication required'));
-      return;
+      return { isValid: false, formData: null };
     }
+
+    return { isValid: true, formData };
+  }, [formData, mode, isAuthenticated, dispatch]);
+
+  // Plan (dry-run)
+  const handlePlan = useCallback(async () => {
+    dispatch(jobFormActions.setPlanError(null));
+    dispatch(jobFormActions.setPlanResult(null));
+
+    const { isValid, formData: validFormData } = validateAndCheckAuth();
+    if (!isValid || !validFormData) return;
 
     dispatch(jobFormActions.setPlanning(true));
     dispatch(jobFormActions.setShowPlanPreview(true));
 
     try {
-      const cleanedData = cleanFormData(formData);
+      const cleanedData = cleanFormData(validFormData);
       const client = createNomadClient();
 
       let jobSpec;
@@ -104,15 +117,15 @@ export function useJobPlan({ mode, jobId }: UseJobPlanOptions) {
         jobSpec = updateJobSpec(initialJob, cleanedData);
       }
 
-      const targetJobId = mode === 'create' ? formData.name : jobId!;
-      const result = await client.planJob(targetJobId, jobSpec, formData.namespace);
+      const targetJobId = mode === 'create' ? validFormData.name : jobId!;
+      const result = await client.planJob(targetJobId, jobSpec, validFormData.namespace);
       dispatch(jobFormActions.setPlanResult(result));
     } catch (err) {
       dispatch(jobFormActions.setPlanError(getErrorMessage(err, 'Failed to plan job')));
     } finally {
       dispatch(jobFormActions.setPlanning(false));
     }
-  }, [formData, mode, initialJob, jobId, isAuthenticated, dispatch]);
+  }, [validateAndCheckAuth, mode, initialJob, jobId, dispatch]);
 
   // Submit
   const handleSubmit = useCallback(
@@ -121,23 +134,12 @@ export function useJobPlan({ mode, jobId }: UseJobPlanOptions) {
       dispatch(jobFormActions.setError(null));
       dispatch(jobFormActions.setSuccess(null));
 
-      const validationError = validateForm(formData, mode);
-      if (validationError) {
-        dispatch(jobFormActions.setError(validationError));
-        if (mode === 'create' && validationError.includes('Job name')) {
-          dispatch(jobFormActions.setNameValid(false));
-        }
-        return;
-      }
-
-      if (!isAuthenticated || !formData) {
-        dispatch(jobFormActions.setError('Authentication required'));
-        return;
-      }
+      const { isValid, formData: validFormData } = validateAndCheckAuth();
+      if (!isValid || !validFormData) return;
 
       dispatch(jobFormActions.setSaving(true));
       try {
-        const cleanedData = cleanFormData(formData);
+        const cleanedData = cleanFormData(validFormData);
         const client = createNomadClient();
 
         let response;
@@ -151,15 +153,15 @@ export function useJobPlan({ mode, jobId }: UseJobPlanOptions) {
         }
 
         const evalId = response.EvalID;
-        const targetJobId = mode === 'create' ? formData.name : jobId!;
-        const targetNamespace = formData.namespace;
+        const targetJobId = mode === 'create' ? validFormData.name : jobId!;
+        const targetNamespace = validFormData.namespace;
 
         if (evalId) {
           deploymentTracker.startTracking(targetJobId, targetNamespace, evalId);
         } else {
           dispatch(
             jobFormActions.setSuccess(
-              `Job "${formData.name}" ${mode === 'create' ? 'created' : 'updated'} successfully!`
+              `Job "${validFormData.name}" ${mode === 'create' ? 'created' : 'updated'} successfully!`
             )
           );
         }
@@ -179,7 +181,7 @@ export function useJobPlan({ mode, jobId }: UseJobPlanOptions) {
         dispatch(jobFormActions.setSaving(false));
       }
     },
-    [formData, mode, initialJob, jobId, isAuthenticated, dispatch, addToast, deploymentTracker]
+    [validateAndCheckAuth, mode, initialJob, jobId, dispatch, addToast, deploymentTracker]
   );
 
   // Submit from plan preview

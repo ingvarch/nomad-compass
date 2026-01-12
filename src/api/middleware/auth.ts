@@ -1,7 +1,8 @@
 import { createMiddleware } from 'hono/factory'
-import { getCookie, setCookie } from 'hono/cookie'
+import { getCookie } from 'hono/cookie'
 import type { Env } from '../types'
 import { generateCSRFToken } from '../utils/crypto'
+import { setCSRFCookie } from '../utils/cookies'
 
 /**
  * Auth middleware for protected routes.
@@ -19,15 +20,7 @@ export const authMiddleware = createMiddleware<{ Bindings: Env }>(
 
     // Generate CSRF token if not present
     const csrfToken = getCookie(c, 'csrf-token') || generateCSRFToken();
-    // Detect secure context from request protocol (works in both Bun and CF Workers)
-    const isSecure = new URL(c.req.url).protocol === 'https:';
-    setCookie(c, 'csrf-token', csrfToken, {
-      httpOnly: false, // Needs to be accessible by JavaScript for API calls
-      secure: isSecure,
-      sameSite: 'Strict',
-      path: '/',
-      maxAge: 7 * 24 * 60 * 60, // 7 days - consistent with login route
-    });
+    setCSRFCookie(c, csrfToken);
 
     await next()
   }

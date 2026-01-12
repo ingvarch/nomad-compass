@@ -37,7 +37,7 @@ export function timingSafeEqual(a: string, b: string): boolean {
 /**
  * Generate random hex string.
  */
-export function generateRandomHex(bytes: number): string {
+function generateRandomHex(bytes: number): string {
   const array = new Uint8Array(bytes)
   crypto.getRandomValues(array)
   return Array.from(array, (b) => b.toString(16).padStart(2, '0')).join('')

@@ -7,22 +7,18 @@ interface AclPermissions {
   isLoading: boolean;
   /** True only for management tokens - use for ACL tab visibility */
   hasManagementAccess: boolean;
-  /** True if user can list policies (management or has acl:read) */
-  canListPolicies: boolean;
   currentToken: NomadAclToken | null;
   error: string | null;
   refetch: () => Promise<void>;
 }
 
 /**
- * Hook to check ACL permissions for the current user
- * Management tokens have full ACL access
- * Client tokens need specific policies to manage ACL
+ * Hook to check ACL permissions for the current user.
+ * Management tokens have full ACL access.
  */
 export function useAclPermissions(): AclPermissions {
   const [isLoading, setIsLoading] = useState(true);
   const [hasManagementAccess, setHasManagementAccess] = useState(false);
-  const [canListPolicies, setCanListPolicies] = useState(false);
   const [currentToken, setCurrentToken] = useState<NomadAclToken | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -39,20 +35,7 @@ export function useAclPermissions(): AclPermissions {
 
       // Only management tokens have full ACL access
       // This is used for ACL tab visibility
-      const isManagement = token.Type === 'management';
-      setHasManagementAccess(isManagement);
-
-      // Check if user can list policies (for ACL page functionality)
-      if (isManagement) {
-        setCanListPolicies(true);
-      } else {
-        try {
-          await client.getAclPolicies();
-          setCanListPolicies(true);
-        } catch {
-          setCanListPolicies(false);
-        }
-      }
+      setHasManagementAccess(token.Type === 'management');
     } catch (err) {
       // If ACLs are disabled or token is invalid
       const message = getErrorMessage(err, 'Failed to check ACL permissions');
@@ -64,7 +47,6 @@ export function useAclPermissions(): AclPermissions {
         setError(message);
       }
       setHasManagementAccess(false);
-      setCanListPolicies(false);
     } finally {
       setIsLoading(false);
     }
@@ -77,7 +59,6 @@ export function useAclPermissions(): AclPermissions {
   return {
     isLoading,
     hasManagementAccess,
-    canListPolicies,
     currentToken,
     error,
     refetch: fetchPermissions,

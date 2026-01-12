@@ -8,20 +8,6 @@ export function errorResponse(c: Context, message: string, status: number = 500)
 }
 
 /**
- * Standard success response with data
- */
-export function successResponse<T>(c: Context, data: T) {
-  return c.json({ success: true, data });
-}
-
-/**
- * Not found response
- */
-export function notFoundResponse(c: Context, resource: string = 'Resource') {
-  return errorResponse(c, `${resource} not found`, 404);
-}
-
-/**
  * Unauthorized response
  */
 export function unauthorizedResponse(c: Context, message: string = 'Unauthorized') {

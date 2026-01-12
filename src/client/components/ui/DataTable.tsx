@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react';
+import EmptyState from './EmptyState';
 
 export interface Column<T> {
   key: string;
@@ -31,19 +32,11 @@ function DataTable<T>({
   if (items.length === 0) {
     return (
       <div className="bg-white dark:bg-gray-800 shadow rounded-lg overflow-hidden">
-        <div className="px-4 py-8 text-center">
-          {emptyState.icon && (
-            <div className="mb-2">{emptyState.icon}</div>
-          )}
-          {emptyState.title && (
-            <h3 className="text-sm font-medium text-gray-900 dark:text-gray-100">
-              {emptyState.title}
-            </h3>
-          )}
-          <p className="text-gray-500 dark:text-gray-400 mt-1">
-            {emptyState.message}
-          </p>
-        </div>
+        <EmptyState
+          message={emptyState.message}
+          icon={emptyState.icon}
+          title={emptyState.title}
+        />
       </div>
     );
   }
