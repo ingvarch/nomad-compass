@@ -1,57 +1,71 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useEffect, useCallback } from 'react';
 import { Plus } from 'lucide-react';
 import { createNomadClient } from '../../../lib/api/nomad';
 import { NomadAclPolicyListItem, NomadAclPolicy } from '../../../types/acl';
 import { LoadingSpinner, ErrorAlert, RefreshButton, Modal, Button, ConfirmationDialog } from '../../ui';
 import { EditButton, DeleteButton } from '../../ui/IconButton';
 import { PolicyForm } from '../policy/PolicyForm';
-import { useToast } from '../../../context/ToastContext';
-import { getErrorMessage } from '../../../lib/errors';
+import { useCrudTab } from '../../../hooks/useCrudTab';
+import {
+  tableStyles,
+  tableHeaderStyles,
+  tableHeaderCellStyles,
+  tableBodyStyles,
+  tableRowHoverStyles,
+} from '../../../lib/styles';
 
 interface PoliciesTabProps {
   hasManagementAccess: boolean;
 }
 
 export function PoliciesTab({ hasManagementAccess }: PoliciesTabProps) {
-  const [policies, setPolicies] = useState<NomadAclPolicyListItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  // Modal states
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [editingPolicy, setEditingPolicy] = useState<NomadAclPolicy | null>(null);
-  const [deletingPolicy, setDeletingPolicy] = useState<NomadAclPolicyListItem | null>(null);
-  const [deleteLoading, setDeleteLoading] = useState(false);
-
-  const { addToast } = useToast();
-
   const fetchPolicies = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-
     const client = createNomadClient();
-    try {
-      const data = await client.getAclPolicies();
-      setPolicies(data || []);
-    } catch (err) {
-      setError(getErrorMessage(err, 'Failed to fetch policies'));
-    } finally {
-      setLoading(false);
-    }
+    return client.getAclPolicies();
   }, []);
 
+  const deletePolicy = useCallback(async (policy: NomadAclPolicy | NomadAclPolicyListItem) => {
+    const client = createNomadClient();
+    await client.deleteAclPolicy(policy.Name);
+  }, []);
+
+  const {
+    items: policies,
+    loading,
+    error,
+    showCreateModal,
+    editingItem: editingPolicy,
+    deletingItem: deletingPolicy,
+    deleteLoading,
+    refetch,
+    openCreateModal,
+    closeCreateModal,
+    openEditModal,
+    closeEditModal,
+    openDeleteConfirm,
+    closeDeleteConfirm,
+    handleDelete,
+    onCreateSuccess,
+    onEditSuccess,
+  } = useCrudTab<NomadAclPolicyListItem, void, NomadAclPolicy | NomadAclPolicyListItem>({
+    fetchData: fetchPolicies,
+    deleteItem: deletePolicy,
+    getDeletedItemName: (policy) => `Policy "${policy.Name}"`,
+    fetchErrorMessage: 'Failed to fetch policies',
+    deleteErrorMessage: 'Failed to delete policy',
+  });
+
   useEffect(() => {
-    fetchPolicies();
-  }, [fetchPolicies]);
+    refetch();
+  }, [refetch]);
 
   const handleEditClick = async (policy: NomadAclPolicyListItem) => {
     const client = createNomadClient();
     try {
       const fullPolicy = await client.getAclPolicy(policy.Name);
-      setEditingPolicy(fullPolicy);
+      openEditModal(fullPolicy);
     } catch {
-      // Fallback to basic info
-      setEditingPolicy({
+      openEditModal({
         Name: policy.Name,
         Description: policy.Description,
         Rules: '',
@@ -62,34 +76,13 @@ export function PoliciesTab({ hasManagementAccess }: PoliciesTabProps) {
   const handleCreatePolicy = async (name: string, description: string, rules: string) => {
     const client = createNomadClient();
     await client.createAclPolicy(name, description, rules);
-    addToast(`Policy "${name}" created successfully`, 'success');
-    setShowCreateModal(false);
-    await fetchPolicies();
+    await onCreateSuccess(`Policy "${name}" created successfully`);
   };
 
   const handleUpdatePolicy = async (name: string, description: string, rules: string) => {
     const client = createNomadClient();
     await client.updateAclPolicy(name, description, rules);
-    addToast(`Policy "${name}" updated successfully`, 'success');
-    setEditingPolicy(null);
-    await fetchPolicies();
-  };
-
-  const handleDeletePolicy = async () => {
-    if (!deletingPolicy) return;
-
-    setDeleteLoading(true);
-    const client = createNomadClient();
-    try {
-      await client.deleteAclPolicy(deletingPolicy.Name);
-      addToast(`Policy "${deletingPolicy.Name}" deleted successfully`, 'success');
-      setDeletingPolicy(null);
-      await fetchPolicies();
-    } catch (err) {
-      addToast(getErrorMessage(err, 'Failed to delete policy'), 'error');
-    } finally {
-      setDeleteLoading(false);
-    }
+    await onEditSuccess(`Policy "${name}" updated successfully`);
   };
 
   if (loading) {
@@ -105,21 +98,19 @@ export function PoliciesTab({ hasManagementAccess }: PoliciesTabProps) {
       {/* Header */}
       <div className="px-4 py-4 border-b border-gray-200 dark:border-gray-700 flex justify-between items-center">
         <div>
-          <h3 className="text-lg font-medium text-gray-900 dark:text-white">
-            ACL Policies
-          </h3>
+          <h3 className="text-lg font-medium text-gray-900 dark:text-white">ACL Policies</h3>
           <p className="text-sm text-gray-500 dark:text-gray-400">
-            {policies.length} policy{policies.length !== 1 ? 'ies' : 'y'}
+            {policies.length} policy{policies.length !== 1 ? 'ies' : ''}
           </p>
         </div>
         <div className="flex gap-2">
           {hasManagementAccess && (
-            <Button onClick={() => setShowCreateModal(true)}>
+            <Button onClick={openCreateModal}>
               <Plus className="w-4 h-4 mr-2" />
               Create Policy
             </Button>
           )}
-          <RefreshButton onClick={() => fetchPolicies()} />
+          <RefreshButton onClick={refetch} />
         </div>
       </div>
 
@@ -131,59 +122,35 @@ export function PoliciesTab({ hasManagementAccess }: PoliciesTabProps) {
         <div className="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
           No policies found.{' '}
           {hasManagementAccess && (
-            <button
-              onClick={() => setShowCreateModal(true)}
-              className="text-blue-600 dark:text-blue-400 hover:underline"
-            >
+            <button onClick={openCreateModal} className="text-blue-600 dark:text-blue-400 hover:underline">
               Create your first policy
             </button>
           )}
         </div>
       ) : (
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-            <thead className="bg-gray-50 dark:bg-gray-700/50">
+          <table className={tableStyles}>
+            <thead className={tableHeaderStyles}>
               <tr>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
-                  Name
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
-                  Description
-                </th>
-                {hasManagementAccess && (
-                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
-                    Actions
-                  </th>
-                )}
+                <th className={tableHeaderCellStyles}>Name</th>
+                <th className={tableHeaderCellStyles}>Description</th>
+                {hasManagementAccess && <th className={`${tableHeaderCellStyles} text-right`}>Actions</th>}
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+            <tbody className={tableBodyStyles}>
               {policies.map((policy) => (
-                <tr
-                  key={policy.Name}
-                  className="hover:bg-gray-50 dark:hover:bg-gray-700/50"
-                >
+                <tr key={policy.Name} className={tableRowHoverStyles}>
                   <td className="px-4 py-3 whitespace-nowrap">
-                    <span className="text-sm font-medium text-gray-900 dark:text-white">
-                      {policy.Name}
-                    </span>
+                    <span className="text-sm font-medium text-gray-900 dark:text-white">{policy.Name}</span>
                   </td>
                   <td className="px-4 py-3">
-                    <span className="text-sm text-gray-600 dark:text-gray-400">
-                      {policy.Description || '-'}
-                    </span>
+                    <span className="text-sm text-gray-600 dark:text-gray-400">{policy.Description || '-'}</span>
                   </td>
                   {hasManagementAccess && (
                     <td className="px-4 py-3 whitespace-nowrap text-right">
                       <div className="flex justify-end gap-2">
-                        <EditButton
-                          onClick={() => handleEditClick(policy)}
-                          title="Edit policy"
-                        />
-                        <DeleteButton
-                          onClick={() => setDeletingPolicy(policy)}
-                          title="Delete policy"
-                        />
+                        <EditButton onClick={() => handleEditClick(policy)} title="Edit policy" />
+                        <DeleteButton onClick={() => openDeleteConfirm(policy)} title="Delete policy" />
                       </div>
                     </td>
                   )}
@@ -195,41 +162,22 @@ export function PoliciesTab({ hasManagementAccess }: PoliciesTabProps) {
       )}
 
       {/* Create Modal */}
-      <Modal
-        isOpen={showCreateModal}
-        onClose={() => setShowCreateModal(false)}
-        title="Create Policy"
-        size="2xl"
-      >
-        <PolicyForm
-          mode="create"
-          onSubmit={handleCreatePolicy}
-          onCancel={() => setShowCreateModal(false)}
-        />
+      <Modal isOpen={showCreateModal} onClose={closeCreateModal} title="Create Policy" size="2xl">
+        <PolicyForm mode="create" onSubmit={handleCreatePolicy} onCancel={closeCreateModal} />
       </Modal>
 
       {/* Edit Modal */}
-      <Modal
-        isOpen={editingPolicy !== null}
-        onClose={() => setEditingPolicy(null)}
-        title="Edit Policy"
-        size="2xl"
-      >
-        {editingPolicy && (
-          <PolicyForm
-            mode="edit"
-            policy={editingPolicy}
-            onSubmit={handleUpdatePolicy}
-            onCancel={() => setEditingPolicy(null)}
-          />
+      <Modal isOpen={editingPolicy !== null} onClose={closeEditModal} title="Edit Policy" size="2xl">
+        {editingPolicy && 'Rules' in editingPolicy && (
+          <PolicyForm mode="edit" policy={editingPolicy} onSubmit={handleUpdatePolicy} onCancel={closeEditModal} />
         )}
       </Modal>
 
       {/* Delete Confirmation */}
       <ConfirmationDialog
         isOpen={deletingPolicy !== null}
-        onClose={() => setDeletingPolicy(null)}
-        onConfirm={handleDeletePolicy}
+        onClose={closeDeleteConfirm}
+        onConfirm={handleDelete}
         title="Delete Policy"
         message={
           <>

@@ -1,4 +1,5 @@
 export { useAclPermissions } from './useAclPermissions';
+export { useCrudTab } from './useCrudTab';
 export { useDeploymentTracker } from './useDeploymentTracker';
 export { useExecSession } from './useExecSession';
 export { useFetch } from './useFetch';

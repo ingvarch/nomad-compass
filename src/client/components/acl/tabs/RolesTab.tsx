@@ -1,66 +1,75 @@
 import { useState, useEffect, useCallback } from 'react';
 import { Plus } from 'lucide-react';
 import { createNomadClient } from '../../../lib/api/nomad';
-import {
-  NomadAclRoleListItem,
-  NomadAclRole,
-  NomadAclPolicyListItem,
-} from '../../../types/acl';
+import { NomadAclRoleListItem, NomadAclRole, NomadAclPolicyListItem } from '../../../types/acl';
 import { LoadingSpinner, ErrorAlert, RefreshButton, Modal, Button, ConfirmationDialog } from '../../ui';
 import { EditButton, DeleteButton } from '../../ui/IconButton';
 import { RoleForm } from '../role/RoleForm';
-import { useToast } from '../../../context/ToastContext';
-import { getErrorMessage } from '../../../lib/errors';
+import { useCrudTab } from '../../../hooks/useCrudTab';
+import {
+  tableStyles,
+  tableHeaderStyles,
+  tableHeaderCellStyles,
+  tableBodyStyles,
+  tableRowHoverStyles,
+} from '../../../lib/styles';
 
 interface RolesTabProps {
   hasManagementAccess: boolean;
 }
 
 export function RolesTab({ hasManagementAccess }: RolesTabProps) {
-  const [roles, setRoles] = useState<NomadAclRoleListItem[]>([]);
   const [policies, setPolicies] = useState<NomadAclPolicyListItem[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  // Modal states
-  const [showCreateModal, setShowCreateModal] = useState(false);
-  const [editingRole, setEditingRole] = useState<NomadAclRole | null>(null);
-  const [deletingRole, setDeletingRole] = useState<NomadAclRoleListItem | null>(null);
-  const [deleteLoading, setDeleteLoading] = useState(false);
-
-  const { addToast } = useToast();
 
   const fetchData = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-
     const client = createNomadClient();
-    try {
-      const [rolesData, policiesData] = await Promise.all([
-        client.getAclRoles(),
-        client.getAclPolicies(),
-      ]);
-      setRoles(rolesData || []);
-      setPolicies(policiesData || []);
-    } catch (err) {
-      setError(getErrorMessage(err, 'Failed to fetch roles'));
-    } finally {
-      setLoading(false);
-    }
+    const [rolesData, policiesData] = await Promise.all([client.getAclRoles(), client.getAclPolicies()]);
+    setPolicies(policiesData || []);
+    return rolesData || [];
   }, []);
 
+  const deleteRole = useCallback(async (role: NomadAclRole | NomadAclRoleListItem) => {
+    const client = createNomadClient();
+    await client.deleteAclRole(role.ID);
+  }, []);
+
+  const {
+    items: roles,
+    loading,
+    error,
+    showCreateModal,
+    editingItem: editingRole,
+    deletingItem: deletingRole,
+    deleteLoading,
+    refetch,
+    openCreateModal,
+    closeCreateModal,
+    openEditModal,
+    closeEditModal,
+    openDeleteConfirm,
+    closeDeleteConfirm,
+    handleDelete,
+    onCreateSuccess,
+    onEditSuccess,
+  } = useCrudTab<NomadAclRoleListItem, void, NomadAclRole | NomadAclRoleListItem>({
+    fetchData,
+    deleteItem: deleteRole,
+    getDeletedItemName: (role) => `Role "${role.Name}"`,
+    fetchErrorMessage: 'Failed to fetch roles',
+    deleteErrorMessage: 'Failed to delete role',
+  });
+
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    refetch();
+  }, [refetch]);
 
   const handleEditClick = async (role: NomadAclRoleListItem) => {
     const client = createNomadClient();
     try {
       const fullRole = await client.getAclRole(role.ID);
-      setEditingRole(fullRole);
+      openEditModal(fullRole);
     } catch {
-      // Fallback to basic info
-      setEditingRole({
+      openEditModal({
         ID: role.ID,
         Name: role.Name,
         Description: role.Description,
@@ -69,28 +78,18 @@ export function RolesTab({ hasManagementAccess }: RolesTabProps) {
     }
   };
 
-  const handleCreateRole = async (
-    name: string,
-    description: string,
-    policyNames: string[]
-  ) => {
+  const handleCreateRole = async (name: string, description: string, policyNames: string[]) => {
     const client = createNomadClient();
     await client.createAclRole({
       Name: name,
       Description: description || undefined,
       Policies: policyNames.map((p) => ({ Name: p })),
     });
-    addToast(`Role "${name}" created successfully`, 'success');
-    setShowCreateModal(false);
-    await fetchData();
+    await onCreateSuccess(`Role "${name}" created successfully`);
   };
 
-  const handleUpdateRole = async (
-    name: string,
-    description: string,
-    policyNames: string[]
-  ) => {
-    if (!editingRole) return;
+  const handleUpdateRole = async (name: string, description: string, policyNames: string[]) => {
+    if (!editingRole || !('ID' in editingRole)) return;
 
     const client = createNomadClient();
     await client.updateAclRole(editingRole.ID, {
@@ -99,26 +98,7 @@ export function RolesTab({ hasManagementAccess }: RolesTabProps) {
       Description: description || undefined,
       Policies: policyNames.map((p) => ({ Name: p })),
     });
-    addToast(`Role "${name}" updated successfully`, 'success');
-    setEditingRole(null);
-    await fetchData();
-  };
-
-  const handleDeleteRole = async () => {
-    if (!deletingRole) return;
-
-    setDeleteLoading(true);
-    const client = createNomadClient();
-    try {
-      await client.deleteAclRole(deletingRole.ID);
-      addToast(`Role "${deletingRole.Name}" deleted successfully`, 'success');
-      setDeletingRole(null);
-      await fetchData();
-    } catch (err) {
-      addToast(getErrorMessage(err, 'Failed to delete role'), 'error');
-    } finally {
-      setDeleteLoading(false);
-    }
+    await onEditSuccess(`Role "${name}" updated successfully`);
   };
 
   if (loading) {
@@ -141,12 +121,12 @@ export function RolesTab({ hasManagementAccess }: RolesTabProps) {
         </div>
         <div className="flex gap-2">
           {hasManagementAccess && (
-            <Button onClick={() => setShowCreateModal(true)}>
+            <Button onClick={openCreateModal}>
               <Plus className="w-4 h-4 mr-2" />
               Create Role
             </Button>
           )}
-          <RefreshButton onClick={() => fetchData()} />
+          <RefreshButton onClick={refetch} />
         </div>
       </div>
 
@@ -158,50 +138,30 @@ export function RolesTab({ hasManagementAccess }: RolesTabProps) {
         <div className="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
           No roles found.{' '}
           {hasManagementAccess && (
-            <button
-              onClick={() => setShowCreateModal(true)}
-              className="text-blue-600 dark:text-blue-400 hover:underline"
-            >
+            <button onClick={openCreateModal} className="text-blue-600 dark:text-blue-400 hover:underline">
               Create your first role
             </button>
           )}
         </div>
       ) : (
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-            <thead className="bg-gray-50 dark:bg-gray-700/50">
+          <table className={tableStyles}>
+            <thead className={tableHeaderStyles}>
               <tr>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
-                  Name
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
-                  Description
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
-                  Policies
-                </th>
-                {hasManagementAccess && (
-                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
-                    Actions
-                  </th>
-                )}
+                <th className={tableHeaderCellStyles}>Name</th>
+                <th className={tableHeaderCellStyles}>Description</th>
+                <th className={tableHeaderCellStyles}>Policies</th>
+                {hasManagementAccess && <th className={`${tableHeaderCellStyles} text-right`}>Actions</th>}
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+            <tbody className={tableBodyStyles}>
               {roles.map((role) => (
-                <tr
-                  key={role.ID}
-                  className="hover:bg-gray-50 dark:hover:bg-gray-700/50"
-                >
+                <tr key={role.ID} className={tableRowHoverStyles}>
                   <td className="px-4 py-3 whitespace-nowrap">
-                    <span className="text-sm font-medium text-gray-900 dark:text-white">
-                      {role.Name}
-                    </span>
+                    <span className="text-sm font-medium text-gray-900 dark:text-white">{role.Name}</span>
                   </td>
                   <td className="px-4 py-3">
-                    <span className="text-sm text-gray-600 dark:text-gray-400">
-                      {role.Description || '-'}
-                    </span>
+                    <span className="text-sm text-gray-600 dark:text-gray-400">{role.Description || '-'}</span>
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex flex-wrap gap-1">
@@ -221,14 +181,8 @@ export function RolesTab({ hasManagementAccess }: RolesTabProps) {
                   {hasManagementAccess && (
                     <td className="px-4 py-3 whitespace-nowrap text-right">
                       <div className="flex justify-end gap-2">
-                        <EditButton
-                          onClick={() => handleEditClick(role)}
-                          title="Edit role"
-                        />
-                        <DeleteButton
-                          onClick={() => setDeletingRole(role)}
-                          title="Delete role"
-                        />
+                        <EditButton onClick={() => handleEditClick(role)} title="Edit role" />
+                        <DeleteButton onClick={() => openDeleteConfirm(role)} title="Delete role" />
                       </div>
                     </td>
                   )}
@@ -240,34 +194,19 @@ export function RolesTab({ hasManagementAccess }: RolesTabProps) {
       )}
 
       {/* Create Modal */}
-      <Modal
-        isOpen={showCreateModal}
-        onClose={() => setShowCreateModal(false)}
-        title="Create Role"
-        size="lg"
-      >
-        <RoleForm
-          mode="create"
-          availablePolicies={policies}
-          onSubmit={handleCreateRole}
-          onCancel={() => setShowCreateModal(false)}
-        />
+      <Modal isOpen={showCreateModal} onClose={closeCreateModal} title="Create Role" size="lg">
+        <RoleForm mode="create" availablePolicies={policies} onSubmit={handleCreateRole} onCancel={closeCreateModal} />
       </Modal>
 
       {/* Edit Modal */}
-      <Modal
-        isOpen={editingRole !== null}
-        onClose={() => setEditingRole(null)}
-        title="Edit Role"
-        size="lg"
-      >
-        {editingRole && (
+      <Modal isOpen={editingRole !== null} onClose={closeEditModal} title="Edit Role" size="lg">
+        {editingRole && 'ID' in editingRole && (
           <RoleForm
             mode="edit"
             role={editingRole}
             availablePolicies={policies}
             onSubmit={handleUpdateRole}
-            onCancel={() => setEditingRole(null)}
+            onCancel={closeEditModal}
           />
         )}
       </Modal>
@@ -275,8 +214,8 @@ export function RolesTab({ hasManagementAccess }: RolesTabProps) {
       {/* Delete Confirmation */}
       <ConfirmationDialog
         isOpen={deletingRole !== null}
-        onClose={() => setDeletingRole(null)}
-        onConfirm={handleDeleteRole}
+        onClose={closeDeleteConfirm}
+        onConfirm={handleDelete}
         title="Delete Role"
         message={
           <>

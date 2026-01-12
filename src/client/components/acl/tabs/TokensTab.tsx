@@ -13,6 +13,13 @@ import { TokenForm } from '../token/TokenForm';
 import { SecretIdDisplay } from '../token/SecretIdDisplay';
 import { useToast } from '../../../context/ToastContext';
 import { getErrorMessage } from '../../../lib/errors';
+import {
+  tableStyles,
+  tableHeaderStyles,
+  tableHeaderCellStyles,
+  tableBodyStyles,
+  tableRowHoverStyles,
+} from '../../../lib/styles';
 
 interface TokensTabProps {
   hasManagementAccess: boolean;
@@ -190,37 +197,20 @@ export function TokensTab({ hasManagementAccess }: TokensTabProps) {
         </div>
       ) : (
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-            <thead className="bg-gray-50 dark:bg-gray-700/50">
+          <table className={tableStyles}>
+            <thead className={tableHeaderStyles}>
               <tr>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
-                  Name
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
-                  Accessor ID
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
-                  Type
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
-                  Policies / Roles
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
-                  Expires
-                </th>
-                {hasManagementAccess && (
-                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
-                    Actions
-                  </th>
-                )}
+                <th className={tableHeaderCellStyles}>Name</th>
+                <th className={tableHeaderCellStyles}>Accessor ID</th>
+                <th className={tableHeaderCellStyles}>Type</th>
+                <th className={tableHeaderCellStyles}>Policies / Roles</th>
+                <th className={tableHeaderCellStyles}>Expires</th>
+                {hasManagementAccess && <th className={`${tableHeaderCellStyles} text-right`}>Actions</th>}
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+            <tbody className={tableBodyStyles}>
               {tokens.map((token) => (
-                <tr
-                  key={token.AccessorID}
-                  className="hover:bg-gray-50 dark:hover:bg-gray-700/50"
-                >
+                <tr key={token.AccessorID} className={tableRowHoverStyles}>
                   <td className="px-4 py-3 whitespace-nowrap">
                     <span className="text-sm font-medium text-gray-900 dark:text-white">
                       {token.Name || '-'}

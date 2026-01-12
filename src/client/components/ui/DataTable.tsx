@@ -1,5 +1,12 @@
 import type { ReactNode } from 'react';
 import EmptyState from './EmptyState';
+import {
+  tableStyles,
+  tableHeaderStyles,
+  tableHeaderCellStyles,
+  tableBodyStyles,
+  tableRowHoverStyles,
+} from '../../lib/styles';
 
 export interface Column<T> {
   key: string;
@@ -44,14 +51,14 @@ function DataTable<T>({
   return (
     <div className="bg-white dark:bg-gray-800 shadow rounded-lg overflow-hidden">
       <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-          <thead className="bg-gray-50 dark:bg-gray-700/50">
+        <table className={tableStyles}>
+          <thead className={tableHeaderStyles}>
             <tr>
               {columns.map((col) => (
                 <th
                   key={col.key}
-                  className={`px-4 py-3 text-xs font-medium text-gray-500 dark:text-gray-400 uppercase ${
-                    col.textAlign === 'right' ? 'text-right' : 'text-left'
+                  className={`${tableHeaderCellStyles} ${
+                    col.textAlign === 'right' ? 'text-right' : ''
                   }`}
                 >
                   {col.header}
@@ -59,11 +66,11 @@ function DataTable<T>({
               ))}
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+          <tbody className={tableBodyStyles}>
             {items.map((item, index) => (
               <tr
                 key={keyExtractor(item, index)}
-                className={`hover:bg-gray-50 dark:hover:bg-gray-700/50 ${
+                className={`${tableRowHoverStyles} ${
                   onRowClick ? 'cursor-pointer' : ''
                 }`}
                 onClick={onRowClick ? () => onRowClick(item) : undefined}

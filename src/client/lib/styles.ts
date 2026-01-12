@@ -55,9 +55,6 @@ export const buttonPrimarySmallStyles = `${buttonBase} px-3 py-1.5 text-xs text-
 
 export const buttonSecondarySmallStyles = `${buttonBase} px-3 py-1.5 text-xs text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 focus:ring-blue-500 dark:focus:ring-offset-gray-800`;
 
-// Ghost button (no background)
-export const buttonGhostStyles = `${buttonBase} px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 focus:ring-blue-500 dark:focus:ring-offset-gray-800`;
-
 // Form label styles
 export const labelStyles = 'block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1';
 
@@ -76,7 +73,5 @@ export const tableRowHoverStyles = 'hover:bg-gray-50 dark:hover:bg-gray-700/50';
 export const cardStyles = 'bg-white dark:bg-gray-800 rounded-lg shadow';
 export const cardHeaderStyles = 'bg-gray-50 dark:bg-gray-700 p-4 rounded-t-lg';
 
-// Icon button styles (for action buttons in tables)
+// Icon button base styles (for action buttons in tables)
 export const iconButtonStyles = 'inline-flex items-center justify-center p-2 border border-transparent text-xs font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 w-10 h-10';
-export const iconButtonPrimaryStyles = `${iconButtonStyles} text-white bg-blue-600 hover:bg-blue-700 focus:ring-blue-500`;
-export const iconButtonDangerStyles = `${iconButtonStyles} text-white bg-red-600 hover:bg-red-700 focus:ring-red-500`;
