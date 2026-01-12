@@ -2,6 +2,7 @@ import { Hono } from 'hono'
 import { setCookie, deleteCookie, getCookie } from 'hono/cookie'
 import type { Env } from '../types'
 import { generateCSRFToken, createTicket, timingSafeEqual } from '../utils/crypto'
+import { badRequestResponse, unauthorizedResponse, forbiddenResponse, errorResponse } from '../utils/responses'
 
 /**
  * Validates a Nomad token against the Nomad API
@@ -33,18 +34,18 @@ authRoutes.post('/login', async (c) => {
     const { token } = body as { token?: string }
 
     if (!token || typeof token !== 'string' || !token.trim()) {
-      return c.json({ error: 'Token is required' }, 400)
+      return badRequestResponse(c, 'Token is required')
     }
 
     const nomadAddr = c.env.NOMAD_ADDR
     if (!nomadAddr) {
-      return c.json({ error: 'Nomad server not configured' }, 500)
+      return errorResponse(c, 'Nomad server not configured')
     }
 
     // Validate token against Nomad API
     const isValid = await validateNomadToken(nomadAddr, token.trim())
     if (!isValid) {
-      return c.json({ error: 'Invalid token or failed to connect to Nomad' }, 401)
+      return unauthorizedResponse(c, 'Invalid token or failed to connect to Nomad')
     }
 
     // Detect secure context from request protocol (works in both Bun and CF Workers)
@@ -71,7 +72,7 @@ authRoutes.post('/login', async (c) => {
 
     return c.json({ success: true })
   } catch {
-    return c.json({ error: 'Login failed' }, 500)
+    return errorResponse(c, 'Login failed')
   }
 })
 
@@ -97,19 +98,19 @@ authRoutes.post('/ws-ticket', async (c) => {
   const csrfCookie = getCookie(c, 'csrf-token')
 
   if (!csrfHeader || !csrfCookie || !timingSafeEqual(csrfHeader, csrfCookie)) {
-    return c.json({ error: 'Invalid CSRF token' }, 403)
+    return forbiddenResponse(c, 'Invalid CSRF token')
   }
 
   // Check authentication
   const token = getCookie(c, 'nomad-token')
   if (!token) {
-    return c.json({ error: 'Not authenticated' }, 401)
+    return unauthorizedResponse(c, 'Not authenticated')
   }
 
   // TICKET_SECRET must be set - no fallbacks for security
   const secret = c.env.TICKET_SECRET
   if (!secret) {
-    return c.json({ error: 'Server misconfigured: TICKET_SECRET not set' }, 500)
+    return errorResponse(c, 'Server misconfigured: TICKET_SECRET not set')
   }
   const ticket = await createTicket(secret)
 
