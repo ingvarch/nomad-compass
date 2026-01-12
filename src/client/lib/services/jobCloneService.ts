@@ -4,7 +4,7 @@ import type { NomadJobFormData } from '../../types/nomad';
  * Generates a clone name from the original job name
  * Examples: "myapp" → "myapp-copy-1", "myapp-copy-1" → "myapp-copy-2"
  */
-export function generateCloneName(originalName: string): string {
+function generateCloneName(originalName: string): string {
   // Check if the name already ends with -copy-N pattern
   const copyPattern = /^(.+)-copy-(\d+)$/;
   const match = originalName.match(copyPattern);

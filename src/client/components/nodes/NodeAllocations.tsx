@@ -1,6 +1,13 @@
 import { Link } from 'react-router-dom';
 import { NomadAllocation } from '../../types/nomad';
 import { Terminal } from 'lucide-react';
+import {
+  tableStyles,
+  tableHeaderStyles,
+  tableHeaderCellStyles,
+  tableBodyStyles,
+  tableRowHoverStyles,
+} from '../../lib/styles';
 
 function getFirstTask(alloc: NomadAllocation): string | null {
   if (alloc.TaskStates) {
@@ -50,34 +57,22 @@ export function NodeAllocations({ allocations }: NodeAllocationsProps) {
 
   return (
     <div className="overflow-x-auto">
-      <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-        <thead className="bg-gray-50 dark:bg-gray-700/50">
+      <table className={tableStyles}>
+        <thead className={tableHeaderStyles}>
           <tr>
-            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
-              Allocation
-            </th>
-            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
-              Job
-            </th>
-            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
-              Task Group
-            </th>
-            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
-              Status
-            </th>
-            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
-              Version
-            </th>
-            <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
-              Actions
-            </th>
+            <th className={tableHeaderCellStyles}>Allocation</th>
+            <th className={tableHeaderCellStyles}>Job</th>
+            <th className={tableHeaderCellStyles}>Task Group</th>
+            <th className={tableHeaderCellStyles}>Status</th>
+            <th className={tableHeaderCellStyles}>Version</th>
+            <th className={`${tableHeaderCellStyles} text-right`}>Actions</th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+        <tbody className={tableBodyStyles}>
           {sortedAllocations.map((alloc) => {
             const statusColors = getStatusColor(alloc.ClientStatus);
             return (
-              <tr key={alloc.ID} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+              <tr key={alloc.ID} className={tableRowHoverStyles}>
                 <td className="px-4 py-3 whitespace-nowrap">
                   <span className="font-mono text-sm text-gray-900 dark:text-white">
                     {alloc.ID.slice(0, 8)}

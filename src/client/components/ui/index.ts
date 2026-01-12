@@ -8,7 +8,7 @@ export { ErrorBoundary } from '../ErrorBoundary';
 export { default as ExpandIcon } from './ExpandIcon';
 export { FilterButtons, type FilterOption } from './FilterButtons';
 export { FormActions } from './FormActions';
-export { IconButton, EditButton, DeleteButton, ViewButton } from './IconButton';
+export { IconButton, EditButton, DeleteButton } from './IconButton';
 export { default as InfoBox } from './InfoBox';
 export { LoadingSpinner } from './LoadingSpinner';
 export { default as Modal } from './Modal';

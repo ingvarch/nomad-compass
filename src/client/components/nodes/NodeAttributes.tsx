@@ -1,6 +1,12 @@
 import { useState } from 'react';
 import { NomadNodeDetail } from '../../types/nomad';
 import ExpandIcon from '../ui/ExpandIcon';
+import {
+  tableStyles,
+  tableHeaderStyles,
+  tableHeaderCellStyles,
+  tableBodyStyles,
+} from '../../lib/styles';
 
 interface NodeAttributesProps {
   node: NomadNodeDetail;
@@ -88,15 +94,15 @@ export function NodeAttributes({ node }: NodeAttributesProps) {
         <div>
           <h4 className="text-sm font-medium text-gray-900 dark:text-white mb-3">Host Volumes</h4>
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-              <thead className="bg-gray-50 dark:bg-gray-700/50">
+            <table className={tableStyles}>
+              <thead className={tableHeaderStyles}>
                 <tr>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Name</th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Path</th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Mode</th>
+                  <th className={tableHeaderCellStyles}>Name</th>
+                  <th className={tableHeaderCellStyles}>Path</th>
+                  <th className={tableHeaderCellStyles}>Mode</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+              <tbody className={tableBodyStyles}>
                 {Object.entries(node.HostVolumes).map(([name, volume]) => (
                   <tr key={name}>
                     <td className="px-4 py-2 text-sm font-medium text-gray-900 dark:text-white">{name}</td>

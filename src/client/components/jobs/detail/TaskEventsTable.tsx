@@ -4,6 +4,13 @@ import { NomadAllocation, NomadTaskEvent } from '../../../types/nomad';
 import ExpandIcon from '../../ui/ExpandIcon';
 import { Terminal } from 'lucide-react';
 import { formatTimestamp } from '../../../lib/utils/dateFormatter';
+import {
+  tableStyles,
+  tableHeaderStyles,
+  tableHeaderCellStyles,
+  tableBodyStyles,
+  tableRowHoverStyles,
+} from '../../../lib/styles';
 
 interface TaskEventsTableProps {
   allocations: NomadAllocation[];
@@ -89,30 +96,18 @@ export function TaskEventsTable({ allocations, taskGroupName }: TaskEventsTableP
 
   return (
     <div className="overflow-x-auto">
-      <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-        <thead className="bg-gray-50 dark:bg-gray-700/50">
+      <table className={tableStyles}>
+        <thead className={tableHeaderStyles}>
           <tr>
-            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
-              Allocation
-            </th>
-            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
-              Task
-            </th>
-            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
-              State
-            </th>
-            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
-              Latest Event
-            </th>
-            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
-              Time
-            </th>
-            <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
-              Actions
-            </th>
+            <th className={tableHeaderCellStyles}>Allocation</th>
+            <th className={tableHeaderCellStyles}>Task</th>
+            <th className={tableHeaderCellStyles}>State</th>
+            <th className={tableHeaderCellStyles}>Latest Event</th>
+            <th className={tableHeaderCellStyles}>Time</th>
+            <th className={`${tableHeaderCellStyles} text-right`}>Actions</th>
           </tr>
         </thead>
-        <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+        <tbody className={tableBodyStyles}>
           {taskEventsData.map((data) => {
             const latestEvent = data.events[0];
             const isExpanded = expandedAlloc === `${data.allocId}-${data.taskName}`;
@@ -122,7 +117,7 @@ export function TaskEventsTable({ allocations, taskGroupName }: TaskEventsTableP
               <>
                 <tr
                   key={`${data.allocId}-${data.taskName}`}
-                  className={`hover:bg-gray-50 dark:hover:bg-gray-700/50 ${hasMultipleEvents ? 'cursor-pointer' : ''}`}
+                  className={`${tableRowHoverStyles} ${hasMultipleEvents ? 'cursor-pointer' : ''}`}
                   onClick={() =>
                     hasMultipleEvents &&
                     setExpandedAlloc(isExpanded ? null : `${data.allocId}-${data.taskName}`)

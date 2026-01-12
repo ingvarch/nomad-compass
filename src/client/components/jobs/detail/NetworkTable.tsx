@@ -1,4 +1,10 @@
 import React from 'react';
+import {
+  tableStyles,
+  tableHeaderStyles,
+  tableHeaderCellStyles,
+  tableBodyStyles,
+} from '../../../lib/styles';
 
 interface Port {
   Label: string;
@@ -43,32 +49,26 @@ const NetworkTable: React.FC<NetworkTableProps> = ({ networks }) => {
                   Dynamic Ports
                 </div>
                 <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                    <thead className="bg-gray-50 dark:bg-gray-700">
+                  <table className={tableStyles}>
+                    <thead className={tableHeaderStyles}>
                       <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                          Label
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                          Host Port
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                          Container Port
-                        </th>
+                        <th className={tableHeaderCellStyles}>Label</th>
+                        <th className={tableHeaderCellStyles}>Host Port</th>
+                        <th className={tableHeaderCellStyles}>Container Port</th>
                       </tr>
                     </thead>
-                    <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                    <tbody className={tableBodyStyles}>
                       {network.DynamicPorts!.map((port, portIndex) => (
                         <tr key={portIndex}>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                          <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                             {port.Label}
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                          <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                             <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">
                               Dynamic
                             </span>
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                          <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                             {port.To || port.Value || '-'}
                           </td>
                         </tr>
@@ -85,30 +85,24 @@ const NetworkTable: React.FC<NetworkTableProps> = ({ networks }) => {
                   Static Ports
                 </div>
                 <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                    <thead className="bg-gray-50 dark:bg-gray-700">
+                  <table className={tableStyles}>
+                    <thead className={tableHeaderStyles}>
                       <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                          Label
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                          Host Port
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                          Container Port
-                        </th>
+                        <th className={tableHeaderCellStyles}>Label</th>
+                        <th className={tableHeaderCellStyles}>Host Port</th>
+                        <th className={tableHeaderCellStyles}>Container Port</th>
                       </tr>
                     </thead>
-                    <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                    <tbody className={tableBodyStyles}>
                       {network.ReservedPorts!.map((port, portIndex) => (
                         <tr key={portIndex}>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                          <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                             {port.Label}
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                          <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                             {port.Value}
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                          <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
                             {port.To || port.Value || '-'}
                           </td>
                         </tr>

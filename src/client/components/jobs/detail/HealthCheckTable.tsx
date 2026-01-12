@@ -1,4 +1,10 @@
 import React from 'react';
+import {
+  tableStyles,
+  tableHeaderStyles,
+  tableHeaderCellStyles,
+  tableBodyStyles,
+} from '../../../lib/styles';
 
 interface Check {
   Type: string;
@@ -39,27 +45,17 @@ const HealthCheckTable: React.FC<HealthCheckTableProps> = ({ services }) => {
               Health Check for {service.Name}
             </h5>
             <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                <thead className="bg-gray-50 dark:bg-gray-700">
+              <table className={tableStyles}>
+                <thead className={tableHeaderStyles}>
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Type
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Path/Command
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Interval
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Timeout
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Check Restart
-                    </th>
+                    <th className={tableHeaderCellStyles}>Type</th>
+                    <th className={tableHeaderCellStyles}>Path/Command</th>
+                    <th className={tableHeaderCellStyles}>Interval</th>
+                    <th className={tableHeaderCellStyles}>Timeout</th>
+                    <th className={tableHeaderCellStyles}>Check Restart</th>
                   </tr>
                 </thead>
-                <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                <tbody className={tableBodyStyles}>
                   {service.Checks.map((check, checkIndex) => (
                     <tr key={checkIndex}>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">

@@ -1,7 +1,7 @@
 import type { NomadAllocation } from '../../types/nomad';
 
 // Types for analysis results
-export interface AllocationIssue {
+interface AllocationIssue {
   type: 'high_restarts' | 'oom_killed' | 'recent_failure' | 'crash_loop';
   taskName: string;
   details: string;
