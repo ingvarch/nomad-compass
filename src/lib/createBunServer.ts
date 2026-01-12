@@ -41,9 +41,6 @@ export function createBunServer(options: BunServerOptions): BunServerConfig {
   // Add any additional middleware (e.g., static file serving for production)
   options.addMiddleware?.(app);
 
-  console.log(`Server running at http://localhost:${port}`);
-  console.log(`Using NOMAD_ADDR: ${nomadAddr}`);
-
   const { handleUpgrade, websocket } = createBunWebSocketHandlers({
     nomadAddr,
     ticketSecret,

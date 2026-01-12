@@ -37,13 +37,6 @@ export function getInputStyles(isError = false): string {
   return isError ? inputErrorStyles : inputStyles;
 }
 
-/**
- * Combine base styles with additional classes
- */
-export function combineStyles(base: string, additional?: string): string {
-  return additional ? `${base} ${additional}` : base;
-}
-
 // Button base styles
 const buttonBase =
   'inline-flex items-center justify-center font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 transition-colors';
@@ -64,3 +57,26 @@ export const buttonSecondarySmallStyles = `${buttonBase} px-3 py-1.5 text-xs tex
 
 // Ghost button (no background)
 export const buttonGhostStyles = `${buttonBase} px-4 py-2 text-sm text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700 focus:ring-blue-500 dark:focus:ring-offset-gray-800`;
+
+// Form label styles
+export const labelStyles = 'block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1';
+
+// Help text / description styles
+export const helpTextStyles = 'text-xs text-gray-500 dark:text-gray-400 mt-1';
+
+// Table styles
+export const tableStyles = 'min-w-full divide-y divide-gray-200 dark:divide-gray-700';
+export const tableHeaderStyles = 'bg-gray-50 dark:bg-gray-700/50';
+export const tableHeaderCellStyles = 'px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase';
+export const tableBodyStyles = 'divide-y divide-gray-200 dark:divide-gray-700';
+export const tableCellStyles = 'px-4 py-3 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400';
+export const tableRowHoverStyles = 'hover:bg-gray-50 dark:hover:bg-gray-700/50';
+
+// Card/Section styles
+export const cardStyles = 'bg-white dark:bg-gray-800 rounded-lg shadow';
+export const cardHeaderStyles = 'bg-gray-50 dark:bg-gray-700 p-4 rounded-t-lg';
+
+// Icon button styles (for action buttons in tables)
+export const iconButtonStyles = 'inline-flex items-center justify-center p-2 border border-transparent text-xs font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 w-10 h-10';
+export const iconButtonPrimaryStyles = `${iconButtonStyles} text-white bg-blue-600 hover:bg-blue-700 focus:ring-blue-500`;
+export const iconButtonDangerStyles = `${iconButtonStyles} text-white bg-red-600 hover:bg-red-700 focus:ring-red-500`;

@@ -6,6 +6,28 @@
 /** Nanoseconds to milliseconds conversion factor */
 export const NANOSECONDS_TO_MS = 1_000_000;
 
+/** Nanoseconds to seconds conversion factor */
+export const NANOSECONDS_TO_SEC = 1_000_000_000;
+
+/**
+ * Convert nanoseconds to seconds.
+ * Commonly used for Nomad health check intervals and timeouts.
+ * @param nanos - Duration in nanoseconds
+ * @returns Duration in seconds (rounded)
+ */
+export function nanosToSeconds(nanos: number): number {
+  return Math.round(nanos / NANOSECONDS_TO_SEC);
+}
+
+/**
+ * Convert nanoseconds to milliseconds.
+ * @param nanos - Duration in nanoseconds
+ * @returns Duration in milliseconds
+ */
+export function nanosToMs(nanos: number): number {
+  return nanos / NANOSECONDS_TO_MS;
+}
+
 /** Reusable date formatter for long format */
 const longDateFormatter = new Intl.DateTimeFormat('en-GB', {
   day: '2-digit',

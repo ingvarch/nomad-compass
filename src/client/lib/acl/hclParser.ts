@@ -2,6 +2,8 @@ import {
   AclPolicyRules,
   NamespaceRule,
   NamespaceCapability,
+  NodePoolCapability,
+  HostVolumeCapability,
   PolicyLevel,
   VariableCapability,
   NamespaceVariablesPath,
@@ -81,7 +83,7 @@ export function parseHcl(hcl: string): AclPolicyRules | null {
         rules.nodePool = {
           name: nodePoolMatch.label,
           policy: policy || undefined,
-          capabilities: capabilities.length > 0 ? (capabilities as any) : undefined,
+          capabilities: capabilities.length > 0 ? (capabilities as NodePoolCapability[]) : undefined,
         };
       }
     }
@@ -96,7 +98,7 @@ export function parseHcl(hcl: string): AclPolicyRules | null {
         rules.hostVolumes.push({
           name: match.label || '*',
           policy: policy || undefined,
-          capabilities: capabilities.length > 0 ? (capabilities as any) : undefined,
+          capabilities: capabilities.length > 0 ? (capabilities as HostVolumeCapability[]) : undefined,
         });
       }
     }
