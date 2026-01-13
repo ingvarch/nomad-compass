@@ -57,7 +57,7 @@ export function TokensTab({ hasManagementAccess }: TokensTabProps) {
     openDeleteConfirm,
     closeDeleteConfirm,
     handleDelete,
-  } = useCrudTab<NomadAclTokenListItem, void, NomadAclTokenListItem>({
+  } = useCrudTab<NomadAclTokenListItem>({
     fetchData: fetchTokens,
     deleteItem: deleteToken,
     getDeletedItemName: (token) => `Token "${token.Name || 'Unnamed'}"`,

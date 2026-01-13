@@ -51,7 +51,7 @@ export function RolesTab({ hasManagementAccess }: RolesTabProps) {
     handleDelete,
     onCreateSuccess,
     onEditSuccess,
-  } = useCrudTab<NomadAclRoleListItem, void, NomadAclRole | NomadAclRoleListItem>({
+  } = useCrudTab<NomadAclRoleListItem, NomadAclRole | NomadAclRoleListItem>({
     fetchData,
     deleteItem: deleteRole,
     getDeletedItemName: (role) => `Role "${role.Name}"`,

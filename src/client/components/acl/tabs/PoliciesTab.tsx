@@ -47,7 +47,7 @@ export function PoliciesTab({ hasManagementAccess }: PoliciesTabProps) {
     handleDelete,
     onCreateSuccess,
     onEditSuccess,
-  } = useCrudTab<NomadAclPolicyListItem, void, NomadAclPolicy | NomadAclPolicyListItem>({
+  } = useCrudTab<NomadAclPolicyListItem, NomadAclPolicy | NomadAclPolicyListItem>({
     fetchData: fetchPolicies,
     deleteItem: deletePolicy,
     getDeletedItemName: (policy) => `Policy "${policy.Name}"`,

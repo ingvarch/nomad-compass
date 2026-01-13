@@ -2,7 +2,7 @@ import { useState, useCallback } from 'react';
 import { useToast } from '../context/ToastContext';
 import { getErrorMessage } from '../lib/errors';
 
-interface UseCrudTabOptions<T, TCreate, TEdit> {
+interface UseCrudTabOptions<T, TEdit> {
   /** Function to fetch initial data */
   fetchData: () => Promise<T[]>;
   /** Function to delete an item by its identifier */
@@ -15,7 +15,7 @@ interface UseCrudTabOptions<T, TCreate, TEdit> {
   deleteErrorMessage?: string;
 }
 
-interface UseCrudTabResult<T, TCreate, TEdit> {
+interface UseCrudTabResult<T, TEdit> {
   // Data state
   items: T[];
   loading: boolean;
@@ -44,13 +44,13 @@ interface UseCrudTabResult<T, TCreate, TEdit> {
  * Generic hook for CRUD tab operations.
  * Consolidates the common pattern of loading data, showing modals, and handling delete.
  */
-export function useCrudTab<T, TCreate = unknown, TEdit = T>({
+export function useCrudTab<T, TEdit = T>({
   fetchData,
   deleteItem,
   getDeletedItemName,
   fetchErrorMessage = 'Failed to fetch data',
   deleteErrorMessage = 'Failed to delete item',
-}: UseCrudTabOptions<T, TCreate, TEdit>): UseCrudTabResult<T, TCreate, TEdit> {
+}: UseCrudTabOptions<T, TEdit>): UseCrudTabResult<T, TEdit> {
   const { addToast } = useToast();
 
   // Data state
