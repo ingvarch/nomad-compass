@@ -16,6 +16,7 @@ export { default as Modal } from './Modal';
 export { PageHeader } from './PageHeader';
 export { RefreshButton } from './RefreshButton';
 export { RemovableBadge } from './RemovableBadge';
+export { Spinner } from './Spinner';
 export { ThemeToggle } from './ThemeToggle';
 export { ToastContainer } from './Toast';
 export { VisibilityToggleButton } from './VisibilityToggleButton';

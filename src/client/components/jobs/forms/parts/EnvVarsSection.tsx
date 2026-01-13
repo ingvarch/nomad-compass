@@ -3,7 +3,7 @@ import { Trash, Plus } from 'lucide-react';
 import { NomadEnvVar } from '../../../../types/nomad';
 import { useToggleState } from '../../../../hooks/useToggleState';
 import { VisibilityToggleButton } from '../../../ui/VisibilityToggleButton';
-import { inputBaseStyles } from '../../../../lib/styles';
+import { inputBaseStyles, iconButtonDangerStyles } from '../../../../lib/styles';
 
 interface EnvVarsSectionProps {
   envVars: NomadEnvVar[];
@@ -59,7 +59,7 @@ const EnvVarsSection: React.FC<EnvVarsSectionProps> = ({
           <button
             type="button"
             onClick={() => onRemoveEnvVar(index)}
-            className="flex-shrink-0 p-2 border border-transparent text-xs font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
+            className={`flex-shrink-0 ${iconButtonDangerStyles}`}
             disabled={isLoading}
             title="Remove"
           >

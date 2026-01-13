@@ -52,6 +52,10 @@ export const buttonSuccessSmallStyles = `${buttonBase} px-3 py-1.5 text-xs text-
 // Danger button - small
 export const buttonDangerSmallStyles = `${buttonBase} px-3 py-1.5 text-xs text-white bg-red-600 hover:bg-red-700 focus:ring-red-500 dark:focus:ring-offset-gray-800`;
 
+// Icon-only button styles (square buttons for add/remove actions in forms)
+export const iconButtonPrimaryStyles = `${buttonBase} p-2 text-xs text-white bg-blue-600 hover:bg-blue-700 focus:ring-blue-500 dark:focus:ring-offset-gray-800`;
+export const iconButtonDangerStyles = `${buttonBase} p-2 text-xs text-white bg-red-600 hover:bg-red-700 focus:ring-red-500 dark:focus:ring-offset-gray-800`;
+
 // Monokai theme input styles (for job/namespace forms with monokai dark theme)
 export const inputMonokaiBaseStyles =
   'border border-gray-300 dark:border-monokai-muted rounded-md bg-white dark:bg-monokai-surface text-gray-900 dark:text-monokai-text focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-monokai-blue';

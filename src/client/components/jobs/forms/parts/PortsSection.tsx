@@ -1,7 +1,7 @@
 import React from 'react';
 import { Trash, Plus } from 'lucide-react';
 import { NomadPort } from '../../../../types/nomad';
-import { inputStyles, selectStyles, labelSmallStyles } from '../../../../lib/styles';
+import { inputStyles, selectStyles, labelSmallStyles, iconButtonPrimaryStyles, iconButtonDangerStyles } from '../../../../lib/styles';
 
 interface PortRowProps {
   port: NomadPort;
@@ -95,7 +95,7 @@ const PortRow: React.FC<PortRowProps> = ({
         <button
           type="button"
           onClick={onAddPort}
-          className="flex justify-center items-center px-3 py-2 border border-transparent text-xs font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-offset-gray-800 w-16"
+          className={`${iconButtonPrimaryStyles} w-16`}
           disabled={isLoading}
         >
           <Plus size={16} />
@@ -104,7 +104,7 @@ const PortRow: React.FC<PortRowProps> = ({
         <button
           type="button"
           onClick={() => onRemovePort(index)}
-          className="flex justify-center items-center px-3 py-2 border border-transparent text-xs font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 dark:focus:ring-offset-gray-800 w-16"
+          className={`${iconButtonDangerStyles} w-16`}
           disabled={isLoading}
         >
           <Trash size={16} />
