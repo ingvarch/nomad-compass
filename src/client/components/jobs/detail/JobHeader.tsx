@@ -4,7 +4,7 @@ import { useAuth } from '../../../context/AuthContext';
 import { createNomadClient } from '../../../lib/api/nomad';
 import { useToast } from '../../../context/ToastContext';
 import { isPermissionError, getPermissionErrorMessage, getErrorMessage } from '../../../lib/errors';
-import { buttonPrimaryStyles, buttonDangerStyles, buttonSecondaryStyles } from '../../../lib/styles';
+import { buttonPrimaryStyles, buttonDangerStyles, buttonSecondaryStyles, buttonSuccessStyles } from '../../../lib/styles';
 import PermissionErrorModal from '../../ui/PermissionErrorModal';
 import { ConfirmationDialog } from '../../ui/ConfirmationDialog';
 
@@ -13,9 +13,6 @@ interface JobHeaderProps {
   jobId: string;
   namespace: string;
 }
-
-// Green button style (Edit)
-const buttonSuccessStyles = 'inline-flex items-center justify-center font-medium rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 transition-colors px-4 py-2 text-sm text-white bg-green-600 hover:bg-green-700 focus:ring-green-500 dark:focus:ring-offset-gray-800';
 
 const JobHeader: React.FC<JobHeaderProps> = ({ jobName, jobId, namespace }) => {
   const navigate = useNavigate();

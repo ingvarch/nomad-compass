@@ -45,6 +45,26 @@ export const buttonPrimarySmallStyles = `${buttonBase} px-3 py-1.5 text-xs text-
 
 export const buttonSecondarySmallStyles = `${buttonBase} px-3 py-1.5 text-xs text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 focus:ring-blue-500 dark:focus:ring-offset-gray-800`;
 
+// Success button (green)
+export const buttonSuccessStyles = `${buttonBase} px-4 py-2 text-sm text-white bg-green-600 hover:bg-green-700 focus:ring-green-500 dark:focus:ring-offset-gray-800`;
+
+// Success button - small
+export const buttonSuccessSmallStyles = `${buttonBase} px-3 py-1.5 text-xs text-white bg-green-600 hover:bg-green-700 focus:ring-green-500 dark:focus:ring-offset-gray-800`;
+
+// Danger button - small
+export const buttonDangerSmallStyles = `${buttonBase} px-3 py-1.5 text-xs text-white bg-red-600 hover:bg-red-700 focus:ring-red-500 dark:focus:ring-offset-gray-800`;
+
+// Monokai theme input styles (for job/namespace forms with monokai dark theme)
+export const inputMonokaiBaseStyles =
+  'border border-gray-300 dark:border-monokai-muted rounded-md bg-white dark:bg-monokai-surface text-gray-900 dark:text-monokai-text focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-monokai-blue';
+
+export const inputMonokaiStyles = `w-full p-2 ${inputMonokaiBaseStyles}`;
+
+export const inputMonokaiFlexStyles = `flex-1 p-2 ${inputMonokaiBaseStyles}`;
+
+export const inputMonokaiErrorStyles =
+  'w-full p-2 border border-red-500 dark:border-monokai-red rounded-md bg-white dark:bg-monokai-surface text-gray-900 dark:text-monokai-text focus:outline-none focus:ring-2 focus:ring-red-500';
+
 // Table styles
 export const tableStyles = 'min-w-full divide-y divide-gray-200 dark:divide-gray-700';
 export const tableHeaderStyles = 'bg-gray-50 dark:bg-gray-700/50';

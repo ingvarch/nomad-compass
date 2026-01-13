@@ -3,6 +3,7 @@ export { useCrudTab } from './useCrudTab';
 export { useDeploymentTracker } from './useDeploymentTracker';
 export { useExecSession } from './useExecSession';
 export { useFetch } from './useFetch';
+export { useFilteredData } from './useFilteredData';
 export { useJobForm } from './useJobForm';
 export { useJobPlan } from './useJobPlan';
 export { useLogStream } from './useLogStream';

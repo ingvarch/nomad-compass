@@ -60,27 +60,27 @@ nomadRoutes.all('/*', async (c) => {
   if (!response.ok) {
     // For error responses, we should not expose internal details
     const errorBody = await response.text();
-    let errorResponse;
+    let responseBody;
 
     try {
       // Try to parse the error as JSON to extract only the essential message
       const errorJson = JSON.parse(errorBody);
       // Only return safe error information
-      errorResponse = JSON.stringify({
+      responseBody = JSON.stringify({
         error: 'Request to Nomad API failed',
         status: response.status,
         message: errorJson.Message || errorJson.message || 'An error occurred while processing your request'
       });
     } catch {
       // If it's not JSON, return a generic error
-      errorResponse = JSON.stringify({
+      responseBody = JSON.stringify({
         error: 'Request to Nomad API failed',
         status: response.status,
         message: 'An error occurred while processing your request'
       });
     }
 
-    return new Response(errorResponse, {
+    return new Response(responseBody, {
       status: response.status,
       headers: { 'Content-Type': 'application/json' },
     });

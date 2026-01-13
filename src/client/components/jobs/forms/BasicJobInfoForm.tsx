@@ -1,5 +1,6 @@
 // src/components/jobs/forms/BasicJobInfoForm.tsx
 import React from 'react';
+import { inputMonokaiStyles, inputMonokaiErrorStyles } from '../../../lib/styles';
 
 interface BasicJobInfoFormProps {
     name: string;
@@ -20,8 +21,6 @@ const BasicJobInfoForm: React.FC<BasicJobInfoFormProps> = ({
                                                                       isLoadingNamespaces,
                                                                       isNameValid
                                                                   }) => {
-    const baseInputClasses = `w-full p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-monokai-blue bg-white dark:bg-monokai-surface text-gray-900 dark:text-monokai-text`;
-
     return (
         <>
             {/* Job Name */}
@@ -36,7 +35,7 @@ const BasicJobInfoForm: React.FC<BasicJobInfoFormProps> = ({
                     value={name}
                     onChange={onChange}
                     placeholder="my-service"
-                    className={`${baseInputClasses} ${!isNameValid ? 'border-red-500 dark:border-monokai-red' : 'border-gray-300 dark:border-monokai-muted'}`}
+                    className={isNameValid ? inputMonokaiStyles : inputMonokaiErrorStyles}
                     disabled={isLoading}
                     required
                 />
@@ -57,7 +56,7 @@ const BasicJobInfoForm: React.FC<BasicJobInfoFormProps> = ({
                     name="namespace"
                     value={namespace}
                     onChange={onChange}
-                    className={`${baseInputClasses} border-gray-300 dark:border-monokai-muted`}
+                    className={inputMonokaiStyles}
                     disabled={isLoading || isLoadingNamespaces}
                 >
                     {isLoadingNamespaces ? (

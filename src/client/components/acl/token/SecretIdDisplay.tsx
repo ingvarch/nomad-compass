@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { NomadAclToken } from '../../../types/acl';
+import { Badge } from '../../ui';
 
 interface SecretIdDisplayProps {
   token: NomadAclToken;
@@ -125,15 +126,9 @@ export function SecretIdDisplay({ token, onClose }: SecretIdDisplayProps) {
           <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
             Type
           </label>
-          <span
-            className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
-              token.Type === 'management'
-                ? 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300'
-                : 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300'
-            }`}
-          >
+          <Badge variant={token.Type === 'management' ? 'red' : 'green'}>
             {token.Type}
-          </span>
+          </Badge>
         </div>
       </div>
 

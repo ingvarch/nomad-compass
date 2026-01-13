@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Plus } from 'lucide-react';
 import { createNomadClient } from '../../../lib/api/nomad';
 import { NomadAclRoleListItem, NomadAclRole, NomadAclPolicyListItem } from '../../../types/acl';
-import { LoadingSpinner, ErrorAlert, RefreshButton, Modal, Button, ConfirmationDialog } from '../../ui';
+import { LoadingSpinner, ErrorAlert, RefreshButton, Modal, Button, ConfirmationDialog, Badge } from '../../ui';
 import { EditButton, DeleteButton } from '../../ui/IconButton';
 import { RoleForm } from '../role/RoleForm';
 import { useCrudTab } from '../../../hooks/useCrudTab';
@@ -166,12 +166,7 @@ export function RolesTab({ hasManagementAccess }: RolesTabProps) {
                   <td className="px-4 py-3">
                     <div className="flex flex-wrap gap-1">
                       {role.Policies?.map((p) => (
-                        <span
-                          key={p.Name}
-                          className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300"
-                        >
-                          {p.Name}
-                        </span>
+                        <Badge key={p.Name} variant="blue">{p.Name}</Badge>
                       ))}
                       {(!role.Policies || role.Policies.length === 0) && (
                         <span className="text-sm text-gray-400">No policies</span>

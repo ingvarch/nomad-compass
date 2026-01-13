@@ -7,12 +7,11 @@ import {
   NomadAclPolicyListItem,
   NomadAclRoleListItem,
 } from '../../../types/acl';
-import { LoadingSpinner, ErrorAlert, RefreshButton, Modal, Button, ConfirmationDialog } from '../../ui';
+import { LoadingSpinner, ErrorAlert, RefreshButton, Modal, Button, ConfirmationDialog, Badge } from '../../ui';
 import { DeleteButton } from '../../ui/IconButton';
 import { TokenForm } from '../token/TokenForm';
 import { SecretIdDisplay } from '../token/SecretIdDisplay';
-import { useToast } from '../../../context/ToastContext';
-import { getErrorMessage } from '../../../lib/errors';
+import { useCrudTab } from '../../../hooks/useCrudTab';
 import {
   tableStyles,
   tableHeaderStyles,
@@ -26,49 +25,73 @@ interface TokensTabProps {
 }
 
 export function TokensTab({ hasManagementAccess }: TokensTabProps) {
-  const [tokens, setTokens] = useState<NomadAclTokenListItem[]>([]);
+  // Token-specific state (not handled by useCrudTab)
   const [policies, setPolicies] = useState<NomadAclPolicyListItem[]>([]);
   const [roles, setRoles] = useState<NomadAclRoleListItem[]>([]);
   const [currentTokenId, setCurrentTokenId] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  // Modal states
-  const [showCreateModal, setShowCreateModal] = useState(false);
   const [newlyCreatedToken, setNewlyCreatedToken] = useState<NomadAclToken | null>(null);
-  const [deletingToken, setDeletingToken] = useState<NomadAclTokenListItem | null>(null);
-  const [deleteLoading, setDeleteLoading] = useState(false);
 
-  const { addToast } = useToast();
-
-  const fetchData = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-
+  // Fetch tokens list
+  const fetchTokens = useCallback(async () => {
     const client = createNomadClient();
-    try {
-      const [tokensData, policiesData, rolesData, selfToken] = await Promise.all([
-        client.getAclTokens(),
-        client.getAclPolicies(),
-        client.getAclRoles(),
-        client.getAclTokenSelf().catch(() => null),
-      ]);
-      setTokens(tokensData || []);
-      setPolicies(policiesData || []);
-      setRoles(rolesData || []);
-      if (selfToken) {
-        setCurrentTokenId(selfToken.AccessorID);
-      }
-    } catch (err) {
-      setError(getErrorMessage(err, 'Failed to fetch tokens'));
-    } finally {
-      setLoading(false);
-    }
+    return client.getAclTokens();
   }, []);
 
+  // Delete token
+  const deleteToken = useCallback(async (token: NomadAclTokenListItem) => {
+    const client = createNomadClient();
+    await client.deleteAclToken(token.AccessorID);
+  }, []);
+
+  // Use CRUD hook for standard operations
+  const {
+    items: tokens,
+    loading,
+    error,
+    showCreateModal,
+    deletingItem: deletingToken,
+    deleteLoading,
+    refetch,
+    openCreateModal,
+    closeCreateModal,
+    openDeleteConfirm,
+    closeDeleteConfirm,
+    handleDelete,
+  } = useCrudTab<NomadAclTokenListItem, void, NomadAclTokenListItem>({
+    fetchData: fetchTokens,
+    deleteItem: deleteToken,
+    getDeletedItemName: (token) => `Token "${token.Name || 'Unnamed'}"`,
+    fetchErrorMessage: 'Failed to fetch tokens',
+    deleteErrorMessage: 'Failed to revoke token',
+  });
+
+  // Fetch additional data (policies, roles, self token) on mount and after refetch
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    const fetchAdditionalData = async () => {
+      const client = createNomadClient();
+      try {
+        const [policiesData, rolesData, selfToken] = await Promise.all([
+          client.getAclPolicies(),
+          client.getAclRoles(),
+          client.getAclTokenSelf().catch(() => null),
+        ]);
+        setPolicies(policiesData || []);
+        setRoles(rolesData || []);
+        if (selfToken) {
+          setCurrentTokenId(selfToken.AccessorID);
+        }
+      } catch {
+        // Silently fail for additional data - main tokens list error is handled by hook
+      }
+    };
+
+    fetchAdditionalData();
+  }, [tokens]); // Re-fetch when tokens change (after refetch)
+
+  // Initial fetch
+  useEffect(() => {
+    refetch();
+  }, [refetch]);
 
   const handleCreateToken = async (tokenData: {
     name: string;
@@ -111,25 +134,8 @@ export function TokensTab({ hasManagementAccess }: TokensTabProps) {
 
     const createdToken = await client.createAclToken(payload);
     setNewlyCreatedToken(createdToken);
-    setShowCreateModal(false);
-    await fetchData();
-  };
-
-  const handleDeleteToken = async () => {
-    if (!deletingToken) return;
-
-    setDeleteLoading(true);
-    const client = createNomadClient();
-    try {
-      await client.deleteAclToken(deletingToken.AccessorID);
-      addToast('Token revoked successfully', 'success');
-      setDeletingToken(null);
-      await fetchData();
-    } catch (err) {
-      addToast(getErrorMessage(err, 'Failed to revoke token'), 'error');
-    } finally {
-      setDeleteLoading(false);
-    }
+    closeCreateModal();
+    await refetch();
   };
 
   const formatExpiration = (expirationTime?: string) => {
@@ -170,12 +176,12 @@ export function TokensTab({ hasManagementAccess }: TokensTabProps) {
         </div>
         <div className="flex gap-2">
           {hasManagementAccess && (
-            <Button onClick={() => setShowCreateModal(true)}>
+            <Button onClick={openCreateModal}>
               <Plus className="w-4 h-4 mr-2" />
               Create Token
             </Button>
           )}
-          <RefreshButton onClick={() => fetchData()} />
+          <RefreshButton onClick={refetch} />
         </div>
       </div>
 
@@ -188,7 +194,7 @@ export function TokensTab({ hasManagementAccess }: TokensTabProps) {
           No tokens found.{' '}
           {hasManagementAccess && (
             <button
-              onClick={() => setShowCreateModal(true)}
+              onClick={openCreateModal}
               className="text-blue-600 dark:text-blue-400 hover:underline"
             >
               Create your first token
@@ -216,14 +222,10 @@ export function TokensTab({ hasManagementAccess }: TokensTabProps) {
                       {token.Name || '-'}
                     </span>
                     {isCurrentToken(token) && (
-                      <span className="ml-2 inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300">
-                        Current
-                      </span>
+                      <Badge variant="blue" className="ml-2">Current</Badge>
                     )}
                     {token.Global && (
-                      <span className="ml-2 inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300">
-                        Global
-                      </span>
+                      <Badge variant="purple" className="ml-2">Global</Badge>
                     )}
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap">
@@ -232,33 +234,17 @@ export function TokensTab({ hasManagementAccess }: TokensTabProps) {
                     </code>
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap">
-                    <span
-                      className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
-                        token.Type === 'management'
-                          ? 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300'
-                          : 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300'
-                      }`}
-                    >
+                    <Badge variant={token.Type === 'management' ? 'red' : 'green'}>
                       {token.Type}
-                    </span>
+                    </Badge>
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex flex-wrap gap-1">
                       {token.Policies?.map((p) => (
-                        <span
-                          key={p}
-                          className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300"
-                        >
-                          {p}
-                        </span>
+                        <Badge key={p} variant="blue">{p}</Badge>
                       ))}
                       {token.Roles?.map((r) => (
-                        <span
-                          key={r.ID}
-                          className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300"
-                        >
-                          {r.Name}
-                        </span>
+                        <Badge key={r.ID} variant="yellow">{r.Name}</Badge>
                       ))}
                       {token.Type === 'management' && (
                         <span className="text-xs text-gray-400">Full access</span>
@@ -278,7 +264,7 @@ export function TokensTab({ hasManagementAccess }: TokensTabProps) {
                   {hasManagementAccess && (
                     <td className="px-4 py-3 whitespace-nowrap text-right">
                       <DeleteButton
-                        onClick={() => setDeletingToken(token)}
+                        onClick={() => openDeleteConfirm(token)}
                         disabled={isCurrentToken(token)}
                         title={isCurrentToken(token) ? 'Cannot revoke your own token' : 'Revoke token'}
                       />
@@ -294,7 +280,7 @@ export function TokensTab({ hasManagementAccess }: TokensTabProps) {
       {/* Create Modal */}
       <Modal
         isOpen={showCreateModal}
-        onClose={() => setShowCreateModal(false)}
+        onClose={closeCreateModal}
         title="Create Token"
         size="lg"
       >
@@ -302,7 +288,7 @@ export function TokensTab({ hasManagementAccess }: TokensTabProps) {
           availablePolicies={policies}
           availableRoles={roles}
           onSubmit={handleCreateToken}
-          onCancel={() => setShowCreateModal(false)}
+          onCancel={closeCreateModal}
         />
       </Modal>
 
@@ -323,8 +309,8 @@ export function TokensTab({ hasManagementAccess }: TokensTabProps) {
       {/* Delete Confirmation */}
       <ConfirmationDialog
         isOpen={deletingToken !== null}
-        onClose={() => setDeletingToken(null)}
-        onConfirm={handleDeleteToken}
+        onClose={closeDeleteConfirm}
+        onConfirm={handleDelete}
         title="Revoke Token"
         message={
           deletingToken && (
