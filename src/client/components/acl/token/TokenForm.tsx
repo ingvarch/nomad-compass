@@ -3,6 +3,7 @@ import { NomadAclPolicyListItem, NomadAclRoleListItem, TokenType } from '../../.
 import { FormActions } from '../../ui/FormActions';
 import { useToast } from '../../../context/ToastContext';
 import { getErrorMessage } from '../../../lib/errors';
+import { labelStyles, labelStylesMb2, inputAclStyles } from '../../../lib/styles';
 
 interface TokenFormProps {
   availablePolicies: NomadAclPolicyListItem[];
@@ -92,7 +93,7 @@ export function TokenForm({
     <form onSubmit={handleSubmit} className="space-y-6">
       {/* Name */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+        <label className={labelStyles}>
           Token Name
         </label>
         <input
@@ -100,13 +101,13 @@ export function TokenForm({
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder="my-token"
-          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-blue-500 focus:border-blue-500"
+          className={inputAclStyles}
         />
       </div>
 
       {/* Type */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+        <label className={labelStylesMb2}>
           Token Type
         </label>
         <div className="flex gap-4">
@@ -145,7 +146,7 @@ export function TokenForm({
       {/* Policies (only for client tokens) */}
       {type === 'client' && (
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+          <label className={labelStylesMb2}>
             Policies
           </label>
           {availablePolicies.length === 0 ? (
@@ -178,7 +179,7 @@ export function TokenForm({
       {/* Roles (only for client tokens) */}
       {type === 'client' && availableRoles.length > 0 && (
         <div>
-          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+          <label className={labelStylesMb2}>
             Roles
           </label>
           <div className="border border-gray-200 dark:border-gray-600 rounded-lg divide-y divide-gray-200 dark:divide-gray-600 max-h-40 overflow-y-auto">
@@ -204,7 +205,7 @@ export function TokenForm({
 
       {/* Expiration */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+        <label className={labelStyles}>
           Expiration
         </label>
         <select

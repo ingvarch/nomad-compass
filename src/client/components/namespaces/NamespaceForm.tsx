@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { NomadNamespace } from '../../types/nomad';
 import { getErrorMessage } from '../../lib/errors';
-import { inputMonokaiStyles, inputMonokaiFlexStyles } from '../../lib/styles';
+import { inputMonokaiStyles, inputMonokaiFlexStyles, labelMonokaiStyles } from '../../lib/styles';
 import { FormActions, RemovableBadge } from '../ui';
 
 interface MetaEntry {
@@ -155,7 +155,7 @@ const NamespaceForm: React.FC<NamespaceFormProps> = ({
       <div>
         <label
           htmlFor="namespace-name"
-          className="block text-sm font-medium text-gray-700 dark:text-monokai-text mb-1"
+          className={labelMonokaiStyles}
         >
           Name *
         </label>
@@ -180,7 +180,7 @@ const NamespaceForm: React.FC<NamespaceFormProps> = ({
       <div>
         <label
           htmlFor="namespace-description"
-          className="block text-sm font-medium text-gray-700 dark:text-monokai-text mb-1"
+          className={labelMonokaiStyles}
         >
           Description
         </label>
@@ -197,7 +197,7 @@ const NamespaceForm: React.FC<NamespaceFormProps> = ({
       {/* Meta */}
       <div>
         <div className="flex items-center justify-between mb-1">
-          <label className="block text-sm font-medium text-gray-700 dark:text-monokai-text">
+          <label className={labelMonokaiStyles}>
             Metadata
           </label>
           <button
@@ -247,7 +247,7 @@ const NamespaceForm: React.FC<NamespaceFormProps> = ({
 
       {/* Capabilities - Enabled Task Drivers */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 dark:text-monokai-text mb-1">
+        <label className={labelMonokaiStyles}>
           Enabled Task Drivers
         </label>
         <p className="text-xs text-gray-500 dark:text-monokai-muted mb-2">
@@ -292,7 +292,7 @@ const NamespaceForm: React.FC<NamespaceFormProps> = ({
 
       {/* Capabilities - Disabled Task Drivers */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 dark:text-monokai-text mb-1">
+        <label className={labelMonokaiStyles}>
           Disabled Task Drivers
         </label>
         <p className="text-xs text-gray-500 dark:text-monokai-muted mb-2">

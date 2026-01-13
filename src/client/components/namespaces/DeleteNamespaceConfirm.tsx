@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { NomadNamespace } from '../../types/nomad';
 import { getErrorMessage } from '../../lib/errors';
+import { labelMonokaiStyles } from '../../lib/styles';
 
 interface DeleteNamespaceConfirmProps {
   namespace: NomadNamespace;
@@ -93,7 +94,7 @@ const DeleteNamespaceConfirm: React.FC<DeleteNamespaceConfirmProps> = ({
           <div>
             <label
               htmlFor="confirm-name"
-              className="block text-sm font-medium text-gray-700 dark:text-monokai-text mb-1"
+              className={labelMonokaiStyles}
             >
               Type <span className="font-mono font-bold">{namespace.Name}</span> to confirm
             </label>

@@ -14,6 +14,7 @@ import {
 } from '../components/ui';
 import { extractRecentEvents, formatTimeAgo, type RecentEvent } from '../lib/services/allocationAnalyzer';
 import { severityColors, getStatusClasses } from '../lib/utils/statusColors';
+import { labelSmallStyles } from '../lib/styles';
 
 type SeverityFilter = 'all' | 'info' | 'warning' | 'error';
 type TimeRangeFilter = 'all' | '1h' | '6h' | '24h' | '7d';
@@ -239,7 +240,7 @@ export default function ActivityPage() {
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
           {/* Search */}
           <div className="lg:col-span-2">
-            <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+            <label className={labelSmallStyles}>
               Search
             </label>
             <input
@@ -253,7 +254,7 @@ export default function ActivityPage() {
 
           {/* Namespace */}
           <div>
-            <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+            <label className={labelSmallStyles}>
               Namespace
             </label>
             <select
@@ -272,7 +273,7 @@ export default function ActivityPage() {
 
           {/* Severity */}
           <div>
-            <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+            <label className={labelSmallStyles}>
               Severity
             </label>
             <select
@@ -289,7 +290,7 @@ export default function ActivityPage() {
 
           {/* Time Range */}
           <div>
-            <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+            <label className={labelSmallStyles}>
               Time Range
             </label>
             <select
@@ -308,7 +309,7 @@ export default function ActivityPage() {
 
         {/* Event Type Filter (second row) */}
         <div className="mt-4">
-          <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+          <label className={labelSmallStyles}>
             Event Type
           </label>
           <div className="flex flex-wrap gap-2">

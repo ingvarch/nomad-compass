@@ -65,9 +65,29 @@ export const inputMonokaiFlexStyles = `flex-1 p-2 ${inputMonokaiBaseStyles}`;
 export const inputMonokaiErrorStyles =
   'w-full p-2 border border-red-500 dark:border-monokai-red rounded-md bg-white dark:bg-monokai-surface text-gray-900 dark:text-monokai-text focus:outline-none focus:ring-2 focus:ring-red-500';
 
+// Label styles (for form labels)
+export const labelStyles = 'block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1';
+export const labelStylesMb2 = 'block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2';
+export const labelSmallStyles = 'block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1';
+export const labelSmallUppercaseStyles = 'block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1';
+
+// Monokai theme label styles (for job/namespace/login forms)
+export const labelMonokaiStyles = 'block text-sm font-medium text-gray-700 dark:text-monokai-text mb-1';
+
+// ACL form input styles (with shadow and placeholder styling)
+export const inputAclStyles =
+  'w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-blue-500 focus:border-blue-500';
+
 // Table styles
 export const tableStyles = 'min-w-full divide-y divide-gray-200 dark:divide-gray-700';
 export const tableHeaderStyles = 'bg-gray-50 dark:bg-gray-700/50';
 export const tableHeaderCellStyles = 'px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase';
 export const tableBodyStyles = 'divide-y divide-gray-200 dark:divide-gray-700';
 export const tableRowHoverStyles = 'hover:bg-gray-50 dark:hover:bg-gray-700/50';
+
+/**
+ * Button styles vs Button component:
+ * - Use Button component (ui/Button.tsx) for interactive button elements with loading states
+ * - Use button style constants below for Link components and custom button-like elements
+ * This is an intentional design choice to support both use cases.
+ */

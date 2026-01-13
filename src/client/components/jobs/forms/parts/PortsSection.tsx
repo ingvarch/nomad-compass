@@ -1,7 +1,7 @@
 import React from 'react';
 import { Trash, Plus } from 'lucide-react';
 import { NomadPort } from '../../../../types/nomad';
-import { inputStyles, selectStyles } from '../../../../lib/styles';
+import { inputStyles, selectStyles, labelSmallStyles } from '../../../../lib/styles';
 
 interface PortRowProps {
   port: NomadPort;
@@ -24,7 +24,7 @@ const PortRow: React.FC<PortRowProps> = ({
 }) => (
   <div className="flex flex-wrap items-end gap-2 mb-2 p-2 border border-gray-200 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800">
     <div className="w-1/5">
-      <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+      <label className={labelSmallStyles}>
         Label
       </label>
       <input
@@ -38,7 +38,7 @@ const PortRow: React.FC<PortRowProps> = ({
     </div>
 
     <div className="w-1/5">
-      <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+      <label className={labelSmallStyles}>
         Port Type
       </label>
       <select
@@ -53,7 +53,7 @@ const PortRow: React.FC<PortRowProps> = ({
     </div>
 
     <div className="w-1/5">
-      <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+      <label className={labelSmallStyles}>
         Host Port
       </label>
       {port.static ? (
@@ -75,7 +75,7 @@ const PortRow: React.FC<PortRowProps> = ({
     </div>
 
     <div className="w-1/5">
-      <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 mb-1">
+      <label className={labelSmallStyles}>
         Container Port
       </label>
       <input

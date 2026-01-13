@@ -1,6 +1,7 @@
-import { useState } from 'react';
 import { NomadAclToken } from '../../../types/acl';
 import { Badge } from '../../ui';
+import { useClipboard } from '../../../hooks';
+import { labelSmallUppercaseStyles } from '../../../lib/styles';
 
 interface SecretIdDisplayProps {
   token: NomadAclToken;
@@ -8,25 +9,11 @@ interface SecretIdDisplayProps {
 }
 
 export function SecretIdDisplay({ token, onClose }: SecretIdDisplayProps) {
-  const [copied, setCopied] = useState(false);
+  const { copied, copy } = useClipboard();
 
-  const handleCopy = async () => {
+  const handleCopy = () => {
     if (token.SecretID) {
-      try {
-        await navigator.clipboard.writeText(token.SecretID);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
-      } catch {
-        // Fallback for older browsers
-        const textArea = document.createElement('textarea');
-        textArea.value = token.SecretID;
-        document.body.appendChild(textArea);
-        textArea.select();
-        document.execCommand('copy');
-        document.body.removeChild(textArea);
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
-      }
+      copy(token.SecretID);
     }
   };
 
@@ -62,25 +49,19 @@ export function SecretIdDisplay({ token, onClose }: SecretIdDisplayProps) {
       {/* Token Info */}
       <div className="bg-gray-50 dark:bg-gray-700/50 rounded-lg p-4 space-y-3">
         <div>
-          <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
-            Name
-          </label>
+          <label className={labelSmallUppercaseStyles}>Name</label>
           <p className="text-sm text-gray-900 dark:text-white">{token.Name || 'Unnamed'}</p>
         </div>
 
         <div>
-          <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
-            Accessor ID
-          </label>
+          <label className={labelSmallUppercaseStyles}>Accessor ID</label>
           <code className="text-sm text-gray-900 dark:text-white font-mono break-all">
             {token.AccessorID}
           </code>
         </div>
 
         <div>
-          <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
-            Secret ID
-          </label>
+          <label className={labelSmallUppercaseStyles}>Secret ID</label>
           <div className="flex items-center gap-2">
             <code className="flex-1 text-sm text-gray-900 dark:text-white font-mono bg-white dark:bg-gray-800 px-3 py-2 rounded border border-gray-200 dark:border-gray-600 break-all">
               {token.SecretID}
@@ -123,9 +104,7 @@ export function SecretIdDisplay({ token, onClose }: SecretIdDisplayProps) {
         </div>
 
         <div>
-          <label className="block text-xs font-medium text-gray-500 dark:text-gray-400 uppercase mb-1">
-            Type
-          </label>
+          <label className={labelSmallUppercaseStyles}>Type</label>
           <Badge variant={token.Type === 'management' ? 'red' : 'green'}>
             {token.Type}
           </Badge>

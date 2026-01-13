@@ -4,7 +4,7 @@ import { NomadServiceConfig, IngressConfig, NomadPort } from '../../../../types/
 import FormInputField from '../../../ui/forms/FormInputField';
 import IngressSection from './IngressSection';
 import ServiceTagsEditor from './ServiceTagsEditor';
-import { inputStyles, selectStyles } from '../../../../lib/styles';
+import { inputStyles, selectStyles, labelStyles } from '../../../../lib/styles';
 
 interface ServiceSectionProps {
   enableService: boolean;
@@ -78,7 +78,7 @@ const ServiceSection: React.FC<ServiceSectionProps> = ({
         <div className="mt-4 space-y-4 pl-4 border-l-2 border-gray-200 dark:border-gray-600">
           {/* Service Name */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label className={labelStyles}>
               Service Name
             </label>
             <input
@@ -97,7 +97,7 @@ const ServiceSection: React.FC<ServiceSectionProps> = ({
           {/* Port Label */}
           {portLabels.length > 0 && (
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label className={labelStyles}>
                 Service Port
               </label>
               <select
@@ -120,7 +120,7 @@ const ServiceSection: React.FC<ServiceSectionProps> = ({
 
           {/* Provider Selection */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label className={labelStyles}>
               Service Provider
             </label>
             <select
@@ -181,7 +181,7 @@ const ServiceSection: React.FC<ServiceSectionProps> = ({
           {/* Advanced Mode: Raw Tags Editor */}
           {serviceConfig.useAdvancedMode && (
             <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              <label className={labelStyles}>
                 Service Tags
               </label>
               <ServiceTagsEditor

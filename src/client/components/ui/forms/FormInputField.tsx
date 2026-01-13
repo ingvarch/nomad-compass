@@ -1,5 +1,8 @@
 import { ChangeEvent } from 'react';
-import { inputStyles, inputErrorStyles, checkboxStyles } from '../../../lib/styles';
+import { inputStyles, inputErrorStyles, checkboxStyles, labelMonokaiStyles } from '../../../lib/styles';
+
+// Checkbox label needs ml-2 prefix
+const checkboxLabelStyles = 'ml-2 block text-sm font-medium text-gray-700 dark:text-monokai-text';
 
 interface FormInputFieldProps {
   id: string;
@@ -54,7 +57,7 @@ function FormInputField({
             disabled={disabled}
             required={required}
           />
-          <label htmlFor={id} className="ml-2 block text-sm font-medium text-gray-700 dark:text-monokai-text">
+          <label htmlFor={id} className={checkboxLabelStyles}>
             {label}
           </label>
         </div>
@@ -66,7 +69,7 @@ function FormInputField({
   if (type === 'select') {
     return (
       <div className={`mb-4 ${className}`}>
-        <label htmlFor={id} className="block text-sm font-medium text-gray-700 dark:text-monokai-text mb-1">
+        <label htmlFor={id} className={labelMonokaiStyles}>
           {label}
         </label>
         <select
@@ -94,7 +97,7 @@ function FormInputField({
 
   return (
     <div className={`mb-4 ${className}`}>
-      <label htmlFor={id} className="block text-sm font-medium text-gray-700 dark:text-monokai-text mb-1">
+      <label htmlFor={id} className={labelMonokaiStyles}>
         {label}
       </label>
       <input

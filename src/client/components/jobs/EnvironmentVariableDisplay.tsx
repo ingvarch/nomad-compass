@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Copy } from 'lucide-react';
-import { useToggleState } from '../../hooks/useToggleState';
+import { useToggleState, useClipboard } from '../../hooks';
 import { VisibilityToggleButton } from '../ui/VisibilityToggleButton';
 
 interface EnvironmentVariableDisplayProps {
@@ -9,18 +9,13 @@ interface EnvironmentVariableDisplayProps {
 
 const EnvironmentVariableDisplay: React.FC<EnvironmentVariableDisplayProps> = ({ envVars }) => {
     const { isActive: isRevealed, toggle: toggleReveal } = useToggleState<string>();
+    const { copy } = useClipboard();
     const [copySuccess, setCopySuccess] = useState<string | null>(null);
 
-    // Copy variable to clipboard
     const copyToClipboard = (value: string, key: string) => {
-        navigator.clipboard.writeText(value)
-            .then(() => {
-                setCopySuccess(key);
-                setTimeout(() => setCopySuccess(null), 2000);
-            })
-            .catch(() => {
-                // Clipboard API not available or permission denied
-            });
+        copy(value);
+        setCopySuccess(key);
+        setTimeout(() => setCopySuccess(null), 2000);
     };
 
     if (!envVars || Object.keys(envVars).length === 0) {

@@ -1,6 +1,6 @@
 // src/components/jobs/forms/BasicJobInfoForm.tsx
 import React from 'react';
-import { inputMonokaiStyles, inputMonokaiErrorStyles } from '../../../lib/styles';
+import { inputMonokaiStyles, inputMonokaiErrorStyles, labelMonokaiStyles } from '../../../lib/styles';
 
 interface BasicJobInfoFormProps {
     name: string;
@@ -25,7 +25,7 @@ const BasicJobInfoForm: React.FC<BasicJobInfoFormProps> = ({
         <>
             {/* Job Name */}
             <div className="mb-4">
-                <label htmlFor="name" className="block text-sm font-medium text-gray-700 dark:text-monokai-text mb-1">
+                <label htmlFor="name" className={labelMonokaiStyles}>
                     Job Name
                 </label>
                 <input
@@ -48,7 +48,7 @@ const BasicJobInfoForm: React.FC<BasicJobInfoFormProps> = ({
 
             {/* Namespace Selector */}
             <div className="mb-4">
-                <label htmlFor="namespace" className="block text-sm font-medium text-gray-700 dark:text-monokai-text mb-1">
+                <label htmlFor="namespace" className={labelMonokaiStyles}>
                     Namespace
                 </label>
                 <select

@@ -3,6 +3,7 @@ import { NomadAclRole, NomadAclPolicyListItem } from '../../../types/acl';
 import { FormActions } from '../../ui/FormActions';
 import { useToast } from '../../../context/ToastContext';
 import { getErrorMessage } from '../../../lib/errors';
+import { labelStyles, labelStylesMb2, inputAclStyles } from '../../../lib/styles';
 
 interface RoleFormProps {
   mode: 'create' | 'edit';
@@ -63,7 +64,7 @@ export function RoleForm({
     <form onSubmit={handleSubmit} className="space-y-6">
       {/* Name */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+        <label className={labelStyles}>
           Role Name
         </label>
         <input
@@ -71,7 +72,7 @@ export function RoleForm({
           value={name}
           onChange={(e) => setName(e.target.value)}
           placeholder="my-role"
-          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-blue-500 focus:border-blue-500"
+          className={inputAclStyles}
         />
         <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
           Alphanumeric characters and dashes only, max 128 characters
@@ -80,7 +81,7 @@ export function RoleForm({
 
       {/* Description */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+        <label className={labelStyles}>
           Description
         </label>
         <input
@@ -88,13 +89,13 @@ export function RoleForm({
           value={description}
           onChange={(e) => setDescription(e.target.value)}
           placeholder="Optional description"
-          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md shadow-sm bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:ring-blue-500 focus:border-blue-500"
+          className={inputAclStyles}
         />
       </div>
 
       {/* Policies */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+        <label className={labelStylesMb2}>
           Policies
         </label>
         {availablePolicies.length === 0 ? (
