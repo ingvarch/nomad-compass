@@ -12,6 +12,7 @@ import {
   FilterButtons,
   BackLink,
   DataTable,
+  Badge,
   type Column,
 } from '../components/ui';
 import { getAllocationStatusColor, getStatusClasses } from '../lib/utils/statusColors';
@@ -125,9 +126,7 @@ export default function AllocationsPage() {
       key: 'namespace',
       header: 'Namespace',
       render: (alloc) => (
-        <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-200">
-          {alloc.Namespace}
-        </span>
+        <Badge variant="blue">{alloc.Namespace}</Badge>
       ),
     },
     {

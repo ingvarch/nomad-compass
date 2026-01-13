@@ -3,7 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { createNomadClient } from '../lib/api/nomad';
 import { getErrorMessage } from '../lib/errors';
 import { NomadNodeDetail, NomadAllocation } from '../types/nomad';
-import { LoadingSpinner, ErrorAlert, BackLink, RefreshButton } from '../components/ui';
+import { LoadingSpinner, ErrorAlert, BackLink, RefreshButton, Badge } from '../components/ui';
 import { NodeAttributes } from '../components/nodes/NodeAttributes';
 import { NodeAllocations } from '../components/nodes/NodeAllocations';
 import { getNodeStatusColor, getNodeEligibilityColor } from '../lib/utils/statusColors';
@@ -91,9 +91,7 @@ export default function NodeDetailPage() {
                 {node.SchedulingEligibility}
               </span>
               {node.Drain && (
-                <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300">
-                  draining
-                </span>
+                <Badge variant="red">draining</Badge>
               )}
             </div>
             <p className="mt-1 text-sm text-gray-500 dark:text-gray-400 font-mono">

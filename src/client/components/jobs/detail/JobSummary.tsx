@@ -1,5 +1,6 @@
 import React from 'react';
 import { StatusBadge } from './StatusBadge';
+import { Badge } from '../../ui';
 import type { NomadAllocation } from '../../../types/nomad';
 import { formatDateLong } from '../../../lib/utils/dateFormatter';
 
@@ -86,9 +87,7 @@ const JobSummary: React.FC<JobSummaryProps> = ({ job, allocations, createTime })
                 Namespace
               </dt>
               <dd className="mt-1 text-sm text-gray-900 dark:text-white sm:mt-0 sm:col-span-2">
-                <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
-                  {job.Namespace || 'default'}
-                </span>
+                <Badge variant="blue">{job.Namespace || 'default'}</Badge>
               </dd>
             </div>
             <div className="px-4 py-3 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">

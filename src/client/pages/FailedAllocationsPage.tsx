@@ -10,6 +10,7 @@ import {
   RefreshButton,
   BackLink,
   DataTable,
+  Badge,
   type Column,
 } from '../components/ui';
 import { useToast } from '../context/ToastContext';
@@ -336,12 +337,8 @@ export default function FailedAllocationsPage() {
                       >
                         {job.Name}
                       </Link>
-                      <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-purple-100 dark:bg-purple-900/50 text-purple-800 dark:text-purple-200">
-                        {job.Type}
-                      </span>
-                      <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-200">
-                        {job.Namespace}
-                      </span>
+                      <Badge variant="purple">{job.Type}</Badge>
+                      <Badge variant="blue">{job.Namespace}</Badge>
                       <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${getStatusClasses(jobStatusColor)}`}>
                         {job.Status}
                       </span>

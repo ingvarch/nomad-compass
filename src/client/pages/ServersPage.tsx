@@ -11,6 +11,7 @@ import {
   FilterButtons,
   BackLink,
   DataTable,
+  Badge,
   type Column,
 } from '../components/ui';
 import { getServerStatusColor, getStatusClasses } from '../lib/utils/statusColors';
@@ -65,9 +66,7 @@ export default function ServersPage() {
             {member.Name}
           </span>
           {member.Leader && (
-            <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300">
-              Leader
-            </span>
+            <Badge variant="blue">Leader</Badge>
           )}
         </div>
       ),

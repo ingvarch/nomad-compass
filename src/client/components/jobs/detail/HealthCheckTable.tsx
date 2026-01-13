@@ -4,7 +4,9 @@ import {
   tableHeaderStyles,
   tableHeaderCellStyles,
   tableBodyStyles,
+  tableCellLargeStyles,
 } from '../../../lib/styles';
+import { formatNanosAsSeconds, nanosToSeconds } from '../../../lib/utils/dateFormatter';
 
 interface Check {
   Type: string;
@@ -58,30 +60,16 @@ const HealthCheckTable: React.FC<HealthCheckTableProps> = ({ services }) => {
                 <tbody className={tableBodyStyles}>
                   {service.Checks.map((check, checkIndex) => (
                     <tr key={checkIndex}>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                        {check.Type}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                        {check.Path || check.Command || '-'}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                        {check.Interval
-                          ? `${Math.round(check.Interval / 1000000000)}s`
-                          : '-'}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                        {check.Timeout
-                          ? `${Math.round(check.Timeout / 1000000000)}s`
-                          : '-'}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                      <td className={tableCellLargeStyles}>{check.Type}</td>
+                      <td className={tableCellLargeStyles}>{check.Path || check.Command || '-'}</td>
+                      <td className={tableCellLargeStyles}>{formatNanosAsSeconds(check.Interval)}</td>
+                      <td className={tableCellLargeStyles}>{formatNanosAsSeconds(check.Timeout)}</td>
+                      <td className={tableCellLargeStyles}>
                         {check.CheckRestart ? (
                           <div>
                             <span>Limit: {check.CheckRestart.Limit}</span>
                             <br />
-                            <span>
-                              Grace: {Math.round(check.CheckRestart.Grace / 1000000000)}s
-                            </span>
+                            <span>Grace: {nanosToSeconds(check.CheckRestart.Grace)}s</span>
                           </div>
                         ) : (
                           '-'

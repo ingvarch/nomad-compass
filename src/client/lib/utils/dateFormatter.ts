@@ -6,6 +6,28 @@
 /** Nanoseconds to milliseconds conversion factor */
 const NANOSECONDS_TO_MS = 1_000_000;
 
+/** Nanoseconds to seconds conversion factor */
+export const NANOSECONDS_TO_SECONDS = 1_000_000_000;
+
+/**
+ * Convert nanoseconds to seconds.
+ * @param nanos - Value in nanoseconds
+ * @returns Value in seconds (rounded)
+ */
+export function nanosToSeconds(nanos: number): number {
+  return Math.round(nanos / NANOSECONDS_TO_SECONDS);
+}
+
+/**
+ * Format nanoseconds as seconds string with "s" suffix.
+ * @param nanos - Value in nanoseconds
+ * @returns Formatted string (e.g., "30s") or "-" if invalid
+ */
+export function formatNanosAsSeconds(nanos: number | undefined): string {
+  if (!nanos) return '-';
+  return `${nanosToSeconds(nanos)}s`;
+}
+
 /** Reusable date formatter for long format */
 const longDateFormatter = new Intl.DateTimeFormat('en-GB', {
   day: '2-digit',

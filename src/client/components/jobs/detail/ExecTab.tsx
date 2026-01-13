@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import { Terminal } from 'lucide-react';
 import type { NomadAllocation } from '../../../types/nomad';
+import { Badge } from '../../ui';
 import {
   tableStyles,
   tableHeaderStyles,
@@ -97,9 +98,7 @@ export function ExecTab({ allocations, namespace }: ExecTabProps) {
                   {task.taskName}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300">
-                    {task.taskState}
-                  </span>
+                  <Badge variant="green">{task.taskState}</Badge>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-right">
                   <Link

@@ -41,8 +41,6 @@ export const buttonSecondaryStyles = `${buttonBase} px-4 py-2 text-sm text-gray-
 export const buttonDangerStyles = `${buttonBase} px-4 py-2 text-sm text-white bg-red-600 hover:bg-red-700 focus:ring-red-500 dark:focus:ring-offset-gray-800`;
 
 // Small button variants
-export const buttonPrimarySmallStyles = `${buttonBase} px-3 py-1.5 text-xs text-white bg-blue-600 hover:bg-blue-700 focus:ring-blue-500 dark:focus:ring-offset-gray-800`;
-
 export const buttonSecondarySmallStyles = `${buttonBase} px-3 py-1.5 text-xs text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 hover:bg-gray-50 dark:hover:bg-gray-600 focus:ring-blue-500 dark:focus:ring-offset-gray-800`;
 
 // Success button (green)
@@ -84,6 +82,8 @@ export const tableHeaderStyles = 'bg-gray-50 dark:bg-gray-700/50';
 export const tableHeaderCellStyles = 'px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase';
 export const tableBodyStyles = 'divide-y divide-gray-200 dark:divide-gray-700';
 export const tableRowHoverStyles = 'hover:bg-gray-50 dark:hover:bg-gray-700/50';
+export const tableCellStyles = 'px-4 py-3 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400';
+export const tableCellLargeStyles = 'px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400';
 
 /**
  * Button styles vs Button component:

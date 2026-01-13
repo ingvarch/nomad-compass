@@ -1,9 +1,11 @@
 import React from 'react';
+import { Badge } from '../../ui';
 import {
   tableStyles,
   tableHeaderStyles,
   tableHeaderCellStyles,
   tableBodyStyles,
+  tableCellStyles,
 } from '../../../lib/styles';
 
 interface Port {
@@ -60,17 +62,11 @@ const NetworkTable: React.FC<NetworkTableProps> = ({ networks }) => {
                     <tbody className={tableBodyStyles}>
                       {network.DynamicPorts!.map((port, portIndex) => (
                         <tr key={portIndex}>
-                          <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                            {port.Label}
+                          <td className={tableCellStyles}>{port.Label}</td>
+                          <td className={tableCellStyles}>
+                            <Badge variant="yellow">Dynamic</Badge>
                           </td>
-                          <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                            <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">
-                              Dynamic
-                            </span>
-                          </td>
-                          <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                            {port.To || port.Value || '-'}
-                          </td>
+                          <td className={tableCellStyles}>{port.To || port.Value || '-'}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -96,15 +92,9 @@ const NetworkTable: React.FC<NetworkTableProps> = ({ networks }) => {
                     <tbody className={tableBodyStyles}>
                       {network.ReservedPorts!.map((port, portIndex) => (
                         <tr key={portIndex}>
-                          <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                            {port.Label}
-                          </td>
-                          <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                            {port.Value}
-                          </td>
-                          <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                            {port.To || port.Value || '-'}
-                          </td>
+                          <td className={tableCellStyles}>{port.Label}</td>
+                          <td className={tableCellStyles}>{port.Value}</td>
+                          <td className={tableCellStyles}>{port.To || port.Value || '-'}</td>
                         </tr>
                       ))}
                     </tbody>

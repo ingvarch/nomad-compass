@@ -17,6 +17,7 @@ import {
   serviceTagsToStrings,
   parseTraefikTagsToIngress,
 } from './traefikTagsService';
+import { NANOSECONDS_TO_SECONDS, nanosToSeconds } from '../utils/dateFormatter';
 
 // Re-export clone utilities for external use
 export { prepareCloneFormData } from './jobCloneService';
@@ -194,11 +195,11 @@ function createHealthCheckConfig(groupData: TaskGroupFormData): NomadServiceChec
     Type: healthCheck.type,
     ...(healthCheck.type === 'http' ? { Path: healthCheck.path } : {}),
     ...(healthCheck.type === 'script' ? { Command: healthCheck.command } : {}),
-    Interval: healthCheck.interval * 1000000000,
-    Timeout: healthCheck.timeout * 1000000000,
+    Interval: healthCheck.interval * NANOSECONDS_TO_SECONDS,
+    Timeout: healthCheck.timeout * NANOSECONDS_TO_SECONDS,
     CheckRestart: {
       Limit: 3,
-      Grace: (healthCheck.initialDelay || 5) * 1000000000,
+      Grace: (healthCheck.initialDelay || 5) * NANOSECONDS_TO_SECONDS,
       IgnoreWarnings: false,
     },
   };
@@ -403,14 +404,10 @@ export function convertJobToFormData(job: NomadJob): NomadJobFormData {
             (healthCheck as unknown as NomadServiceCheck).Type === 'script'
               ? (healthCheck as unknown as NomadServiceCheck).Command
               : '',
-          interval: Math.floor(
-            (healthCheck as unknown as NomadServiceCheck).Interval / 1000000000
-          ),
-          timeout: Math.floor((healthCheck as unknown as NomadServiceCheck).Timeout / 1000000000),
+          interval: nanosToSeconds((healthCheck as unknown as NomadServiceCheck).Interval),
+          timeout: nanosToSeconds((healthCheck as unknown as NomadServiceCheck).Timeout),
           initialDelay: (healthCheck as unknown as NomadServiceCheck).CheckRestart
-            ? Math.floor(
-                (healthCheck as unknown as NomadServiceCheck).CheckRestart!.Grace / 1000000000
-              )
+            ? nanosToSeconds((healthCheck as unknown as NomadServiceCheck).CheckRestart!.Grace)
             : 5,
           failuresBeforeUnhealthy: 3,
           successesBeforeHealthy: 2,

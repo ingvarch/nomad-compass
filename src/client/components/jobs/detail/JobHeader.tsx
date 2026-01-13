@@ -7,6 +7,7 @@ import { isPermissionError, getPermissionErrorMessage, getErrorMessage } from '.
 import { buttonPrimaryStyles, buttonDangerStyles, buttonSecondaryStyles, buttonSuccessStyles } from '../../../lib/styles';
 import PermissionErrorModal from '../../ui/PermissionErrorModal';
 import { ConfirmationDialog } from '../../ui/ConfirmationDialog';
+import { Badge } from '../../ui';
 
 interface JobHeaderProps {
   jobName: string;
@@ -73,9 +74,7 @@ const JobHeader: React.FC<JobHeaderProps> = ({ jobName, jobId, namespace }) => {
             <p className="text-sm text-gray-600 dark:text-gray-400">
               Job ID: {jobId}
             </p>
-            <span className="px-2 py-1 text-xs font-semibold rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
-              Namespace: {namespace}
-            </span>
+            <Badge variant="blue">Namespace: {namespace}</Badge>
           </div>
         </div>
         <div className="flex space-x-2">
