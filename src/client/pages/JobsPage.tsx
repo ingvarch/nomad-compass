@@ -1,7 +1,7 @@
 // src/client/pages/JobsPage.tsx
 import { Link } from 'react-router-dom';
 import JobList from '../components/jobs/JobList';
-import { PageHeader } from '../components/ui';
+import { PageHeader, Button } from '../components/ui';
 
 export default function JobsPage() {
   return (
@@ -10,11 +10,8 @@ export default function JobsPage() {
         title="Nomad Jobs"
         description="View and manage jobs running in your Nomad cluster"
         actions={
-          <Link
-            to="/jobs/create"
-            className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-          >
-            Create Job
+          <Link to="/jobs/create">
+            <Button variant="primary">Create Job</Button>
           </Link>
         }
       />

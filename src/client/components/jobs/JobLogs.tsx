@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { createNomadClient } from '../../lib/api/nomad';
 import { isPermissionError, getErrorMessage } from '../../lib/errors';
@@ -15,7 +15,39 @@ interface JobLogsProps {
     initialTaskGroup?: string | null;
 }
 
-const JobLogs: React.FC<JobLogsProps> = ({ jobId, allocId, taskName, initialTaskGroup }) => {    const { isAuthenticated } = useAuth();
+/** Get CSS classes for log container based on allocation status and streaming mode */
+function getLogContainerStyles(
+    selectedAlloc: string | null,
+    allocations: NomadAllocation[],
+    streamingMode: boolean,
+    isLoading: boolean
+): string {
+    const baseStyles = 'p-4 rounded-md overflow-auto max-h-96 text-sm font-mono';
+    const loadingStyle = isLoading && !streamingMode ? 'opacity-50' : '';
+
+    if (!selectedAlloc) {
+        const colorStyle = streamingMode
+            ? 'bg-gray-900 text-green-400 border-2 border-green-600'
+            : 'bg-gray-800 text-white';
+        return `${baseStyles} ${loadingStyle} ${colorStyle}`;
+    }
+
+    const alloc = allocations.find(a => a.ID === selectedAlloc);
+    const status = alloc?.ClientStatus;
+
+    const statusStyles: Record<string, string> = {
+        failed: 'bg-red-950 text-red-100 border-2 border-red-500',
+        lost: 'bg-orange-950 text-orange-100 border-2 border-orange-500',
+    };
+
+    const colorStyle = statusStyles[status || '']
+        || (streamingMode ? 'bg-gray-900 text-green-400 border-2 border-green-600' : 'bg-gray-800 text-white');
+
+    return `${baseStyles} ${loadingStyle} ${colorStyle}`;
+}
+
+const JobLogs: React.FC<JobLogsProps> = ({ jobId, allocId, taskName, initialTaskGroup }) => {
+    const { isAuthenticated } = useAuth();
     const [logs, setLogs] = useState<string>('');
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
@@ -27,6 +59,12 @@ const JobLogs: React.FC<JobLogsProps> = ({ jobId, allocId, taskName, initialTask
     const [selectedTaskGroup, setSelectedTaskGroup] = useState<string | null>(null);
     const [statusFilter, setStatusFilter] = useState<'all' | 'running' | 'failed' | 'complete'>('all');
     const [allAllocations, setAllAllocations] = useState<NomadAllocation[]>([]);
+
+    // Extract namespace from URL once
+    const namespace = useMemo(
+        () => new URLSearchParams(window.location.search).get('namespace') || 'default',
+        []
+    );
 
     const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
     const [showNomadTimestamp, setShowNomadTimestamp] = useState<boolean>(false);
@@ -77,7 +115,6 @@ const JobLogs: React.FC<JobLogsProps> = ({ jobId, allocId, taskName, initialTask
 
             try {
                 const client = createNomadClient();
-                const namespace = new URLSearchParams(window.location.search).get('namespace') || 'default';
                 const jobData = await client.getJob(jobId, namespace);
 
                 // Set task groups from job data
@@ -94,7 +131,7 @@ const JobLogs: React.FC<JobLogsProps> = ({ jobId, allocId, taskName, initialTask
         };
 
         fetchJobData();
-    }, [jobId, isAuthenticated, selectedTaskGroup]);
+    }, [jobId, isAuthenticated, selectedTaskGroup, namespace]);
 
     // Fetch job allocations based on selected task group and status filter
     useEffect(() => {
@@ -107,7 +144,6 @@ const JobLogs: React.FC<JobLogsProps> = ({ jobId, allocId, taskName, initialTask
 
             try {
                 const client = createNomadClient();
-                const namespace = new URLSearchParams(window.location.search).get('namespace') || 'default';
                 const allocs = await client.getJobAllocations(jobId, namespace);
 
                 // Filter by task group first
@@ -173,7 +209,7 @@ const JobLogs: React.FC<JobLogsProps> = ({ jobId, allocId, taskName, initialTask
 
             return () => clearTimeout(timer);
         }
-    }, [jobId, isAuthenticated, allocId, taskName, selectedTaskGroup, statusFilter]);
+    }, [jobId, isAuthenticated, allocId, taskName, selectedTaskGroup, statusFilter, namespace]);
 
     // Fetch logs
     const fetchLogs = useCallback(async () => {
@@ -491,17 +527,7 @@ const JobLogs: React.FC<JobLogsProps> = ({ jobId, allocId, taskName, initialTask
 
                 <pre
                     ref={logsContainerRef}
-                    className={`p-4 rounded-md overflow-auto max-h-96 text-sm font-mono ${
-                        isLoading && !streamingMode ? 'opacity-50' : ''
-                    } ${
-                        selectedAlloc && allocations.find(a => a.ID === selectedAlloc)?.ClientStatus === 'failed'
-                            ? 'bg-red-950 text-red-100 border-2 border-red-500'
-                            : selectedAlloc && allocations.find(a => a.ID === selectedAlloc)?.ClientStatus === 'lost'
-                                ? 'bg-orange-950 text-orange-100 border-2 border-orange-500'
-                                : streamingMode
-                                    ? 'bg-gray-900 text-green-400 border-2 border-green-600'
-                                    : 'bg-gray-800 text-white'
-                    }`}
+                    className={getLogContainerStyles(selectedAlloc, allocations, streamingMode, isLoading)}
                 >
                     {streamingMode
                         ? (formatLogs(streamLogs) || 'Waiting for log data...')

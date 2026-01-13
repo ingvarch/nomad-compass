@@ -18,6 +18,18 @@ import { convertJobToFormData, prepareCloneFormData } from '../lib/services/jobS
 import { useToast } from '../context/ToastContext';
 import { useJobPlan } from './useJobPlan';
 import { DEFAULT_NAMESPACE, JOB_NAME_REGEX } from '../lib/constants';
+import type { NomadJobFormData } from '../types/nomad';
+
+/** Ensures all task groups have envVars array initialized */
+function ensureEnvVars(formData: NomadJobFormData): NomadJobFormData {
+  return {
+    ...formData,
+    taskGroups: formData.taskGroups.map((group) => ({
+      ...group,
+      envVars: group.envVars || [],
+    })),
+  };
+}
 
 interface UseJobFormOptions {
   mode: 'create' | 'edit';
@@ -82,12 +94,7 @@ export function useJobForm({
       const jobData = await client.getJob(jobId, namespace);
       dispatch(jobFormActions.setInitialJob(jobData));
 
-      const formattedData = convertJobToFormData(jobData);
-      formattedData.taskGroups = formattedData.taskGroups.map((group) => ({
-        ...group,
-        envVars: group.envVars || [],
-      }));
-
+      const formattedData = ensureEnvVars(convertJobToFormData(jobData));
       dispatch(jobFormActions.setFormData(formattedData));
       dispatch(jobFormActions.setError(null));
     } catch (err) {
@@ -117,12 +124,7 @@ export function useJobForm({
       const client = createNomadClient();
       const jobData = await client.getJob(cloneFromId, cloneNamespace);
 
-      const formattedData = convertJobToFormData(jobData);
-      formattedData.taskGroups = formattedData.taskGroups.map((group) => ({
-        ...group,
-        envVars: group.envVars || [],
-      }));
-
+      const formattedData = ensureEnvVars(convertJobToFormData(jobData));
       const cloneData = prepareCloneFormData(formattedData);
       dispatch(jobFormActions.setFormData(cloneData));
       dispatch(jobFormActions.setError(null));
