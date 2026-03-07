@@ -1,5 +1,5 @@
 import React from 'react';
-import { useJobFormContext, jobFormActions, defaultTaskGroupData } from '../../../../context/JobFormContext';
+import { useJobFormContext, jobFormActions, defaultTaskGroupData, defaultTaskData } from '../../../../context/JobFormContext';
 import TaskGroupForm from '../TaskGroupForm';
 
 /**
@@ -16,9 +16,11 @@ const TaskGroupsSection: React.FC = () => {
   const loading = isLoading || isSaving;
 
   const handleAddTaskGroup = () => {
+    const groupName = `${jobName ? jobName + '-' : ''}group-${taskGroups.length + 1}`;
     const newGroup = {
       ...defaultTaskGroupData,
-      name: `${jobName ? jobName + '-' : ''}group-${taskGroups.length + 1}`,
+      name: groupName,
+      tasks: [{ ...defaultTaskData, name: groupName }],
     };
     dispatch(jobFormActions.addTaskGroup(newGroup));
   };

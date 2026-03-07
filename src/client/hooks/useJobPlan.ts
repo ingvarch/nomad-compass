@@ -6,7 +6,7 @@ import { isPermissionError, getPermissionErrorMessage, getErrorMessage } from '.
 import { createJobSpec, updateJobSpec } from '../lib/services/jobSpecService';
 import { useToast } from '../context/ToastContext';
 import { useDeploymentTracker } from './useDeploymentTracker';
-import { NomadJobFormData, TaskGroupFormData, NomadEnvVar } from '../types/nomad';
+import { NomadJobFormData, TaskGroupFormData, TaskFormData, NomadEnvVar } from '../types/nomad';
 import { JOB_NAME_REGEX, JOB_NAME_ERROR } from '../lib/constants';
 
 interface UseJobPlanOptions {
@@ -20,9 +20,12 @@ function cleanFormData(data: NomadJobFormData): NomadJobFormData {
     ...data,
     taskGroups: data.taskGroups.map((group: TaskGroupFormData) => ({
       ...group,
-      envVars: (group.envVars || []).filter(
-        (ev: NomadEnvVar) => ev.key.trim() !== '' || ev.value.trim() !== ''
-      ),
+      tasks: group.tasks.map((task: TaskFormData) => ({
+        ...task,
+        envVars: (task.envVars || []).filter(
+          (ev: NomadEnvVar) => ev.key.trim() !== '' || ev.value.trim() !== ''
+        ),
+      })),
     })),
   };
 }
@@ -41,13 +44,18 @@ function validateForm(formData: NomadJobFormData | null, mode: 'create' | 'edit'
   for (let i = 0; i < formData.taskGroups.length; i++) {
     const group = formData.taskGroups[i];
     if (!group.name.trim()) return `Group ${i + 1} name is required`;
-    if (!group.image.trim()) return `Image for group ${i + 1} is required`;
 
-    if (group.usePrivateRegistry) {
-      if (!group.dockerAuth?.username)
-        return `Username is required for private registry in group ${i + 1}`;
-      if (!group.dockerAuth?.password)
-        return `Password is required for private registry in group ${i + 1}`;
+    for (let t = 0; t < group.tasks.length; t++) {
+      const task = group.tasks[t];
+      if (!task.name.trim()) return `Task ${t + 1} name is required in group ${i + 1}`;
+      if (!task.image.trim()) return `Image for task ${t + 1} in group ${i + 1} is required`;
+
+      if (task.usePrivateRegistry) {
+        if (!task.dockerAuth?.username)
+          return `Username is required for private registry in task ${t + 1} of group ${i + 1}`;
+        if (!task.dockerAuth?.password)
+          return `Password is required for private registry in task ${t + 1} of group ${i + 1}`;
+      }
     }
 
     if (group.enableNetwork && group.ports.length > 0) {

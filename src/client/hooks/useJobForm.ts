@@ -20,13 +20,16 @@ import { useJobPlan } from './useJobPlan';
 import { DEFAULT_NAMESPACE, JOB_NAME_REGEX } from '../lib/constants';
 import type { NomadJobFormData } from '../types/nomad';
 
-/** Ensures all task groups have envVars array initialized */
+/** Ensures all tasks have envVars array initialized */
 function ensureEnvVars(formData: NomadJobFormData): NomadJobFormData {
   return {
     ...formData,
     taskGroups: formData.taskGroups.map((group) => ({
       ...group,
-      envVars: group.envVars || [],
+      tasks: group.tasks.map((task) => ({
+        ...task,
+        envVars: task.envVars || [],
+      })),
     })),
   };
 }

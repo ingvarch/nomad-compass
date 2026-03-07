@@ -1,6 +1,7 @@
 import type {
   NomadJobFormData,
   TaskGroupFormData,
+  TaskFormData,
   NomadPort,
   NomadEnvVar,
   NomadServiceConfig,
@@ -93,7 +94,7 @@ function createServiceForTaskGroup(
 
   const service: NomadServiceDefinition = {
     Name: serviceConfig?.name || groupData.name,
-    TaskName: groupData.name,
+    TaskName: groupData.tasks[0]?.name || groupData.name,
     AddressMode: serviceConfig?.addressMode || 'alloc',
     PortLabel: serviceConfig?.portLabel || portLabel,
     Provider: serviceConfig?.provider || 'nomad',
@@ -113,11 +114,11 @@ function createServiceForTaskGroup(
 /**
  * Creates a task configuration object for a Nomad job
  */
-function createTaskConfig(groupData: TaskGroupFormData): TaskConfig {
+function createTaskConfig(taskData: TaskFormData): TaskConfig {
   const env: Record<string, string> = {};
 
-  if (groupData.envVars && groupData.envVars.length > 0) {
-    groupData.envVars.forEach((envVar) => {
+  if (taskData.envVars && taskData.envVars.length > 0) {
+    taskData.envVars.forEach((envVar) => {
       if (envVar.key.trim() !== '') {
         env[envVar.key] = envVar.value;
       }
@@ -125,25 +126,25 @@ function createTaskConfig(groupData: TaskGroupFormData): TaskConfig {
   }
 
   const taskConfig: NomadTaskDriverConfig = {
-    image: groupData.image,
+    image: taskData.image,
   };
 
-  if (groupData.usePrivateRegistry && groupData.dockerAuth) {
+  if (taskData.usePrivateRegistry && taskData.dockerAuth) {
     taskConfig.auth = {
-      username: groupData.dockerAuth.username,
-      password: groupData.dockerAuth.password,
+      username: taskData.dockerAuth.username,
+      password: taskData.dockerAuth.password,
     };
   }
 
   return {
-    Name: groupData.name,
-    Driver: groupData.plugin,
+    Name: taskData.name,
+    Driver: taskData.plugin,
     Config: taskConfig,
     Env: env,
     Resources: {
-      CPU: groupData.resources.CPU,
-      MemoryMB: groupData.resources.MemoryMB,
-      DiskMB: groupData.resources.DiskMB || 500,
+      CPU: taskData.resources.CPU,
+      MemoryMB: taskData.resources.MemoryMB,
+      DiskMB: taskData.resources.DiskMB || 500,
     },
   };
 }
@@ -211,13 +212,13 @@ function createHealthCheckConfig(groupData: TaskGroupFormData): NomadServiceChec
 export function createJobSpec(formData: NomadJobFormData): JobSpec {
   const taskGroups = formData.taskGroups.map((groupData) => {
     const network = createNetworkConfig(groupData);
-    const task = createTaskConfig(groupData);
+    const tasks = groupData.tasks.map((taskData) => createTaskConfig(taskData));
     const healthCheckConfig = createHealthCheckConfig(groupData);
 
     const taskGroup: TaskGroupConfig = {
       Name: groupData.name,
       Count: groupData.count,
-      Tasks: [task],
+      Tasks: tasks,
     };
 
     if (network && (network.DynamicPorts.length > 0 || network.ReservedPorts.length > 0)) {
@@ -368,16 +369,35 @@ function extractServiceConfig(
  */
 export function convertJobToFormData(job: NomadJob): NomadJobFormData {
   const taskGroups = (job.TaskGroups || []).map((group: NomadTaskGroup) => {
-    const task = group.Tasks[0];
-    const config = task.Config || {};
+    const tasks: TaskFormData[] = (group.Tasks || []).map((task) => {
+      const config = task.Config || {};
+      const envVars: NomadEnvVar[] = task.Env
+        ? Object.entries(task.Env)
+            .map(([key, value]) => ({ key, value: value as string }))
+            .sort((a, b) => a.key.localeCompare(b.key))
+        : [];
+      const usePrivateRegistry = !!(config.auth && config.auth.username && config.auth.password);
 
-    const envVars: NomadEnvVar[] = task.Env
-      ? Object.entries(task.Env)
-          .map(([key, value]) => ({ key, value: value as string }))
-          .sort((a, b) => a.key.localeCompare(b.key))
-      : [];
-
-    const usePrivateRegistry = !!(config.auth && config.auth.username && config.auth.password);
+      return {
+        name: task.Name,
+        image: config.image || '',
+        plugin: task.Driver || 'podman',
+        resources: {
+          CPU: task.Resources?.CPU || 100,
+          MemoryMB: task.Resources?.MemoryMB || 256,
+          DiskMB: task.Resources?.DiskMB || 500,
+        },
+        envVars,
+        usePrivateRegistry,
+        dockerAuth:
+          usePrivateRegistry && config.auth
+            ? {
+                username: config.auth.username,
+                password: config.auth.password,
+              }
+            : undefined,
+      };
+    });
 
     const networkConfig = group.Networks && group.Networks.length > 0 ? group.Networks[0] : null;
     const enableNetwork = !!networkConfig;
@@ -417,22 +437,7 @@ export function convertJobToFormData(job: NomadJob): NomadJobFormData {
     return {
       name: group.Name,
       count: group.Count || 1,
-      image: config.image || '',
-      plugin: task.Driver || 'podman',
-      resources: {
-        CPU: task.Resources?.CPU || 100,
-        MemoryMB: task.Resources?.MemoryMB || 256,
-        DiskMB: task.Resources?.DiskMB || 500,
-      },
-      envVars,
-      usePrivateRegistry,
-      dockerAuth:
-        usePrivateRegistry && config.auth
-          ? {
-              username: config.auth.username,
-              password: config.auth.password,
-            }
-          : undefined,
+      tasks,
       enableNetwork,
       networkMode: networkMode as 'none' | 'host' | 'bridge',
       ports,

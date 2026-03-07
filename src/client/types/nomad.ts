@@ -191,6 +191,16 @@ export interface DockerAuth {
     password: string;
 }
 
+export interface TaskFormData {
+    name: string;
+    image: string;
+    plugin: string;
+    resources: NomadResource;
+    envVars: NomadEnvVar[];
+    usePrivateRegistry: boolean;
+    dockerAuth?: DockerAuth;
+}
+
 // Service Discovery & Ingress types
 export interface NomadServiceTag {
     key: string;
@@ -217,12 +227,7 @@ export interface NomadServiceConfig {
 export interface TaskGroupFormData {
     name: string;
     count: number;
-    image: string;
-    plugin: string;
-    resources: NomadResource;
-    envVars: NomadEnvVar[];
-    usePrivateRegistry: boolean;
-    dockerAuth?: DockerAuth;
+    tasks: TaskFormData[];
     enableNetwork: boolean;
     networkMode: 'none' | 'host' | 'bridge';
     ports: NomadPort[];

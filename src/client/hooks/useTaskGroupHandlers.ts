@@ -9,7 +9,8 @@ import {
 
 /**
  * Hook that provides handlers for a specific task group.
- * Used by TaskGroupForm to avoid props drilling.
+ * Used by TaskGroupForm for group-level fields only.
+ * Task-level handlers are in useTaskHandlers.
  */
 export function useTaskGroupHandlers(groupIndex: number) {
   const { state, dispatch } = useJobFormContext();
@@ -24,14 +25,6 @@ export function useTaskGroupHandlers(groupIndex: number) {
 
       if (parts.length === 1) {
         dispatch(jobFormActions.updateTaskGroup(groupIndex, { [name]: type === 'number' ? Number(value) : value }));
-      } else if (parts[0] === 'resources') {
-        dispatch(jobFormActions.updateTaskGroup(groupIndex, {
-          resources: { ...currentGroup.resources, [parts[1]]: parseInt(value, 10) },
-        }));
-      } else if (parts[0] === 'dockerAuth') {
-        dispatch(jobFormActions.updateTaskGroup(groupIndex, {
-          dockerAuth: { ...currentGroup.dockerAuth!, [parts[1]]: value },
-        }));
       } else if (parts[0] === 'healthCheck') {
         dispatch(jobFormActions.updateTaskGroup(groupIndex, {
           healthCheck: {
@@ -48,25 +41,6 @@ export function useTaskGroupHandlers(groupIndex: number) {
     (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
       const target = e.target as HTMLInputElement;
       dispatch(jobFormActions.updateTaskGroup(groupIndex, { [target.name]: target.checked }));
-    },
-    [groupIndex, dispatch]
-  );
-
-  // Environment variables
-  const onEnvVarChange = useCallback(
-    (varIndex: number, field: 'key' | 'value', value: string) => {
-      dispatch(jobFormActions.updateEnvVar(groupIndex, varIndex, field, value));
-    },
-    [groupIndex, dispatch]
-  );
-
-  const onAddEnvVar = useCallback(() => {
-    dispatch(jobFormActions.addEnvVar(groupIndex));
-  }, [groupIndex, dispatch]);
-
-  const onRemoveEnvVar = useCallback(
-    (varIndex: number) => {
-      dispatch(jobFormActions.removeEnvVar(groupIndex, varIndex));
     },
     [groupIndex, dispatch]
   );
@@ -156,9 +130,6 @@ export function useTaskGroupHandlers(groupIndex: number) {
     group,
     onInputChange,
     onCheckboxChange,
-    onEnvVarChange,
-    onAddEnvVar,
-    onRemoveEnvVar,
     onPortChange,
     onAddPort,
     onRemovePort,

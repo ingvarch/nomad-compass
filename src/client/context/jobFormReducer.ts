@@ -4,6 +4,7 @@
 import {
   NomadJobFormData,
   TaskGroupFormData,
+  TaskFormData,
   NomadJob,
   NomadJobPlanResponse,
   NomadPort,
@@ -11,7 +12,7 @@ import {
   NomadServiceConfig,
   IngressConfig,
 } from '../types/nomad';
-import { defaultTaskGroupData, defaultServiceConfig } from './jobFormDefaults';
+import { defaultTaskGroupData, defaultServiceConfig, defaultTaskData } from './jobFormDefaults';
 
 // State type
 export interface JobFormState {
@@ -52,9 +53,12 @@ export type JobFormAction =
   | { type: 'UPDATE_TASK_GROUP'; payload: { groupIndex: number; updates: Partial<TaskGroupFormData> } }
   | { type: 'ADD_TASK_GROUP'; payload: TaskGroupFormData }
   | { type: 'REMOVE_TASK_GROUP'; payload: number }
-  | { type: 'UPDATE_ENV_VAR'; payload: { groupIndex: number; varIndex: number; field: 'key' | 'value'; value: string } }
-  | { type: 'ADD_ENV_VAR'; payload: number }
-  | { type: 'REMOVE_ENV_VAR'; payload: { groupIndex: number; varIndex: number } }
+  | { type: 'ADD_TASK'; payload: { groupIndex: number; task: TaskFormData } }
+  | { type: 'REMOVE_TASK'; payload: { groupIndex: number; taskIndex: number } }
+  | { type: 'UPDATE_TASK'; payload: { groupIndex: number; taskIndex: number; updates: Partial<TaskFormData> } }
+  | { type: 'UPDATE_TASK_ENV_VAR'; payload: { groupIndex: number; taskIndex: number; varIndex: number; field: 'key' | 'value'; value: string } }
+  | { type: 'ADD_TASK_ENV_VAR'; payload: { groupIndex: number; taskIndex: number } }
+  | { type: 'REMOVE_TASK_ENV_VAR'; payload: { groupIndex: number; taskIndex: number; varIndex: number } }
   | { type: 'UPDATE_PORT'; payload: { groupIndex: number; portIndex: number; field: keyof NomadPort; value: string } }
   | { type: 'ADD_PORT'; payload: number }
   | { type: 'REMOVE_PORT'; payload: { groupIndex: number; portIndex: number } }
@@ -95,6 +99,20 @@ function updateTaskGroup(
   const updatedGroups = [...formData.taskGroups];
   updatedGroups[groupIndex] = updater(updatedGroups[groupIndex]);
   return { ...formData, taskGroups: updatedGroups };
+}
+
+// Helper to update a task within a task group
+function updateTask(
+  formData: NomadJobFormData,
+  groupIndex: number,
+  taskIndex: number,
+  updater: (task: TaskFormData) => TaskFormData
+): NomadJobFormData {
+  return updateTaskGroup(formData, groupIndex, (group) => {
+    const updatedTasks = [...group.tasks];
+    updatedTasks[taskIndex] = updater(updatedTasks[taskIndex]);
+    return { ...group, tasks: updatedTasks };
+  });
 }
 
 // Reducer
@@ -182,12 +200,45 @@ export function jobFormReducer(state: JobFormState, action: JobFormAction): JobF
         },
       };
 
-    case 'UPDATE_ENV_VAR':
+    case 'ADD_TASK':
+      if (!state.formData) return state;
+      return {
+        ...state,
+        formData: updateTaskGroup(state.formData, action.payload.groupIndex, (group) => ({
+          ...group,
+          tasks: [...group.tasks, action.payload.task],
+        })),
+      };
+
+    case 'REMOVE_TASK':
       if (!state.formData) return state;
       return {
         ...state,
         formData: updateTaskGroup(state.formData, action.payload.groupIndex, (group) => {
-          const envVars = [...(group.envVars || [])];
+          if (group.tasks.length <= 1) return group;
+          return {
+            ...group,
+            tasks: group.tasks.filter((_, i) => i !== action.payload.taskIndex),
+          };
+        }),
+      };
+
+    case 'UPDATE_TASK':
+      if (!state.formData) return state;
+      return {
+        ...state,
+        formData: updateTask(state.formData, action.payload.groupIndex, action.payload.taskIndex, (task) => ({
+          ...task,
+          ...action.payload.updates,
+        })),
+      };
+
+    case 'UPDATE_TASK_ENV_VAR':
+      if (!state.formData) return state;
+      return {
+        ...state,
+        formData: updateTask(state.formData, action.payload.groupIndex, action.payload.taskIndex, (task) => {
+          const envVars = [...(task.envVars || [])];
           if (!envVars[action.payload.varIndex]) {
             envVars[action.payload.varIndex] = { key: '', value: '' };
           }
@@ -195,29 +246,29 @@ export function jobFormReducer(state: JobFormState, action: JobFormAction): JobF
             ...envVars[action.payload.varIndex],
             [action.payload.field]: action.payload.value,
           };
-          return { ...group, envVars };
+          return { ...task, envVars };
         }),
       };
 
-    case 'ADD_ENV_VAR':
+    case 'ADD_TASK_ENV_VAR':
       if (!state.formData) return state;
       return {
         ...state,
-        formData: updateTaskGroup(state.formData, action.payload, (group) => ({
-          ...group,
-          envVars: [...(group.envVars || []), { key: '', value: '' }],
+        formData: updateTask(state.formData, action.payload.groupIndex, action.payload.taskIndex, (task) => ({
+          ...task,
+          envVars: [...(task.envVars || []), { key: '', value: '' }],
         })),
       };
 
-    case 'REMOVE_ENV_VAR':
+    case 'REMOVE_TASK_ENV_VAR':
       if (!state.formData) return state;
       return {
         ...state,
-        formData: updateTaskGroup(state.formData, action.payload.groupIndex, (group) => {
-          const envVars = [...(group.envVars || [])];
-          if (envVars.length <= 1) return { ...group, envVars: [] };
+        formData: updateTask(state.formData, action.payload.groupIndex, action.payload.taskIndex, (task) => {
+          const envVars = [...(task.envVars || [])];
+          if (envVars.length <= 1) return { ...task, envVars: [] };
           envVars.splice(action.payload.varIndex, 1);
-          return { ...group, envVars };
+          return { ...task, envVars };
         }),
       };
 

@@ -8,6 +8,7 @@ import React, { createContext, useContext, useReducer, ReactNode } from 'react';
 import {
   NomadJobFormData,
   TaskGroupFormData,
+  TaskFormData,
   NomadJob,
   NomadJobPlanResponse,
   NomadPort,
@@ -18,7 +19,7 @@ import {
 import { jobFormReducer, initialState, JobFormState, JobFormAction } from './jobFormReducer';
 
 // Re-export from submodules for backward compatibility
-export { defaultTaskGroupData, defaultFormValues } from './jobFormDefaults';
+export { defaultTaskGroupData, defaultTaskData, defaultFormValues } from './jobFormDefaults';
 export { jobFormReducer, initialState } from './jobFormReducer';
 export type { JobFormState, JobFormAction } from './jobFormReducer';
 
@@ -82,9 +83,12 @@ export const jobFormActions = {
   updateTaskGroup: (groupIndex: number, updates: Partial<TaskGroupFormData>): JobFormAction => ({ type: 'UPDATE_TASK_GROUP', payload: { groupIndex, updates } }),
   addTaskGroup: (group: TaskGroupFormData): JobFormAction => ({ type: 'ADD_TASK_GROUP', payload: group }),
   removeTaskGroup: (index: number): JobFormAction => ({ type: 'REMOVE_TASK_GROUP', payload: index }),
-  updateEnvVar: (groupIndex: number, varIndex: number, field: 'key' | 'value', value: string): JobFormAction => ({ type: 'UPDATE_ENV_VAR', payload: { groupIndex, varIndex, field, value } }),
-  addEnvVar: (groupIndex: number): JobFormAction => ({ type: 'ADD_ENV_VAR', payload: groupIndex }),
-  removeEnvVar: (groupIndex: number, varIndex: number): JobFormAction => ({ type: 'REMOVE_ENV_VAR', payload: { groupIndex, varIndex } }),
+  addTask: (groupIndex: number, task: TaskFormData): JobFormAction => ({ type: 'ADD_TASK', payload: { groupIndex, task } }),
+  removeTask: (groupIndex: number, taskIndex: number): JobFormAction => ({ type: 'REMOVE_TASK', payload: { groupIndex, taskIndex } }),
+  updateTask: (groupIndex: number, taskIndex: number, updates: Partial<TaskFormData>): JobFormAction => ({ type: 'UPDATE_TASK', payload: { groupIndex, taskIndex, updates } }),
+  updateTaskEnvVar: (groupIndex: number, taskIndex: number, varIndex: number, field: 'key' | 'value', value: string): JobFormAction => ({ type: 'UPDATE_TASK_ENV_VAR', payload: { groupIndex, taskIndex, varIndex, field, value } }),
+  addTaskEnvVar: (groupIndex: number, taskIndex: number): JobFormAction => ({ type: 'ADD_TASK_ENV_VAR', payload: { groupIndex, taskIndex } }),
+  removeTaskEnvVar: (groupIndex: number, taskIndex: number, varIndex: number): JobFormAction => ({ type: 'REMOVE_TASK_ENV_VAR', payload: { groupIndex, taskIndex, varIndex } }),
   updatePort: (groupIndex: number, portIndex: number, field: keyof NomadPort, value: string): JobFormAction => ({ type: 'UPDATE_PORT', payload: { groupIndex, portIndex, field, value } }),
   addPort: (groupIndex: number): JobFormAction => ({ type: 'ADD_PORT', payload: groupIndex }),
   removePort: (groupIndex: number, portIndex: number): JobFormAction => ({ type: 'REMOVE_PORT', payload: { groupIndex, portIndex } }),

@@ -1,15 +1,12 @@
 import React from 'react';
-import { useJobFormContext } from '../../../context/JobFormContext';
+import { useJobFormContext, jobFormActions, defaultTaskData } from '../../../context/JobFormContext';
 import { useTaskGroupHandlers } from '../../../hooks/useTaskGroupHandlers';
 import FormInputField from '../../ui/forms/FormInputField';
 import ToggleableSection from '../../ui/forms/ToggleableSection';
-import PrivateRegistryForm from './parts/PrivateRegistryForm';
-import ResourcesForm from './parts/ResourcesForm';
-import EnvVarsSection from './parts/EnvVarsSection';
+import TaskForm from './TaskForm';
 import NetworkSection from './parts/NetworkSection';
 import ServiceSection from './parts/ServiceSection';
 import HealthCheckSection from './parts/HealthCheckSection';
-import NomadEnvironmentInfo from './parts/NomadEnvironmentInfo';
 
 interface TaskGroupFormProps {
   groupIndex: number;
@@ -19,14 +16,15 @@ interface TaskGroupFormProps {
 
 /**
  * TaskGroupForm - Form for a single task group.
- * Uses useTaskGroupHandlers for all handlers, eliminating props drilling.
+ * Uses useTaskGroupHandlers for group-level handlers.
+ * Task-level fields are delegated to TaskForm components.
  */
 const TaskGroupForm: React.FC<TaskGroupFormProps> = ({
   groupIndex,
   isFirst,
   jobName,
 }) => {
-  const { state } = useJobFormContext();
+  const { state, dispatch } = useJobFormContext();
   const { isLoading, isSaving } = state;
   const loading = isLoading || isSaving;
 
@@ -34,9 +32,6 @@ const TaskGroupForm: React.FC<TaskGroupFormProps> = ({
     group,
     onInputChange,
     onCheckboxChange,
-    onEnvVarChange,
-    onAddEnvVar,
-    onRemoveEnvVar,
     onPortChange,
     onAddPort,
     onRemovePort,
@@ -52,6 +47,11 @@ const TaskGroupForm: React.FC<TaskGroupFormProps> = ({
   } = useTaskGroupHandlers(groupIndex);
 
   if (!group) return null;
+
+  const handleAddTask = () => {
+    const taskName = `${group.name || 'task'}-${group.tasks.length + 1}`;
+    dispatch(jobFormActions.addTask(groupIndex, { ...defaultTaskData, name: taskName }));
+  };
 
   return (
     <ToggleableSection
@@ -89,72 +89,30 @@ const TaskGroupForm: React.FC<TaskGroupFormProps> = ({
         helpText="Number of instances to run of this task group"
       />
 
-      {/* Docker Image */}
-      <FormInputField
-        id={`group-${groupIndex}-image`}
-        name="image"
-        label="Docker Image"
-        type="text"
-        value={group.image}
-        onChange={onInputChange}
-        placeholder="nginx:latest"
-        disabled={loading}
-        required
-      />
-
-      {/* Private Registry Checkbox */}
-      <FormInputField
-        id={`group-${groupIndex}-usePrivateRegistry`}
-        name="usePrivateRegistry"
-        label="Use Private Container Registry"
-        type="checkbox"
-        value={group.usePrivateRegistry}
-        onChange={onCheckboxChange}
-        disabled={loading}
-      />
-
-      {/* Private Registry Credentials */}
-      {group.usePrivateRegistry && (
-        <PrivateRegistryForm
-          dockerAuth={group.dockerAuth}
-          onInputChange={onInputChange}
-          isLoading={loading}
-          groupIndex={groupIndex}
-        />
-      )}
-
-      {/* Container Runtime */}
-      <FormInputField
-        id={`group-${groupIndex}-plugin`}
-        name="plugin"
-        label="Container Runtime"
-        type="select"
-        value={group.plugin}
-        onChange={onInputChange}
-        disabled={loading}
-        className="mt-6"
-        options={[
-          { value: 'podman', label: 'Podman' },
-          { value: 'docker', label: 'Docker' },
-        ]}
-      />
-
-      {/* Resources */}
-      <ResourcesForm
-        resources={group.resources}
-        onInputChange={onInputChange}
-        isLoading={loading}
-        groupIndex={groupIndex}
-      />
-
-      {/* Environment Variables */}
-      <EnvVarsSection
-        envVars={group.envVars}
-        onEnvVarChange={onEnvVarChange}
-        onAddEnvVar={onAddEnvVar}
-        onRemoveEnvVar={onRemoveEnvVar}
-        isLoading={loading}
-      />
+      {/* Tasks */}
+      <div className="mb-4">
+        <div className="flex justify-between items-center mb-2">
+          <h5 className="text-md font-medium text-gray-700 dark:text-gray-300">Tasks</h5>
+          <button
+            type="button"
+            onClick={handleAddTask}
+            className="inline-flex items-center px-2.5 py-1.5 border border-transparent text-xs font-medium rounded text-blue-700 dark:text-blue-300 bg-blue-100 dark:bg-blue-900/30 hover:bg-blue-200 dark:hover:bg-blue-900/50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+            disabled={loading}
+          >
+            Add Task
+          </button>
+        </div>
+        <div className="space-y-4">
+          {group.tasks.map((_, taskIndex) => (
+            <TaskForm
+              key={taskIndex}
+              groupIndex={groupIndex}
+              taskIndex={taskIndex}
+              isOnly={group.tasks.length === 1}
+            />
+          ))}
+        </div>
+      </div>
 
       {/* Network Configuration */}
       <NetworkSection
@@ -195,9 +153,6 @@ const TaskGroupForm: React.FC<TaskGroupFormProps> = ({
         isLoading={loading}
         groupIndex={groupIndex}
       />
-
-      {/* Nomad Environment Variables Information */}
-      <NomadEnvironmentInfo />
     </ToggleableSection>
   );
 };

@@ -1,6 +1,15 @@
 import { describe, test, expect } from 'bun:test';
 import { createJobSpec, updateJobSpec, convertJobToFormData, prepareCloneFormData } from './jobSpecService';
-import type { NomadJobFormData, NomadJob } from '../../types/nomad';
+import type { NomadJobFormData, NomadJob, TaskFormData } from '../../types/nomad';
+
+const defaultTask: TaskFormData = {
+    name: 'test-group',
+    image: 'nginx:latest',
+    plugin: 'docker',
+    resources: { CPU: 100, MemoryMB: 256, DiskMB: 500 },
+    envVars: [],
+    usePrivateRegistry: false,
+};
 
 // Helper to create minimal valid form data
 function createMinimalFormData(overrides: Partial<NomadJobFormData> = {}): NomadJobFormData {
@@ -12,11 +21,7 @@ function createMinimalFormData(overrides: Partial<NomadJobFormData> = {}): Nomad
         taskGroups: [{
             name: 'test-group',
             count: 1,
-            image: 'nginx:latest',
-            plugin: 'docker',
-            resources: { CPU: 100, MemoryMB: 256, DiskMB: 500 },
-            envVars: [],
-            usePrivateRegistry: false,
+            tasks: [{ ...defaultTask }],
             enableNetwork: false,
             networkMode: 'none',
             ports: [],
@@ -56,7 +61,7 @@ describe('createJobSpec', () => {
         const formData = createMinimalFormData({
             taskGroups: [{
                 ...createMinimalFormData().taskGroups[0],
-                resources: { CPU: 500, MemoryMB: 1024, DiskMB: 2000 },
+                tasks: [{ ...defaultTask, resources: { CPU: 500, MemoryMB: 1024, DiskMB: 2000 } }],
             }],
         });
         const result = createJobSpec(formData);
@@ -71,7 +76,7 @@ describe('createJobSpec', () => {
         const formData = createMinimalFormData({
             taskGroups: [{
                 ...createMinimalFormData().taskGroups[0],
-                image: 'myapp:v1.2.3',
+                tasks: [{ ...defaultTask, image: 'myapp:v1.2.3' }],
             }],
         });
         const result = createJobSpec(formData);
@@ -84,10 +89,13 @@ describe('createJobSpec', () => {
         const formData = createMinimalFormData({
             taskGroups: [{
                 ...createMinimalFormData().taskGroups[0],
-                envVars: [
-                    { key: 'NODE_ENV', value: 'production' },
-                    { key: 'PORT', value: '3000' },
-                ],
+                tasks: [{
+                    ...defaultTask,
+                    envVars: [
+                        { key: 'NODE_ENV', value: 'production' },
+                        { key: 'PORT', value: '3000' },
+                    ],
+                }],
             }],
         });
         const result = createJobSpec(formData);
@@ -101,11 +109,14 @@ describe('createJobSpec', () => {
         const formData = createMinimalFormData({
             taskGroups: [{
                 ...createMinimalFormData().taskGroups[0],
-                envVars: [
-                    { key: 'VALID', value: 'yes' },
-                    { key: '', value: 'ignored' },
-                    { key: '  ', value: 'also-ignored' },
-                ],
+                tasks: [{
+                    ...defaultTask,
+                    envVars: [
+                        { key: 'VALID', value: 'yes' },
+                        { key: '', value: 'ignored' },
+                        { key: '  ', value: 'also-ignored' },
+                    ],
+                }],
             }],
         });
         const result = createJobSpec(formData);
@@ -119,8 +130,11 @@ describe('createJobSpec', () => {
         const formData = createMinimalFormData({
             taskGroups: [{
                 ...createMinimalFormData().taskGroups[0],
-                usePrivateRegistry: true,
-                dockerAuth: { username: 'user', password: 'pass' },
+                tasks: [{
+                    ...defaultTask,
+                    usePrivateRegistry: true,
+                    dockerAuth: { username: 'user', password: 'pass' },
+                }],
             }],
         });
         const result = createJobSpec(formData);
@@ -298,6 +312,26 @@ describe('createJobSpec', () => {
         expect(service.Tags).toContain('custom.tag=value1');
         expect(service.Tags).toContain('another.tag');
     });
+
+    test('creates multiple tasks per group', () => {
+        const formData = createMinimalFormData({
+            taskGroups: [{
+                ...createMinimalFormData().taskGroups[0],
+                tasks: [
+                    { ...defaultTask, name: 'web', image: 'nginx:latest' },
+                    { ...defaultTask, name: 'sidecar', image: 'envoy:latest', plugin: 'docker' },
+                ],
+            }],
+        });
+        const result = createJobSpec(formData);
+        const taskGroup = result.Job.TaskGroups[0];
+
+        expect(taskGroup.Tasks).toHaveLength(2);
+        expect(taskGroup.Tasks[0].Name).toBe('web');
+        expect(taskGroup.Tasks[0].Config.image).toBe('nginx:latest');
+        expect(taskGroup.Tasks[1].Name).toBe('sidecar');
+        expect(taskGroup.Tasks[1].Config.image).toBe('envoy:latest');
+    });
 });
 
 describe('updateJobSpec', () => {
@@ -375,7 +409,7 @@ describe('convertJobToFormData', () => {
         expect(result.taskGroups).toHaveLength(1);
         expect(result.taskGroups[0].name).toBe('api');
         expect(result.taskGroups[0].count).toBe(3);
-        expect(result.taskGroups[0].image).toBe('api:v1.0');
+        expect(result.taskGroups[0].tasks[0].image).toBe('api:v1.0');
     });
 
     test('extracts environment variables sorted alphabetically', () => {
@@ -396,11 +430,12 @@ describe('convertJobToFormData', () => {
             }],
         };
         const result = convertJobToFormData(job as NomadJob);
+        const taskEnvVars = result.taskGroups[0].tasks[0].envVars;
 
-        expect(result.taskGroups[0].envVars).toHaveLength(3);
-        expect(result.taskGroups[0].envVars[0].key).toBe('APPLE');
-        expect(result.taskGroups[0].envVars[1].key).toBe('MIDDLE');
-        expect(result.taskGroups[0].envVars[2].key).toBe('ZEBRA');
+        expect(taskEnvVars).toHaveLength(3);
+        expect(taskEnvVars[0].key).toBe('APPLE');
+        expect(taskEnvVars[1].key).toBe('MIDDLE');
+        expect(taskEnvVars[2].key).toBe('ZEBRA');
     });
 
     test('extracts network configuration', () => {
@@ -459,10 +494,45 @@ describe('convertJobToFormData', () => {
             }],
         };
         const result = convertJobToFormData(job as NomadJob);
+        const task = result.taskGroups[0].tasks[0];
 
-        expect(result.taskGroups[0].usePrivateRegistry).toBe(true);
-        expect(result.taskGroups[0].dockerAuth?.username).toBe('deploy');
-        expect(result.taskGroups[0].dockerAuth?.password).toBe('secret');
+        expect(task.usePrivateRegistry).toBe(true);
+        expect(task.dockerAuth?.username).toBe('deploy');
+        expect(task.dockerAuth?.password).toBe('secret');
+    });
+
+    test('converts multiple tasks per group', () => {
+        const job: Partial<NomadJob> = {
+            ID: 'test',
+            Name: 'test',
+            Namespace: 'default',
+            TaskGroups: [{
+                Name: 'app',
+                Count: 1,
+                Tasks: [
+                    {
+                        Name: 'web',
+                        Driver: 'docker',
+                        Config: { image: 'nginx:latest' },
+                        Resources: { CPU: 200, MemoryMB: 512, DiskMB: 500 },
+                    },
+                    {
+                        Name: 'sidecar',
+                        Driver: 'docker',
+                        Config: { image: 'envoy:latest' },
+                        Resources: { CPU: 100, MemoryMB: 128, DiskMB: 300 },
+                    },
+                ],
+            }],
+        };
+        const result = convertJobToFormData(job as NomadJob);
+
+        expect(result.taskGroups[0].tasks).toHaveLength(2);
+        expect(result.taskGroups[0].tasks[0].name).toBe('web');
+        expect(result.taskGroups[0].tasks[0].image).toBe('nginx:latest');
+        expect(result.taskGroups[0].tasks[1].name).toBe('sidecar');
+        expect(result.taskGroups[0].tasks[1].image).toBe('envoy:latest');
+        expect(result.taskGroups[0].tasks[1].resources.MemoryMB).toBe(128);
     });
 });
 

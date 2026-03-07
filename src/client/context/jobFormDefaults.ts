@@ -1,7 +1,7 @@
 /**
  * Default values for job form data structures.
  */
-import { NomadJobFormData, TaskGroupFormData, NomadServiceConfig } from '../types/nomad';
+import { NomadJobFormData, TaskGroupFormData, TaskFormData, NomadServiceConfig } from '../types/nomad';
 import { DEFAULT_NAMESPACE } from '../lib/constants';
 
 // Default service configuration
@@ -20,10 +20,9 @@ export const defaultServiceConfig: NomadServiceConfig = {
   useAdvancedMode: false,
 };
 
-// Default task group configuration
-export const defaultTaskGroupData: TaskGroupFormData = {
+// Default task configuration
+export const defaultTaskData: TaskFormData = {
   name: '',
-  count: 1,
   image: '',
   plugin: 'podman',
   resources: {
@@ -34,6 +33,13 @@ export const defaultTaskGroupData: TaskGroupFormData = {
   envVars: [],
   usePrivateRegistry: false,
   dockerAuth: { username: '', password: '' },
+};
+
+// Default task group configuration
+export const defaultTaskGroupData: TaskGroupFormData = {
+  name: '',
+  count: 1,
+  tasks: [{ ...defaultTaskData }],
   enableNetwork: false,
   networkMode: 'bridge',
   ports: [{ label: 'http', value: 0, to: 80, static: false }],

@@ -9,14 +9,20 @@ interface PrivateRegistryFormProps {
   onInputChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void;
   isLoading: boolean;
   groupIndex: number;
+  taskIndex?: number;
 }
 
 const PrivateRegistryForm: React.FC<PrivateRegistryFormProps> = ({
   dockerAuth,
   onInputChange,
   isLoading,
-  groupIndex
+  groupIndex,
+  taskIndex
 }) => {
+  const idPrefix = taskIndex !== undefined
+    ? `group-${groupIndex}-task-${taskIndex}`
+    : `group-${groupIndex}`;
+
   return (
     <div className="mb-6 p-4 border border-gray-200 dark:border-monokai-muted rounded-md bg-gray-50 dark:bg-monokai-surface">
       <h4 className="text-md font-medium text-gray-700 dark:text-monokai-text mb-3">Registry Credentials</h4>
@@ -35,7 +41,7 @@ const PrivateRegistryForm: React.FC<PrivateRegistryFormProps> = ({
       </div>
 
       <FormInputField
-        id={`group-${groupIndex}-dockerAuth.username`}
+        id={`${idPrefix}-dockerAuth.username`}
         name="dockerAuth.username"
         label="Username"
         type="text"
@@ -46,7 +52,7 @@ const PrivateRegistryForm: React.FC<PrivateRegistryFormProps> = ({
       />
 
       <FormInputField
-        id={`group-${groupIndex}-dockerAuth.password`}
+        id={`${idPrefix}-dockerAuth.password`}
         name="dockerAuth.password"
         label="Password"
         type="password"
@@ -59,4 +65,4 @@ const PrivateRegistryForm: React.FC<PrivateRegistryFormProps> = ({
   );
 };
 
-export default PrivateRegistryForm; 
+export default PrivateRegistryForm;
