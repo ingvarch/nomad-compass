@@ -45,7 +45,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
       isRemovable={!isOnly}
       onRemove={onRemoveTask}
       isLoading={loading}
-      defaultExpanded={true}
+      defaultExpanded={false}
     >
       {/* Task Name */}
       <FormInputField

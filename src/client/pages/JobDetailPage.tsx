@@ -69,7 +69,11 @@ export default function JobDetailPage() {
         const initialExpandedState: Record<string, boolean> = {};
         jobDetail.TaskGroups.forEach((group: NomadTaskGroup) => {
           initialExpandedState[group.Name] = false;
-          initialExpandedState[`${group.Name}-container`] = false;
+          if (group.Tasks) {
+            group.Tasks.forEach((task) => {
+              initialExpandedState[`${group.Name}-task-${task.Name}`] = false;
+            });
+          }
         });
         setExpandedGroups(initialExpandedState);
       }
@@ -120,11 +124,11 @@ export default function JobDetailPage() {
     });
   };
 
-  const toggleContainerDetails = (groupName: string) => {
-    const containerName = `${groupName}-container`;
+  const toggleTaskDetails = (groupName: string, taskName: string) => {
+    const key = `${groupName}-task-${taskName}`;
     setExpandedGroups({
       ...expandedGroups,
-      [containerName]: !expandedGroups[containerName],
+      [key]: !expandedGroups[key],
     });
   };
 
@@ -199,7 +203,7 @@ export default function JobDetailPage() {
           createTime={createTime}
           expandedGroups={expandedGroups}
           onToggleGroup={toggleGroupDetails}
-          onToggleContainer={toggleContainerDetails}
+          onToggleTask={toggleTaskDetails}
           onViewLogs={handleViewLogs}
         />
       )}

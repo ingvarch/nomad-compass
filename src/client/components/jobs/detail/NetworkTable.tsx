@@ -12,6 +12,7 @@ interface Port {
   Label: string;
   Value?: number;
   To?: number;
+  TaskName?: string;
 }
 
 interface Network {
@@ -22,6 +23,10 @@ interface Network {
 
 interface NetworkTableProps {
   networks: Network[];
+}
+
+function hasTaskNames(ports?: Port[]): boolean {
+  return ports?.some((p) => !!p.TaskName) ?? false;
 }
 
 const NetworkTable: React.FC<NetworkTableProps> = ({ networks }) => {
@@ -39,6 +44,9 @@ const NetworkTable: React.FC<NetworkTableProps> = ({ networks }) => {
           return null;
         }
 
+        const showTaskNameDynamic = hasTaskNames(network.DynamicPorts);
+        const showTaskNameReserved = hasTaskNames(network.ReservedPorts);
+
         return (
           <div key={index} className="mt-4">
             <h5 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -55,6 +63,7 @@ const NetworkTable: React.FC<NetworkTableProps> = ({ networks }) => {
                     <thead className={tableHeaderStyles}>
                       <tr>
                         <th className={tableHeaderCellStyles}>Label</th>
+                        {showTaskNameDynamic && <th className={tableHeaderCellStyles}>Task</th>}
                         <th className={tableHeaderCellStyles}>Host Port</th>
                         <th className={tableHeaderCellStyles}>Container Port</th>
                       </tr>
@@ -63,6 +72,9 @@ const NetworkTable: React.FC<NetworkTableProps> = ({ networks }) => {
                       {network.DynamicPorts!.map((port, portIndex) => (
                         <tr key={portIndex}>
                           <td className={tableCellStyles}>{port.Label}</td>
+                          {showTaskNameDynamic && (
+                            <td className={tableCellStyles}>{port.TaskName || '-'}</td>
+                          )}
                           <td className={tableCellStyles}>
                             <Badge variant="yellow">Dynamic</Badge>
                           </td>
@@ -85,6 +97,7 @@ const NetworkTable: React.FC<NetworkTableProps> = ({ networks }) => {
                     <thead className={tableHeaderStyles}>
                       <tr>
                         <th className={tableHeaderCellStyles}>Label</th>
+                        {showTaskNameReserved && <th className={tableHeaderCellStyles}>Task</th>}
                         <th className={tableHeaderCellStyles}>Host Port</th>
                         <th className={tableHeaderCellStyles}>Container Port</th>
                       </tr>
@@ -93,6 +106,9 @@ const NetworkTable: React.FC<NetworkTableProps> = ({ networks }) => {
                       {network.ReservedPorts!.map((port, portIndex) => (
                         <tr key={portIndex}>
                           <td className={tableCellStyles}>{port.Label}</td>
+                          {showTaskNameReserved && (
+                            <td className={tableCellStyles}>{port.TaskName || '-'}</td>
+                          )}
                           <td className={tableCellStyles}>{port.Value}</td>
                           <td className={tableCellStyles}>{port.To || port.Value || '-'}</td>
                         </tr>

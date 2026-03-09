@@ -10,7 +10,7 @@ interface OverviewTabProps {
   createTime: number | null;
   expandedGroups: Record<string, boolean>;
   onToggleGroup: (groupName: string) => void;
-  onToggleContainer: (groupName: string) => void;
+  onToggleTask: (groupName: string, taskName: string) => void;
   onViewLogs: (groupName: string) => void;
 }
 
@@ -21,7 +21,7 @@ export function OverviewTab({
   createTime,
   expandedGroups,
   onToggleGroup,
-  onToggleContainer,
+  onToggleTask,
   onViewLogs,
 }: OverviewTabProps) {
   const [showTaskEvents, setShowTaskEvents] = useState(false);
@@ -45,9 +45,9 @@ export function OverviewTab({
               key={groupIndex}
               taskGroup={taskGroup}
               isExpanded={expandedGroups[taskGroup.Name] || false}
-              isContainerExpanded={expandedGroups[`${taskGroup.Name}-container`] || false}
+              expandedGroups={expandedGroups}
               onToggle={() => onToggleGroup(taskGroup.Name)}
-              onToggleContainer={() => onToggleContainer(taskGroup.Name)}
+              onToggleTask={(taskName: string) => onToggleTask(taskGroup.Name, taskName)}
               onViewLogs={() => onViewLogs(taskGroup.Name)}
             />
           ))}
