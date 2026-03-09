@@ -1,9 +1,9 @@
-import React, { useState } from 'react';
+import { useState, ReactNode } from 'react';
 import { ChevronRight, Trash } from 'lucide-react';
 
 interface ToggleableSectionProps {
   title: string;
-  children: React.ReactNode;
+  children: ReactNode;
   defaultExpanded?: boolean;
   isRemovable?: boolean;
   onRemove?: () => void;
@@ -12,7 +12,7 @@ interface ToggleableSectionProps {
   className?: string;
 }
 
-export const ToggleableSection: React.FC<ToggleableSectionProps> = ({
+function ToggleableSection({
   title,
   children,
   defaultExpanded = true,
@@ -21,7 +21,7 @@ export const ToggleableSection: React.FC<ToggleableSectionProps> = ({
   isPrimary = false,
   isLoading = false,
   className = ''
-}) => {
+}: ToggleableSectionProps) {
   const [isCollapsed, setIsCollapsed] = useState(!defaultExpanded);
 
   return (
@@ -62,6 +62,6 @@ export const ToggleableSection: React.FC<ToggleableSectionProps> = ({
       </div>
     </div>
   );
-};
+}
 
 export default ToggleableSection; 

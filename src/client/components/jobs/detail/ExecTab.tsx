@@ -1,6 +1,14 @@
 import { Link } from 'react-router-dom';
 import { Terminal } from 'lucide-react';
 import type { NomadAllocation } from '../../../types/nomad';
+import { Badge } from '../../ui';
+import {
+  tableStyles,
+  tableHeaderStyles,
+  tableHeaderCellStyles,
+  tableBodyStyles,
+  tableRowHoverStyles,
+} from '../../../lib/styles';
 
 interface ExecTabProps {
   allocations: NomadAllocation[];
@@ -65,29 +73,19 @@ export function ExecTab({ allocations, namespace }: ExecTabProps) {
       </div>
 
       <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-          <thead className="bg-gray-50 dark:bg-gray-700/50">
+        <table className={tableStyles}>
+          <thead className={tableHeaderStyles}>
             <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
-                Allocation
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
-                Task Group
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
-                Task
-              </th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
-                Status
-              </th>
-              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
-                Actions
-              </th>
+              <th className={tableHeaderCellStyles}>Allocation</th>
+              <th className={tableHeaderCellStyles}>Task Group</th>
+              <th className={tableHeaderCellStyles}>Task</th>
+              <th className={tableHeaderCellStyles}>Status</th>
+              <th className={`${tableHeaderCellStyles} text-right`}>Actions</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+          <tbody className={tableBodyStyles}>
             {runningTasks.map((task) => (
-              <tr key={`${task.allocId}-${task.taskName}`} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
+              <tr key={`${task.allocId}-${task.taskName}`} className={tableRowHoverStyles}>
                 <td className="px-6 py-4 whitespace-nowrap">
                   <span className="font-mono text-sm text-gray-900 dark:text-white">
                     {task.allocId.slice(0, 8)}
@@ -100,9 +98,7 @@ export function ExecTab({ allocations, namespace }: ExecTabProps) {
                   {task.taskName}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap">
-                  <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300">
-                    {task.taskState}
-                  </span>
+                  <Badge variant="green">{task.taskState}</Badge>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-right">
                   <Link

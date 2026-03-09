@@ -1,6 +1,7 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Globe, Server, Network, Copy, Check, ExternalLink, Lock } from 'lucide-react';
 import type { NomadServiceRegistration } from '../../../types/nomad';
+import { useClipboard } from '../../../hooks';
 
 interface IngressInfo {
   domain: string;
@@ -58,11 +59,11 @@ function extractIngressInfo(tags: string[]): IngressInfo | null {
   return { domain, url, https: hasHttps, pathPrefix };
 }
 
-export const NetworkAccessCard: React.FC<NetworkAccessCardProps> = ({
+const NetworkAccessCard: React.FC<NetworkAccessCardProps> = ({
   job,
   serviceRegistrations
 }) => {
-  const [copiedAddress, setCopiedAddress] = useState<string | null>(null);
+  const { copied, copy } = useClipboard();
 
   // Extract ingress info from job's service tags
   const ingressInfos: Array<IngressInfo & { serviceName: string }> = [];
@@ -92,16 +93,6 @@ export const NetworkAccessCard: React.FC<NetworkAccessCardProps> = ({
   if (ingressInfos.length === 0 && internalAddresses.length === 0) {
     return null;
   }
-
-  const copyToClipboard = async (text: string) => {
-    try {
-      await navigator.clipboard.writeText(text);
-      setCopiedAddress(text);
-      setTimeout(() => setCopiedAddress(null), 2000);
-    } catch (err) {
-      console.error('Failed to copy:', err);
-    }
-  };
 
   return (
     <div className="bg-white dark:bg-gray-800 shadow rounded-lg overflow-hidden">
@@ -173,11 +164,11 @@ export const NetworkAccessCard: React.FC<NetworkAccessCardProps> = ({
                       {addr.address}
                     </code>
                     <button
-                      onClick={() => copyToClipboard(addr.address)}
+                      onClick={() => copy(addr.address)}
                       className="p-1 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 rounded"
                       title="Copy to clipboard"
                     >
-                      {copiedAddress === addr.address ? (
+                      {copied ? (
                         <Check className="w-4 h-4 text-green-500" />
                       ) : (
                         <Copy className="w-4 h-4" />

@@ -7,20 +7,26 @@ interface ResourcesFormProps {
   onInputChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void;
   isLoading: boolean;
   groupIndex: number;
+  taskIndex?: number;
 }
 
-export const ResourcesForm: React.FC<ResourcesFormProps> = ({
+const ResourcesForm: React.FC<ResourcesFormProps> = ({
   resources,
   onInputChange,
   isLoading,
-  groupIndex
+  groupIndex,
+  taskIndex
 }) => {
+  const idPrefix = taskIndex !== undefined
+    ? `group-${groupIndex}-task-${taskIndex}`
+    : `group-${groupIndex}`;
+
   return (
     <div className="mb-4">
       <h5 className="text-md font-medium text-gray-700 mb-2">Resources</h5>
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
         <FormInputField
-          id={`group-${groupIndex}-resources.CPU`}
+          id={`${idPrefix}-resources.CPU`}
           name="resources.CPU"
           label="CPU (MHz)"
           type="number"
@@ -31,7 +37,7 @@ export const ResourcesForm: React.FC<ResourcesFormProps> = ({
         />
 
         <FormInputField
-          id={`group-${groupIndex}-resources.MemoryMB`}
+          id={`${idPrefix}-resources.MemoryMB`}
           name="resources.MemoryMB"
           label="Memory (MB)"
           type="number"
@@ -42,7 +48,7 @@ export const ResourcesForm: React.FC<ResourcesFormProps> = ({
         />
 
         <FormInputField
-          id={`group-${groupIndex}-resources.DiskMB`}
+          id={`${idPrefix}-resources.DiskMB`}
           name="resources.DiskMB"
           label="Disk (MB)"
           type="number"
@@ -56,4 +62,4 @@ export const ResourcesForm: React.FC<ResourcesFormProps> = ({
   );
 };
 
-export default ResourcesForm; 
+export default ResourcesForm;

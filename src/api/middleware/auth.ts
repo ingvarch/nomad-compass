@@ -1,7 +1,8 @@
 import { createMiddleware } from 'hono/factory'
-import { getCookie, setCookie } from 'hono/cookie'
+import { getCookie } from 'hono/cookie'
 import type { Env } from '../types'
 import { generateCSRFToken } from '../utils/crypto'
+import { setCSRFCookie } from '../utils/cookies'
 
 /**
  * Auth middleware for protected routes.
@@ -19,12 +20,7 @@ export const authMiddleware = createMiddleware<{ Bindings: Env }>(
 
     // Generate CSRF token if not present
     const csrfToken = getCookie(c, 'csrf-token') || generateCSRFToken();
-    setCookie(c, 'csrf-token', csrfToken, {
-      httpOnly: false, // Needs to be accessible by JavaScript for API calls
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'Strict',
-      path: '/',
-    });
+    setCSRFCookie(c, csrfToken);
 
     await next()
   }

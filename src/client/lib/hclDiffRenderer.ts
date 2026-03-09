@@ -8,7 +8,7 @@ export interface HclLine {
   type: 'added' | 'deleted' | 'none';
 }
 
-export interface GroupedFields {
+interface GroupedFields {
   simple: NomadFieldDiff[];
   blocks: Map<string, NomadFieldDiff[]>;
 }
@@ -119,7 +119,7 @@ export function renderFieldAsHcl(field: NomadFieldDiff, indent: number): HclLine
 }
 
 // HCL Generator: Render grouped fields as a block (env, meta, etc.)
-export function renderBlockFields(blockName: string, fields: NomadFieldDiff[], indent: number, parentType: string): HclLine[] {
+function renderBlockFields(blockName: string, fields: NomadFieldDiff[], indent: number, parentType: string): HclLine[] {
   if (fields.length === 0) return [];
 
   const lines: HclLine[] = [];
@@ -142,7 +142,7 @@ export function renderBlockFields(blockName: string, fields: NomadFieldDiff[], i
 }
 
 // HCL Generator: Process object diff recursively
-export function processObjectDiff(obj: NomadObjectDiff, indent: number): HclLine[] {
+function processObjectDiff(obj: NomadObjectDiff, indent: number): HclLine[] {
   if (obj.Type === 'None') return [];
 
   const lines: HclLine[] = [];
@@ -190,7 +190,7 @@ export function processObjectDiff(obj: NomadObjectDiff, indent: number): HclLine
 }
 
 // HCL Generator: Process task diff
-export function processTaskDiff(task: NomadTaskDiff, indent: number): HclLine[] {
+function processTaskDiff(task: NomadTaskDiff, indent: number): HclLine[] {
   if (task.Type === 'None') return [];
 
   const lines: HclLine[] = [];
@@ -236,7 +236,7 @@ export function processTaskDiff(task: NomadTaskDiff, indent: number): HclLine[] 
 }
 
 // HCL Generator: Process task group diff
-export function processTaskGroupDiff(tg: NomadTaskGroupDiff, indent: number): HclLine[] {
+function processTaskGroupDiff(tg: NomadTaskGroupDiff, indent: number): HclLine[] {
   if (tg.Type === 'None') return [];
 
   const lines: HclLine[] = [];

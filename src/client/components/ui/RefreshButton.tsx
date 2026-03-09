@@ -1,4 +1,5 @@
 import React, { useState, useCallback } from 'react';
+import { buttonSecondaryStyles } from '../../lib/styles';
 
 interface RefreshButtonProps {
   onClick: () => void;
@@ -28,7 +29,7 @@ export const RefreshButton: React.FC<RefreshButtonProps> = ({
     <button
       onClick={handleClick}
       disabled={isOnCooldown}
-      className={`inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 shadow-sm text-sm font-medium rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-opacity ${className}`}
+      className={`${buttonSecondaryStyles} shadow-sm disabled:opacity-50 disabled:cursor-not-allowed transition-opacity ${className}`}
     >
       <svg
         className={`w-4 h-4 mr-2 ${isOnCooldown ? 'animate-spin' : ''}`}

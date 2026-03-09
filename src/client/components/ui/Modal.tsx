@@ -1,20 +1,20 @@
-import React, { useEffect, useCallback } from 'react';
+import { useEffect, useCallback, ReactNode } from 'react';
 
 interface ModalProps {
   isOpen: boolean;
   onClose: () => void;
   title: string;
-  children: React.ReactNode;
+  children: ReactNode;
   size?: 'sm' | 'md' | 'lg' | 'xl' | '2xl';
 }
 
-export const Modal: React.FC<ModalProps> = ({
+function Modal({
   isOpen,
   onClose,
   title,
   children,
   size = 'md',
-}) => {
+}: ModalProps) {
   const handleKeyDown = useCallback(
     (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
@@ -88,6 +88,6 @@ export const Modal: React.FC<ModalProps> = ({
       </div>
     </div>
   );
-};
+}
 
 export default Modal;

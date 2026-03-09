@@ -1,10 +1,12 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { createNomadClient } from '../../lib/api/nomad';
-import { isPermissionError } from '../../lib/api/errors';
+import { isPermissionError, getErrorMessage } from '../../lib/errors';
 import { LoadingSpinner, ErrorAlert } from '../ui';
+import InfoBox from '../ui/InfoBox';
 import { RefreshCw, Radio } from 'lucide-react';
 import { useLogStream } from '../../hooks/useLogStream';
+import type { NomadAllocation, NomadTaskGroup } from '../../types/nomad';
 
 interface JobLogsProps {
     jobId: string;
@@ -13,18 +15,56 @@ interface JobLogsProps {
     initialTaskGroup?: string | null;
 }
 
-export const JobLogs: React.FC<JobLogsProps> = ({ jobId, allocId, taskName, initialTaskGroup }) => {    const { isAuthenticated } = useAuth();
+/** Get CSS classes for log container based on allocation status and streaming mode */
+function getLogContainerStyles(
+    selectedAlloc: string | null,
+    allocations: NomadAllocation[],
+    streamingMode: boolean,
+    isLoading: boolean
+): string {
+    const baseStyles = 'p-4 rounded-md overflow-auto max-h-96 text-sm font-mono';
+    const loadingStyle = isLoading && !streamingMode ? 'opacity-50' : '';
+
+    if (!selectedAlloc) {
+        const colorStyle = streamingMode
+            ? 'bg-gray-900 text-green-400 border-2 border-green-600'
+            : 'bg-gray-800 text-white';
+        return `${baseStyles} ${loadingStyle} ${colorStyle}`;
+    }
+
+    const alloc = allocations.find(a => a.ID === selectedAlloc);
+    const status = alloc?.ClientStatus;
+
+    const statusStyles: Record<string, string> = {
+        failed: 'bg-red-950 text-red-100 border-2 border-red-500',
+        lost: 'bg-orange-950 text-orange-100 border-2 border-orange-500',
+    };
+
+    const colorStyle = statusStyles[status || '']
+        || (streamingMode ? 'bg-gray-900 text-green-400 border-2 border-green-600' : 'bg-gray-800 text-white');
+
+    return `${baseStyles} ${loadingStyle} ${colorStyle}`;
+}
+
+const JobLogs: React.FC<JobLogsProps> = ({ jobId, allocId, taskName, initialTaskGroup }) => {
+    const { isAuthenticated } = useAuth();
     const [logs, setLogs] = useState<string>('');
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
-    const [allocations, setAllocations] = useState<any[]>([]);
+    const [allocations, setAllocations] = useState<NomadAllocation[]>([]);
     const [selectedAlloc, setSelectedAlloc] = useState<string | null>(null);
     const [selectedTask, setSelectedTask] = useState<string | null>(null);
     const [logType, setLogType] = useState<'stdout' | 'stderr'>('stdout');
-    const [taskGroups, setTaskGroups] = useState<any[]>([]);
+    const [taskGroups, setTaskGroups] = useState<NomadTaskGroup[]>([]);
     const [selectedTaskGroup, setSelectedTaskGroup] = useState<string | null>(null);
     const [statusFilter, setStatusFilter] = useState<'all' | 'running' | 'failed' | 'complete'>('all');
-    const [allAllocations, setAllAllocations] = useState<any[]>([]);
+    const [allAllocations, setAllAllocations] = useState<NomadAllocation[]>([]);
+
+    // Extract namespace from URL once
+    const namespace = useMemo(
+        () => new URLSearchParams(window.location.search).get('namespace') || 'default',
+        []
+    );
 
     const [lastRefreshed, setLastRefreshed] = useState<Date | null>(null);
     const [showNomadTimestamp, setShowNomadTimestamp] = useState<boolean>(false);
@@ -75,7 +115,6 @@ export const JobLogs: React.FC<JobLogsProps> = ({ jobId, allocId, taskName, init
 
             try {
                 const client = createNomadClient();
-                const namespace = new URLSearchParams(window.location.search).get('namespace') || 'default';
                 const jobData = await client.getJob(jobId, namespace);
 
                 // Set task groups from job data
@@ -86,14 +125,13 @@ export const JobLogs: React.FC<JobLogsProps> = ({ jobId, allocId, taskName, init
                         setSelectedTaskGroup(jobData.TaskGroups[0].Name);
                     }
                 }
-            } catch (err) {
-                console.error('Failed to fetch job data:', err);
+            } catch {
                 setError('Failed to load job data. Please try again.');
             }
         };
 
         fetchJobData();
-    }, [jobId, isAuthenticated, selectedTaskGroup]);
+    }, [jobId, isAuthenticated, selectedTaskGroup, namespace]);
 
     // Fetch job allocations based on selected task group and status filter
     useEffect(() => {
@@ -106,11 +144,10 @@ export const JobLogs: React.FC<JobLogsProps> = ({ jobId, allocId, taskName, init
 
             try {
                 const client = createNomadClient();
-                const namespace = new URLSearchParams(window.location.search).get('namespace') || 'default';
                 const allocs = await client.getJobAllocations(jobId, namespace);
 
                 // Filter by task group first
-                const groupFilteredAllocs = allocs.filter((alloc: any) => {
+                const groupFilteredAllocs = allocs.filter((alloc) => {
                     if (selectedTaskGroup) {
                         return alloc.TaskGroup === selectedTaskGroup;
                     }
@@ -121,7 +158,7 @@ export const JobLogs: React.FC<JobLogsProps> = ({ jobId, allocId, taskName, init
                 setAllAllocations(groupFilteredAllocs);
 
                 // Apply status filter
-                const filteredAllocs = groupFilteredAllocs.filter((alloc: any) => {
+                const filteredAllocs = groupFilteredAllocs.filter((alloc) => {
                     if (statusFilter === 'all') return true;
                     if (statusFilter === 'failed') {
                         return alloc.ClientStatus === 'failed' || alloc.ClientStatus === 'lost';
@@ -130,7 +167,7 @@ export const JobLogs: React.FC<JobLogsProps> = ({ jobId, allocId, taskName, init
                 });
 
                 // Sort by ModifyTime descending (most recent first)
-                filteredAllocs.sort((a: any, b: any) => b.ModifyTime - a.ModifyTime);
+                filteredAllocs.sort((a, b) => b.ModifyTime - a.ModifyTime);
 
                 setAllocations(filteredAllocs);
 
@@ -154,8 +191,7 @@ export const JobLogs: React.FC<JobLogsProps> = ({ jobId, allocId, taskName, init
 
                 setError(null);
                 setIsLoading(false);
-            } catch (err) {
-                console.error('Failed to fetch allocations:', err);
+            } catch {
                 setError('Failed to load job allocations. Please try again.');
                 setIsLoading(false);
             }
@@ -173,7 +209,7 @@ export const JobLogs: React.FC<JobLogsProps> = ({ jobId, allocId, taskName, init
 
             return () => clearTimeout(timer);
         }
-    }, [jobId, isAuthenticated, allocId, taskName, selectedTaskGroup, statusFilter]);
+    }, [jobId, isAuthenticated, allocId, taskName, selectedTaskGroup, statusFilter, namespace]);
 
     // Fetch logs
     const fetchLogs = useCallback(async () => {
@@ -195,11 +231,10 @@ export const JobLogs: React.FC<JobLogsProps> = ({ jobId, allocId, taskName, init
             setLastRefreshed(new Date());
             setError(null);
         } catch (err) {
-            console.error('Failed to fetch logs:', err);
             if (isPermissionError(err)) {
                 setError('You do not have permission to view logs. The read-logs capability is required.');
             } else {
-                const message = err instanceof Error ? err.message : 'Failed to load logs';
+                const message = getErrorMessage(err, 'Failed to load logs');
                 // Check if this might be a permission issue disguised as 500
                 if (message.includes('500') || message.includes('Internal Server Error')) {
                     setError('Unable to fetch logs. This may be due to insufficient permissions (read-logs capability required) or the allocation may no longer be available.');
@@ -416,44 +451,22 @@ export const JobLogs: React.FC<JobLogsProps> = ({ jobId, allocId, taskName, init
                 {error && <ErrorAlert message={error} />}
 
                 {!selectedTaskGroup && (
-                    <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4">
-                        <div className="flex">
-                            <div className="flex-shrink-0">
-                                <svg className="h-5 w-5 text-yellow-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                                    <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                                </svg>
-                            </div>
-                            <div className="ml-3">
-                                <p className="text-sm text-yellow-700">
-                                    Please select a task group to view logs.
-                                </p>
-                            </div>
-                        </div>
-                    </div>
+                    <InfoBox type="warning">
+                        Please select a task group to view logs.
+                    </InfoBox>
                 )}
 
                 {selectedTaskGroup && allocations.length === 0 && (
-                    <div className="bg-yellow-50 dark:bg-yellow-900/20 border-l-4 border-yellow-400 dark:border-yellow-600 p-4">
-                        <div className="flex">
-                            <div className="flex-shrink-0">
-                                <svg className="h-5 w-5 text-yellow-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
-                                    <path fillRule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                                </svg>
-                            </div>
-                            <div className="ml-3">
-                                <p className="text-sm text-yellow-700 dark:text-yellow-300">
-                                    {allAllocations.length === 0
-                                        ? 'No allocations found for this task group.'
-                                        : statusFilter === 'running'
-                                            ? `No running allocations. ${allAllocations.filter(a => a.ClientStatus === 'failed' || a.ClientStatus === 'lost').length > 0 ? 'Try selecting "Failed/Lost" to view failed allocation logs.' : ''}`
-                                            : statusFilter === 'failed'
-                                                ? 'No failed allocations found.'
-                                                : `No allocations match the selected filter.`
-                                    }
-                                </p>
-                            </div>
-                        </div>
-                    </div>
+                    <InfoBox type="warning">
+                        {allAllocations.length === 0
+                            ? 'No allocations found for this task group.'
+                            : statusFilter === 'running'
+                                ? `No running allocations. ${allAllocations.filter(a => a.ClientStatus === 'failed' || a.ClientStatus === 'lost').length > 0 ? 'Try selecting "Failed/Lost" to view failed allocation logs.' : ''}`
+                                : statusFilter === 'failed'
+                                    ? 'No failed allocations found.'
+                                    : `No allocations match the selected filter.`
+                        }
+                    </InfoBox>
                 )}
 
                 {/* Failed allocation banner */}
@@ -514,17 +527,7 @@ export const JobLogs: React.FC<JobLogsProps> = ({ jobId, allocId, taskName, init
 
                 <pre
                     ref={logsContainerRef}
-                    className={`p-4 rounded-md overflow-auto max-h-96 text-sm font-mono ${
-                        isLoading && !streamingMode ? 'opacity-50' : ''
-                    } ${
-                        selectedAlloc && allocations.find(a => a.ID === selectedAlloc)?.ClientStatus === 'failed'
-                            ? 'bg-red-950 text-red-100 border-2 border-red-500'
-                            : selectedAlloc && allocations.find(a => a.ID === selectedAlloc)?.ClientStatus === 'lost'
-                                ? 'bg-orange-950 text-orange-100 border-2 border-orange-500'
-                                : streamingMode
-                                    ? 'bg-gray-900 text-green-400 border-2 border-green-600'
-                                    : 'bg-gray-800 text-white'
-                    }`}
+                    className={getLogContainerStyles(selectedAlloc, allocations, streamingMode, isLoading)}
                 >
                     {streamingMode
                         ? (formatLogs(streamLogs) || 'Waiting for log data...')

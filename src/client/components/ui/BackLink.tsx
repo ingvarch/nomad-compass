@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { buttonSecondaryStyles } from '../../lib/styles';
 
 interface BackLinkProps {
   to: string;
@@ -15,10 +16,10 @@ export const BackLink: React.FC<BackLinkProps> = ({
   return (
     <Link
       to={to}
-      className={`inline-flex items-center text-sm text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-gray-200 ${className}`}
+      className={`${buttonSecondaryStyles} shadow-sm ${className}`}
     >
       <svg
-        className="w-4 h-4 mr-1"
+        className="w-4 h-4 mr-1.5"
         fill="none"
         viewBox="0 0 24 24"
         stroke="currentColor"

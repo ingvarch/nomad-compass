@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { Plus } from 'lucide-react';
 import { createNomadClient } from '../../../lib/api/nomad';
 import {
   NomadAclTokenListItem,
@@ -6,61 +7,91 @@ import {
   NomadAclPolicyListItem,
   NomadAclRoleListItem,
 } from '../../../types/acl';
-import { LoadingSpinner, ErrorAlert, RefreshButton } from '../../ui';
-import { Modal } from '../../ui/Modal';
+import { LoadingSpinner, ErrorAlert, RefreshButton, Modal, Button, ConfirmationDialog, Badge } from '../../ui';
+import { DeleteButton } from '../../ui/IconButton';
 import { TokenForm } from '../token/TokenForm';
 import { SecretIdDisplay } from '../token/SecretIdDisplay';
-import { useToast } from '../../../context/ToastContext';
+import { useCrudTab } from '../../../hooks/useCrudTab';
+import {
+  tableStyles,
+  tableHeaderStyles,
+  tableHeaderCellStyles,
+  tableBodyStyles,
+  tableRowHoverStyles,
+} from '../../../lib/styles';
 
 interface TokensTabProps {
   hasManagementAccess: boolean;
 }
 
 export function TokensTab({ hasManagementAccess }: TokensTabProps) {
-  const [tokens, setTokens] = useState<NomadAclTokenListItem[]>([]);
+  // Token-specific state (not handled by useCrudTab)
   const [policies, setPolicies] = useState<NomadAclPolicyListItem[]>([]);
   const [roles, setRoles] = useState<NomadAclRoleListItem[]>([]);
   const [currentTokenId, setCurrentTokenId] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  // Modal states
-  const [showCreateModal, setShowCreateModal] = useState(false);
   const [newlyCreatedToken, setNewlyCreatedToken] = useState<NomadAclToken | null>(null);
-  const [deletingToken, setDeletingToken] = useState<NomadAclTokenListItem | null>(null);
-  const [deleteLoading, setDeleteLoading] = useState(false);
 
-  const { addToast } = useToast();
-
-  const fetchData = useCallback(async () => {
-    setLoading(true);
-    setError(null);
-
+  // Fetch tokens list
+  const fetchTokens = useCallback(async () => {
     const client = createNomadClient();
-    try {
-      const [tokensData, policiesData, rolesData, selfToken] = await Promise.all([
-        client.getAclTokens(),
-        client.getAclPolicies(),
-        client.getAclRoles(),
-        client.getAclTokenSelf().catch(() => null),
-      ]);
-      setTokens(tokensData || []);
-      setPolicies(policiesData || []);
-      setRoles(rolesData || []);
-      if (selfToken) {
-        setCurrentTokenId(selfToken.AccessorID);
-      }
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to fetch tokens';
-      setError(message);
-    } finally {
-      setLoading(false);
-    }
+    return client.getAclTokens();
   }, []);
 
+  // Delete token
+  const deleteToken = useCallback(async (token: NomadAclTokenListItem) => {
+    const client = createNomadClient();
+    await client.deleteAclToken(token.AccessorID);
+  }, []);
+
+  // Use CRUD hook for standard operations
+  const {
+    items: tokens,
+    loading,
+    error,
+    showCreateModal,
+    deletingItem: deletingToken,
+    deleteLoading,
+    refetch,
+    openCreateModal,
+    closeCreateModal,
+    openDeleteConfirm,
+    closeDeleteConfirm,
+    handleDelete,
+  } = useCrudTab<NomadAclTokenListItem>({
+    fetchData: fetchTokens,
+    deleteItem: deleteToken,
+    getDeletedItemName: (token) => `Token "${token.Name || 'Unnamed'}"`,
+    fetchErrorMessage: 'Failed to fetch tokens',
+    deleteErrorMessage: 'Failed to revoke token',
+  });
+
+  // Fetch additional data (policies, roles, self token) on mount and after refetch
   useEffect(() => {
-    fetchData();
-  }, [fetchData]);
+    const fetchAdditionalData = async () => {
+      const client = createNomadClient();
+      try {
+        const [policiesData, rolesData, selfToken] = await Promise.all([
+          client.getAclPolicies(),
+          client.getAclRoles(),
+          client.getAclTokenSelf().catch(() => null),
+        ]);
+        setPolicies(policiesData || []);
+        setRoles(rolesData || []);
+        if (selfToken) {
+          setCurrentTokenId(selfToken.AccessorID);
+        }
+      } catch {
+        // Silently fail for additional data - main tokens list error is handled by hook
+      }
+    };
+
+    fetchAdditionalData();
+  }, [tokens]); // Re-fetch when tokens change (after refetch)
+
+  // Initial fetch
+  useEffect(() => {
+    refetch();
+  }, [refetch]);
 
   const handleCreateToken = async (tokenData: {
     name: string;
@@ -103,26 +134,8 @@ export function TokensTab({ hasManagementAccess }: TokensTabProps) {
 
     const createdToken = await client.createAclToken(payload);
     setNewlyCreatedToken(createdToken);
-    setShowCreateModal(false);
-    await fetchData();
-  };
-
-  const handleDeleteToken = async () => {
-    if (!deletingToken) return;
-
-    setDeleteLoading(true);
-    const client = createNomadClient();
-    try {
-      await client.deleteAclToken(deletingToken.AccessorID);
-      addToast('Token revoked successfully', 'success');
-      setDeletingToken(null);
-      await fetchData();
-    } catch (err) {
-      const message = err instanceof Error ? err.message : 'Failed to revoke token';
-      addToast(message, 'error');
-    } finally {
-      setDeleteLoading(false);
-    }
+    closeCreateModal();
+    await refetch();
   };
 
   const formatExpiration = (expirationTime?: string) => {
@@ -163,27 +176,12 @@ export function TokensTab({ hasManagementAccess }: TokensTabProps) {
         </div>
         <div className="flex gap-2">
           {hasManagementAccess && (
-            <button
-              onClick={() => setShowCreateModal(true)}
-              className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-500 dark:hover:bg-blue-600"
-            >
-              <svg
-                className="w-4 h-4 mr-2"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 4v16m8-8H4"
-                />
-              </svg>
+            <Button onClick={openCreateModal}>
+              <Plus className="w-4 h-4 mr-2" />
               Create Token
-            </button>
+            </Button>
           )}
-          <RefreshButton onClick={() => fetchData()} />
+          <RefreshButton onClick={refetch} />
         </div>
       </div>
 
@@ -196,7 +194,7 @@ export function TokensTab({ hasManagementAccess }: TokensTabProps) {
           No tokens found.{' '}
           {hasManagementAccess && (
             <button
-              onClick={() => setShowCreateModal(true)}
+              onClick={openCreateModal}
               className="text-blue-600 dark:text-blue-400 hover:underline"
             >
               Create your first token
@@ -205,50 +203,29 @@ export function TokensTab({ hasManagementAccess }: TokensTabProps) {
         </div>
       ) : (
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-            <thead className="bg-gray-50 dark:bg-gray-700/50">
+          <table className={tableStyles}>
+            <thead className={tableHeaderStyles}>
               <tr>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
-                  Name
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
-                  Accessor ID
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
-                  Type
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
-                  Policies / Roles
-                </th>
-                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
-                  Expires
-                </th>
-                {hasManagementAccess && (
-                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
-                    Actions
-                  </th>
-                )}
+                <th className={tableHeaderCellStyles}>Name</th>
+                <th className={tableHeaderCellStyles}>Accessor ID</th>
+                <th className={tableHeaderCellStyles}>Type</th>
+                <th className={tableHeaderCellStyles}>Policies / Roles</th>
+                <th className={tableHeaderCellStyles}>Expires</th>
+                {hasManagementAccess && <th className={`${tableHeaderCellStyles} text-right`}>Actions</th>}
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+            <tbody className={tableBodyStyles}>
               {tokens.map((token) => (
-                <tr
-                  key={token.AccessorID}
-                  className="hover:bg-gray-50 dark:hover:bg-gray-700/50"
-                >
+                <tr key={token.AccessorID} className={tableRowHoverStyles}>
                   <td className="px-4 py-3 whitespace-nowrap">
                     <span className="text-sm font-medium text-gray-900 dark:text-white">
                       {token.Name || '-'}
                     </span>
                     {isCurrentToken(token) && (
-                      <span className="ml-2 inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300">
-                        Current
-                      </span>
+                      <Badge variant="blue" className="ml-2">Current</Badge>
                     )}
                     {token.Global && (
-                      <span className="ml-2 inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300">
-                        Global
-                      </span>
+                      <Badge variant="purple" className="ml-2">Global</Badge>
                     )}
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap">
@@ -257,33 +234,17 @@ export function TokensTab({ hasManagementAccess }: TokensTabProps) {
                     </code>
                   </td>
                   <td className="px-4 py-3 whitespace-nowrap">
-                    <span
-                      className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
-                        token.Type === 'management'
-                          ? 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300'
-                          : 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300'
-                      }`}
-                    >
+                    <Badge variant={token.Type === 'management' ? 'red' : 'green'}>
                       {token.Type}
-                    </span>
+                    </Badge>
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex flex-wrap gap-1">
                       {token.Policies?.map((p) => (
-                        <span
-                          key={p}
-                          className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300"
-                        >
-                          {p}
-                        </span>
+                        <Badge key={p} variant="blue">{p}</Badge>
                       ))}
                       {token.Roles?.map((r) => (
-                        <span
-                          key={r.ID}
-                          className="inline-flex items-center px-1.5 py-0.5 rounded text-xs font-medium bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300"
-                        >
-                          {r.Name}
-                        </span>
+                        <Badge key={r.ID} variant="yellow">{r.Name}</Badge>
                       ))}
                       {token.Type === 'management' && (
                         <span className="text-xs text-gray-400">Full access</span>
@@ -302,30 +263,11 @@ export function TokensTab({ hasManagementAccess }: TokensTabProps) {
                   </td>
                   {hasManagementAccess && (
                     <td className="px-4 py-3 whitespace-nowrap text-right">
-                      <button
-                        onClick={() => setDeletingToken(token)}
+                      <DeleteButton
+                        onClick={() => openDeleteConfirm(token)}
                         disabled={isCurrentToken(token)}
-                        className={`p-1.5 rounded transition-colors ${
-                          isCurrentToken(token)
-                            ? 'text-gray-300 dark:text-gray-600 cursor-not-allowed'
-                            : 'text-gray-500 hover:text-red-600 dark:text-gray-400 dark:hover:text-red-400 hover:bg-gray-100 dark:hover:bg-gray-700'
-                        }`}
                         title={isCurrentToken(token) ? 'Cannot revoke your own token' : 'Revoke token'}
-                      >
-                        <svg
-                          className="w-4 h-4"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
-                          />
-                        </svg>
-                      </button>
+                      />
                     </td>
                   )}
                 </tr>
@@ -338,7 +280,7 @@ export function TokensTab({ hasManagementAccess }: TokensTabProps) {
       {/* Create Modal */}
       <Modal
         isOpen={showCreateModal}
-        onClose={() => setShowCreateModal(false)}
+        onClose={closeCreateModal}
         title="Create Token"
         size="lg"
       >
@@ -346,7 +288,7 @@ export function TokensTab({ hasManagementAccess }: TokensTabProps) {
           availablePolicies={policies}
           availableRoles={roles}
           onSubmit={handleCreateToken}
-          onCancel={() => setShowCreateModal(false)}
+          onCancel={closeCreateModal}
         />
       </Modal>
 
@@ -364,48 +306,35 @@ export function TokensTab({ hasManagementAccess }: TokensTabProps) {
         )}
       </Modal>
 
-      {/* Delete Confirmation Modal */}
-      <Modal
+      {/* Delete Confirmation */}
+      <ConfirmationDialog
         isOpen={deletingToken !== null}
-        onClose={() => setDeletingToken(null)}
+        onClose={closeDeleteConfirm}
+        onConfirm={handleDelete}
         title="Revoke Token"
-      >
-        {deletingToken && (
-          <div className="space-y-4">
-            <p className="text-gray-700 dark:text-gray-300">
-              Are you sure you want to revoke this token?
-            </p>
-            <div className="bg-gray-50 dark:bg-gray-700/50 p-3 rounded-lg">
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                <strong>Name:</strong> {deletingToken.Name || 'Unnamed'}
+        message={
+          deletingToken && (
+            <>
+              <p className="mb-3">Are you sure you want to revoke this token?</p>
+              <div className="bg-gray-50 dark:bg-gray-700/50 p-3 rounded-lg mb-3">
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  <strong>Name:</strong> {deletingToken.Name || 'Unnamed'}
+                </p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  <strong>Accessor ID:</strong>{' '}
+                  <code className="font-mono">{deletingToken.AccessorID}</code>
+                </p>
+              </div>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                This action cannot be undone. Anyone using this token will immediately lose access.
               </p>
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                <strong>Accessor ID:</strong>{' '}
-                <code className="font-mono">{deletingToken.AccessorID}</code>
-              </p>
-            </div>
-            <p className="text-sm text-gray-500 dark:text-gray-400">
-              This action cannot be undone. Anyone using this token will immediately lose
-              access.
-            </p>
-            <div className="flex justify-end gap-3 pt-4">
-              <button
-                onClick={() => setDeletingToken(null)}
-                className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md hover:bg-gray-50 dark:hover:bg-gray-600"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleDeleteToken}
-                disabled={deleteLoading}
-                className="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 rounded-md disabled:opacity-50"
-              >
-                {deleteLoading ? 'Revoking...' : 'Revoke Token'}
-              </button>
-            </div>
-          </div>
-        )}
-      </Modal>
+            </>
+          )
+        }
+        mode="delete"
+        confirmLabel="Revoke Token"
+        isLoading={deleteLoading}
+      />
     </div>
   );
 }

@@ -1,10 +1,10 @@
 export { StatusBadge } from './StatusBadge';
-export { JobHeader } from './JobHeader';
-export { JobSummary } from './JobSummary';
-export { NetworkAccessCard } from './NetworkAccessCard';
-export { NetworkTable } from './NetworkTable';
-export { HealthCheckTable } from './HealthCheckTable';
-export { TaskGroupCard } from './TaskGroupCard';
+export { default as JobHeader } from './JobHeader';
+export { default as JobSummary } from './JobSummary';
+export { default as NetworkAccessCard } from './NetworkAccessCard';
+export { default as NetworkTable } from './NetworkTable';
+export { default as HealthCheckTable } from './HealthCheckTable';
+export { default as TaskGroupCard } from './TaskGroupCard';
 export { TaskEventsTable } from './TaskEventsTable';
 export { JobDetailTabs, useActiveJobTab } from './JobDetailTabs';
 export type { JobTabType } from './JobDetailTabs';

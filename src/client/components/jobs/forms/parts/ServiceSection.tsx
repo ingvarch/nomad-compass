@@ -1,9 +1,10 @@
 import React from 'react';
 import { Network, Settings2 } from 'lucide-react';
-import { NomadServiceConfig, NomadServiceTag, IngressConfig, NomadPort } from '../../../../types/nomad';
+import { NomadServiceConfig, IngressConfig, NomadPort } from '../../../../types/nomad';
 import FormInputField from '../../../ui/forms/FormInputField';
 import IngressSection from './IngressSection';
 import ServiceTagsEditor from './ServiceTagsEditor';
+import { inputStyles, selectStyles, labelStyles } from '../../../../lib/styles';
 
 interface ServiceSectionProps {
   enableService: boolean;
@@ -35,7 +36,7 @@ const defaultServiceConfig: NomadServiceConfig = {
   useAdvancedMode: false,
 };
 
-export const ServiceSection: React.FC<ServiceSectionProps> = ({
+const ServiceSection: React.FC<ServiceSectionProps> = ({
   enableService,
   serviceConfig = defaultServiceConfig,
   ports,
@@ -77,7 +78,7 @@ export const ServiceSection: React.FC<ServiceSectionProps> = ({
         <div className="mt-4 space-y-4 pl-4 border-l-2 border-gray-200 dark:border-gray-600">
           {/* Service Name */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label className={labelStyles}>
               Service Name
             </label>
             <input
@@ -85,7 +86,7 @@ export const ServiceSection: React.FC<ServiceSectionProps> = ({
               value={serviceConfig.name}
               onChange={(e) => onServiceConfigChange({ name: e.target.value })}
               placeholder={groupName || 'my-service'}
-              className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className={inputStyles}
               disabled={isLoading}
             />
             <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
@@ -96,13 +97,13 @@ export const ServiceSection: React.FC<ServiceSectionProps> = ({
           {/* Port Label */}
           {portLabels.length > 0 && (
             <div>
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              <label className={labelStyles}>
                 Service Port
               </label>
               <select
                 value={serviceConfig.portLabel}
                 onChange={(e) => onServiceConfigChange({ portLabel: e.target.value })}
-                className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className={selectStyles}
                 disabled={isLoading}
               >
                 {portLabels.map((label) => (
@@ -119,13 +120,13 @@ export const ServiceSection: React.FC<ServiceSectionProps> = ({
 
           {/* Provider Selection */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+            <label className={labelStyles}>
               Service Provider
             </label>
             <select
               value={serviceConfig.provider}
               onChange={(e) => onServiceConfigChange({ provider: e.target.value as 'nomad' | 'consul' })}
-              className="w-full p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className={selectStyles}
               disabled={isLoading}
             >
               <option value="nomad">Nomad (Native Service Discovery)</option>
@@ -180,7 +181,7 @@ export const ServiceSection: React.FC<ServiceSectionProps> = ({
           {/* Advanced Mode: Raw Tags Editor */}
           {serviceConfig.useAdvancedMode && (
             <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">
+              <label className={labelStyles}>
                 Service Tags
               </label>
               <ServiceTagsEditor

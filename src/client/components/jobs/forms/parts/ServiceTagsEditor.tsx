@@ -1,6 +1,7 @@
 import React from 'react';
 import { Trash, Plus } from 'lucide-react';
 import { NomadServiceTag } from '../../../../types/nomad';
+import { inputFlexStyles, inputMonoStyles, iconButtonPrimaryStyles, iconButtonDangerStyles } from '../../../../lib/styles';
 
 interface ServiceTagsEditorProps {
   tags: NomadServiceTag[];
@@ -18,7 +19,7 @@ const TRAEFIK_TAG_TEMPLATES = [
   { key: 'traefik.http.routers.{name}.tls.certresolver', value: 'letsencrypt', description: 'Let\'s Encrypt SSL' },
 ];
 
-export const ServiceTagsEditor: React.FC<ServiceTagsEditorProps> = ({
+const ServiceTagsEditor: React.FC<ServiceTagsEditorProps> = ({
   tags,
   onTagChange,
   onAddTag,
@@ -60,7 +61,7 @@ export const ServiceTagsEditor: React.FC<ServiceTagsEditorProps> = ({
             value=""
             onChange={(e) => onTagChange(0, 'key', e.target.value)}
             placeholder="traefik.enable"
-            className="flex-1 p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className={inputFlexStyles}
             disabled={isLoading}
           />
           <span className="text-gray-500">=</span>
@@ -69,13 +70,13 @@ export const ServiceTagsEditor: React.FC<ServiceTagsEditorProps> = ({
             value=""
             onChange={(e) => onTagChange(0, 'value', e.target.value)}
             placeholder="true"
-            className="flex-1 p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className={inputFlexStyles}
             disabled={isLoading}
           />
           <button
             type="button"
             onClick={onAddTag}
-            className="inline-flex items-center justify-center p-2 border border-transparent text-xs font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 w-10 h-10"
+            className={`${iconButtonPrimaryStyles} w-10 h-10`}
             disabled={isLoading}
           >
             <Plus size={16} />
@@ -89,7 +90,7 @@ export const ServiceTagsEditor: React.FC<ServiceTagsEditorProps> = ({
               value={tag.key}
               onChange={(e) => onTagChange(index, 'key', e.target.value)}
               placeholder="traefik.enable"
-              className="flex-1 p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm"
+              className={inputMonoStyles}
               disabled={isLoading}
             />
             <span className="text-gray-500">=</span>
@@ -98,14 +99,14 @@ export const ServiceTagsEditor: React.FC<ServiceTagsEditorProps> = ({
               value={tag.value}
               onChange={(e) => onTagChange(index, 'value', e.target.value)}
               placeholder="true"
-              className="flex-1 p-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500 font-mono text-sm"
+              className={inputMonoStyles}
               disabled={isLoading}
             />
             {index === tags.length - 1 ? (
               <button
                 type="button"
                 onClick={onAddTag}
-                className="inline-flex items-center justify-center p-2 border border-transparent text-xs font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 w-10 h-10"
+                className={`${iconButtonPrimaryStyles} w-10 h-10`}
                 disabled={isLoading}
               >
                 <Plus size={16} />
@@ -114,7 +115,7 @@ export const ServiceTagsEditor: React.FC<ServiceTagsEditorProps> = ({
               <button
                 type="button"
                 onClick={() => onRemoveTag(index)}
-                className="inline-flex items-center justify-center p-2 border border-transparent text-xs font-medium rounded-md text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 w-10 h-10"
+                className={`${iconButtonDangerStyles} w-10 h-10`}
                 disabled={isLoading}
               >
                 <Trash size={16} />

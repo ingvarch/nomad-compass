@@ -1,11 +1,6 @@
 import { useState } from 'react';
-import {
-  NamespaceRule,
-  PolicyLevel,
-  NamespaceCapability,
-  NAMESPACE_POLICY_OPTIONS,
-  NAMESPACE_CAPABILITY_GROUPS,
-} from '../../../../types/acl';
+import type { NamespaceRule, PolicyLevel, NamespaceCapability } from '../../../../types/acl';
+import { NAMESPACE_POLICY_OPTIONS, NAMESPACE_CAPABILITY_GROUPS } from '../../../../lib/constants/acl';
 
 interface NamespaceRuleRowProps {
   rule: NamespaceRule;

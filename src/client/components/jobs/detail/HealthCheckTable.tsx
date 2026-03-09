@@ -1,4 +1,12 @@
 import React from 'react';
+import {
+  tableStyles,
+  tableHeaderStyles,
+  tableHeaderCellStyles,
+  tableBodyStyles,
+  tableCellLargeStyles,
+} from '../../../lib/styles';
+import { formatNanosAsSeconds, nanosToSeconds } from '../../../lib/utils/dateFormatter';
 
 interface Check {
   Type: string;
@@ -21,7 +29,7 @@ interface HealthCheckTableProps {
   services: Service[];
 }
 
-export const HealthCheckTable: React.FC<HealthCheckTableProps> = ({ services }) => {
+const HealthCheckTable: React.FC<HealthCheckTableProps> = ({ services }) => {
   if (!services?.length) {
     return null;
   }
@@ -39,53 +47,29 @@ export const HealthCheckTable: React.FC<HealthCheckTableProps> = ({ services }) 
               Health Check for {service.Name}
             </h5>
             <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                <thead className="bg-gray-50 dark:bg-gray-700">
+              <table className={tableStyles}>
+                <thead className={tableHeaderStyles}>
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Type
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Path/Command
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Interval
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Timeout
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Check Restart
-                    </th>
+                    <th className={tableHeaderCellStyles}>Type</th>
+                    <th className={tableHeaderCellStyles}>Path/Command</th>
+                    <th className={tableHeaderCellStyles}>Interval</th>
+                    <th className={tableHeaderCellStyles}>Timeout</th>
+                    <th className={tableHeaderCellStyles}>Check Restart</th>
                   </tr>
                 </thead>
-                <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                <tbody className={tableBodyStyles}>
                   {service.Checks.map((check, checkIndex) => (
                     <tr key={checkIndex}>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                        {check.Type}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                        {check.Path || check.Command || '-'}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                        {check.Interval
-                          ? `${Math.round(check.Interval / 1000000000)}s`
-                          : '-'}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                        {check.Timeout
-                          ? `${Math.round(check.Timeout / 1000000000)}s`
-                          : '-'}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
+                      <td className={tableCellLargeStyles}>{check.Type}</td>
+                      <td className={tableCellLargeStyles}>{check.Path || check.Command || '-'}</td>
+                      <td className={tableCellLargeStyles}>{formatNanosAsSeconds(check.Interval)}</td>
+                      <td className={tableCellLargeStyles}>{formatNanosAsSeconds(check.Timeout)}</td>
+                      <td className={tableCellLargeStyles}>
                         {check.CheckRestart ? (
                           <div>
                             <span>Limit: {check.CheckRestart.Limit}</span>
                             <br />
-                            <span>
-                              Grace: {Math.round(check.CheckRestart.Grace / 1000000000)}s
-                            </span>
+                            <span>Grace: {nanosToSeconds(check.CheckRestart.Grace)}s</span>
                           </div>
                         ) : (
                           '-'

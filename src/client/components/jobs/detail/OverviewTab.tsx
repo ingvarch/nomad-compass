@@ -1,16 +1,16 @@
 import { useState } from 'react';
 import { JobSummary, NetworkAccessCard, TaskGroupCard, TaskEventsTable } from './index';
 import ExpandIcon from '../../ui/ExpandIcon';
-import type { NomadAllocation, NomadServiceRegistration } from '../../../types/nomad';
+import type { NomadAllocation, NomadServiceRegistration, NomadJob, NomadTaskGroup } from '../../../types/nomad';
 
 interface OverviewTabProps {
-  job: any;
+  job: NomadJob;
   allocations: NomadAllocation[];
   serviceRegistrations: NomadServiceRegistration[];
   createTime: number | null;
   expandedGroups: Record<string, boolean>;
   onToggleGroup: (groupName: string) => void;
-  onToggleContainer: (groupName: string) => void;
+  onToggleTask: (groupName: string, taskName: string) => void;
   onViewLogs: (groupName: string) => void;
 }
 
@@ -21,7 +21,7 @@ export function OverviewTab({
   createTime,
   expandedGroups,
   onToggleGroup,
-  onToggleContainer,
+  onToggleTask,
   onViewLogs,
 }: OverviewTabProps) {
   const [showTaskEvents, setShowTaskEvents] = useState(false);
@@ -38,16 +38,16 @@ export function OverviewTab({
       <NetworkAccessCard job={job} serviceRegistrations={serviceRegistrations} />
 
       {/* Task Groups */}
-      {job.TaskGroups?.length > 0 && (
+      {job.TaskGroups && job.TaskGroups.length > 0 && (
         <div className="space-y-6">
-          {job.TaskGroups.map((taskGroup: any, groupIndex: number) => (
+          {job.TaskGroups.map((taskGroup: NomadTaskGroup, groupIndex: number) => (
             <TaskGroupCard
               key={groupIndex}
               taskGroup={taskGroup}
               isExpanded={expandedGroups[taskGroup.Name] || false}
-              isContainerExpanded={expandedGroups[`${taskGroup.Name}-container`] || false}
+              expandedGroups={expandedGroups}
               onToggle={() => onToggleGroup(taskGroup.Name)}
-              onToggleContainer={() => onToggleContainer(taskGroup.Name)}
+              onToggleTask={(taskName: string) => onToggleTask(taskGroup.Name, taskName)}
               onViewLogs={() => onViewLogs(taskGroup.Name)}
             />
           ))}

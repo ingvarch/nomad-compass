@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import type { ProblematicAllocation } from '../../lib/services/allocationAnalyzer';
 import { formatTimeAgo } from '../../lib/services/allocationAnalyzer';
+import { Badge } from '../ui';
 
 interface StabilityAlertsProps {
   problems: ProblematicAllocation[];
@@ -102,16 +103,12 @@ export function StabilityAlerts({ problems, loading }: StabilityAlertsProps) {
                   </div>
                   <div className="mt-1 flex flex-wrap gap-2">
                     {issues.map((issue, idx) => (
-                      <span
+                      <Badge
                         key={idx}
-                        className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium ${
-                          issue.type === 'oom_killed' || issue.type === 'crash_loop'
-                            ? 'bg-red-100 dark:bg-red-900/50 text-red-800 dark:text-red-200'
-                            : 'bg-yellow-100 dark:bg-yellow-900/50 text-yellow-800 dark:text-yellow-200'
-                        }`}
+                        variant={issue.type === 'oom_killed' || issue.type === 'crash_loop' ? 'red' : 'yellow'}
                       >
                         {issue.taskName}: {issue.details}
-                      </span>
+                      </Badge>
                     ))}
                   </div>
                 </div>

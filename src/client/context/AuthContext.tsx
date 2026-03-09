@@ -41,15 +41,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         credentials: 'include',
       });
       if (!response.ok) {
-        console.error('Auth check failed:', response.status);
         setIsAuthenticated(false);
         return false;
       }
       const data = await response.json();
       setIsAuthenticated(data.authenticated);
       return data.authenticated;
-    } catch (error) {
-      console.error('Auth check error:', error);
+    } catch {
       setIsAuthenticated(false);
       return false;
     }
@@ -78,8 +76,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
 
       return { success: false, error: data.error || 'Login failed' };
-    } catch (error) {
-      console.error('Login error:', error);
+    } catch {
       return { success: false, error: 'Network error during login' };
     }
   };
@@ -93,8 +90,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         method: 'POST',
         credentials: 'include',
       });
-    } catch (error) {
-      console.error('Logout error:', error);
+    } catch {
+      // Logout failed, but we still clear local auth state
     } finally {
       setIsAuthenticated(false);
     }

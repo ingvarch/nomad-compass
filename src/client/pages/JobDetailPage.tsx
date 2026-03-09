@@ -1,7 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { DEFAULT_NAMESPACE } from '../lib/constants';
 import { createNomadClient } from '../lib/api/nomad';
+import { getErrorMessage } from '../lib/errors';
 import { useToast } from '../context/ToastContext';
 import { LoadingSpinner, ErrorAlert } from '../components/ui';
 import {
@@ -15,7 +17,7 @@ import {
   ExecTab,
 } from '../components/jobs/detail';
 import JobActions from '../components/jobs/JobActions';
-import type { NomadAllocation, NomadServiceRegistration } from '../types/nomad';
+import type { NomadAllocation, NomadServiceRegistration, NomadJob, NomadTaskGroup } from '../types/nomad';
 
 export default function JobDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -24,7 +26,7 @@ export default function JobDetailPage() {
   const { isAuthenticated } = useAuth();
   const { addToast } = useToast();
   const activeTab = useActiveJobTab();
-  const [job, setJob] = useState<any>(null);
+  const [job, setJob] = useState<NomadJob | null>(null);
   const [allocations, setAllocations] = useState<NomadAllocation[]>([]);
   const [serviceRegistrations, setServiceRegistrations] = useState<NomadServiceRegistration[]>([]);
   const [createTime, setCreateTime] = useState<number | null>(null);
@@ -34,7 +36,7 @@ export default function JobDetailPage() {
   const [selectedGroupForLogs, setSelectedGroupForLogs] = useState<string | null>(null);
 
   const jobId = id as string;
-  const namespace = searchParams.get('namespace') || 'default';
+  const namespace = searchParams.get('namespace') || DEFAULT_NAMESPACE;
 
   const fetchJobDetail = useCallback(async () => {
     if (!isAuthenticated) {
@@ -57,7 +59,7 @@ export default function JobDetailPage() {
 
       // Get creation time from the oldest available version
       if (jobVersions?.Versions?.length > 0) {
-        const oldestVersion = jobVersions.Versions.reduce((oldest: any, current: any) =>
+        const oldestVersion = jobVersions.Versions.reduce((oldest, current) =>
           current.Version < oldest.Version ? current : oldest
         );
         setCreateTime(oldestVersion?.SubmitTime || null);
@@ -65,9 +67,13 @@ export default function JobDetailPage() {
 
       if (jobDetail.TaskGroups && jobDetail.TaskGroups.length > 0) {
         const initialExpandedState: Record<string, boolean> = {};
-        jobDetail.TaskGroups.forEach((group: any) => {
+        jobDetail.TaskGroups.forEach((group: NomadTaskGroup) => {
           initialExpandedState[group.Name] = false;
-          initialExpandedState[`${group.Name}-container`] = false;
+          if (group.Tasks) {
+            group.Tasks.forEach((task) => {
+              initialExpandedState[`${group.Name}-task-${task.Name}`] = false;
+            });
+          }
         });
         setExpandedGroups(initialExpandedState);
       }
@@ -100,8 +106,7 @@ export default function JobDetailPage() {
 
       setError(null);
     } catch (err) {
-      console.error('Failed to fetch job details:', err);
-      setError('Failed to load job details. Please check your connection and try again.');
+      setError(`Failed to load job details: ${getErrorMessage(err)}`);
       addToast('Failed to load job details', 'error');
     } finally {
       setIsLoading(false);
@@ -119,11 +124,11 @@ export default function JobDetailPage() {
     });
   };
 
-  const toggleContainerDetails = (groupName: string) => {
-    const containerName = `${groupName}-container`;
+  const toggleTaskDetails = (groupName: string, taskName: string) => {
+    const key = `${groupName}-task-${taskName}`;
     setExpandedGroups({
       ...expandedGroups,
-      [containerName]: !expandedGroups[containerName],
+      [key]: !expandedGroups[key],
     });
   };
 
@@ -184,7 +189,7 @@ export default function JobDetailPage() {
       <JobHeader
         jobName={job.Name || job.ID}
         jobId={job.ID}
-        namespace={job.Namespace || 'default'}
+        namespace={job.Namespace || DEFAULT_NAMESPACE}
       />
 
       <JobDetailTabs namespace={namespace} />
@@ -198,7 +203,7 @@ export default function JobDetailPage() {
           createTime={createTime}
           expandedGroups={expandedGroups}
           onToggleGroup={toggleGroupDetails}
-          onToggleContainer={toggleContainerDetails}
+          onToggleTask={toggleTaskDetails}
           onViewLogs={handleViewLogs}
         />
       )}

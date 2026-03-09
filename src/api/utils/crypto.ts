@@ -22,19 +22,14 @@ export function generateCSRFToken(): string {
  * @returns true if strings are equal, false otherwise
  */
 export function timingSafeEqual(a: string, b: string): boolean {
-  if (a.length !== b.length) {
-    // Perform dummy comparison to prevent length-based timing leaks
-    let result = 0
-    for (let i = 0; i < a.length; i++) {
-      result |= a.charCodeAt(i) ^ a.charCodeAt(i)
-    }
-    return false
-  }
+  // Use the longer string length to prevent length-based timing leaks
+  const len = Math.max(a.length, b.length)
 
   // Constant-time comparison: XOR each character and accumulate differences
-  let result = 0
-  for (let i = 0; i < a.length; i++) {
-    result |= a.charCodeAt(i) ^ b.charCodeAt(i)
+  // Access characters safely with default to 0 if out of bounds
+  let result = a.length ^ b.length // Start with length difference
+  for (let i = 0; i < len; i++) {
+    result |= (a.charCodeAt(i) || 0) ^ (b.charCodeAt(i) || 0)
   }
   return result === 0
 }
@@ -42,7 +37,7 @@ export function timingSafeEqual(a: string, b: string): boolean {
 /**
  * Generate random hex string.
  */
-export function generateRandomHex(bytes: number): string {
+function generateRandomHex(bytes: number): string {
   const array = new Uint8Array(bytes)
   crypto.getRandomValues(array)
   return Array.from(array, (b) => b.toString(16).padStart(2, '0')).join('')

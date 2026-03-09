@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { ThemeToggle } from '../ui/ThemeToggle';
+import { labelMonokaiStyles } from '../../lib/styles';
 
-export const LoginForm: React.FC = () => {
+const LoginForm: React.FC = () => {
   const [token, setToken] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -72,7 +73,7 @@ export const LoginForm: React.FC = () => {
 
           <form onSubmit={handleSubmit}>
             <div className="mb-6">
-              <label htmlFor="token" className="block text-sm font-medium text-gray-700 dark:text-monokai-text mb-1">
+              <label htmlFor="token" className={labelMonokaiStyles}>
                 Nomad Token
               </label>
               <input

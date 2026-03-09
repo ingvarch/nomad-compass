@@ -1,10 +1,7 @@
 import React from 'react';
-import {
-  DeploymentState,
-  DeploymentStep,
-  DEPLOYMENT_STEPS,
-  STEP_LABELS,
-} from '../../types/deployment';
+import type { DeploymentState, DeploymentStep } from '../../types/deployment';
+import { DEPLOYMENT_STEPS, STEP_LABELS } from '../../lib/constants/deployment';
+import { Spinner } from '../ui';
 
 interface DeploymentOverlayProps {
   state: DeploymentState;
@@ -21,28 +18,21 @@ const stepIconStyles = {
 
 function getStepStatus(
   step: DeploymentStep,
-  currentStep: DeploymentStep
+  currentStep: DeploymentStep,
+  progress: number = 0
 ): 'completed' | 'current' | 'pending' | 'failed' {
+  const stepIndex = DEPLOYMENT_STEPS.indexOf(step);
+
   if (currentStep === 'failed' || currentStep === 'timeout') {
-    const currentIndex = DEPLOYMENT_STEPS.indexOf(
-      DEPLOYMENT_STEPS.find((s) => s === step) || 'submitting'
-    );
-    const failedIndex = DEPLOYMENT_STEPS.length; // Assume failed at last known step
+    // Determine which step failed based on progress
+    // Progress: 20=submitting, 40=scheduling, 60=pulling, 80=starting, 100=healthy
+    const failedStepIndex = Math.max(0, Math.floor(progress / 20) - 1);
 
-    // Find the step that was in progress when it failed
-    const stateStepIndex = DEPLOYMENT_STEPS.indexOf(
-      DEPLOYMENT_STEPS.find((s) => {
-        const idx = DEPLOYMENT_STEPS.indexOf(s);
-        return idx >= 0;
-      }) || 'submitting'
-    );
-
-    if (currentIndex < stateStepIndex) return 'completed';
-    if (currentIndex === stateStepIndex) return 'failed';
+    if (stepIndex < failedStepIndex) return 'completed';
+    if (stepIndex === failedStepIndex) return 'failed';
     return 'pending';
   }
 
-  const stepIndex = DEPLOYMENT_STEPS.indexOf(step);
   const currentIndex = DEPLOYMENT_STEPS.indexOf(currentStep);
 
   if (stepIndex < currentIndex) return 'completed';
@@ -61,11 +51,8 @@ function StepIcon({ status }: { status: 'completed' | 'current' | 'pending' | 'f
 
   if (status === 'current') {
     return (
-      <div className={`w-5 h-5 ${stepIconStyles.current}`}>
-        <svg className="animate-spin" fill="none" viewBox="0 0 24 24">
-          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-        </svg>
+      <div className={stepIconStyles.current}>
+        <Spinner size="md" />
       </div>
     );
   }
@@ -83,7 +70,7 @@ function StepIcon({ status }: { status: 'completed' | 'current' | 'pending' | 'f
   );
 }
 
-export const DeploymentOverlay: React.FC<DeploymentOverlayProps> = ({
+const DeploymentOverlay: React.FC<DeploymentOverlayProps> = ({
   state,
   onClose,
   onViewJob,
@@ -113,7 +100,7 @@ export const DeploymentOverlay: React.FC<DeploymentOverlayProps> = ({
         {/* Steps */}
         <div className="space-y-4 mb-6">
           {DEPLOYMENT_STEPS.map((step) => {
-            const status = getStepStatus(step, state.step);
+            const status = getStepStatus(step, state.step, state.progress);
             const isCurrent = status === 'current';
 
             return (

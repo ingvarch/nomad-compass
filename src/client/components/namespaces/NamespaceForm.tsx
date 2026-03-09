@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { NomadNamespace } from '../../types/nomad';
-import { isPermissionError, getPermissionErrorMessage } from '../../lib/api/errors';
+import { getErrorMessage } from '../../lib/errors';
+import { inputMonokaiStyles, inputMonokaiFlexStyles, labelMonokaiStyles } from '../../lib/styles';
+import { FormActions, RemovableBadge } from '../ui';
 
 interface MetaEntry {
   key: string;
@@ -14,7 +16,7 @@ interface NamespaceFormProps {
   onCancel: () => void;
 }
 
-export const NamespaceForm: React.FC<NamespaceFormProps> = ({
+const NamespaceForm: React.FC<NamespaceFormProps> = ({
   mode,
   namespace,
   onSubmit,
@@ -134,19 +136,12 @@ export const NamespaceForm: React.FC<NamespaceFormProps> = ({
     try {
       await onSubmit(namespaceData);
     } catch (err) {
-      if (isPermissionError(err)) {
-        const operation = mode === 'create' ? 'create-namespace' : 'update-namespace';
-        setError(getPermissionErrorMessage(operation));
-      } else {
-        setError(err instanceof Error ? err.message : 'Failed to save namespace');
-      }
+      const operation = mode === 'create' ? 'create-namespace' : 'update-namespace';
+      setError(getErrorMessage(err, 'Failed to save namespace', operation));
     } finally {
       setIsSubmitting(false);
     }
   };
-
-  const inputClasses =
-    'w-full p-2 border border-gray-300 dark:border-monokai-muted rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-monokai-blue bg-white dark:bg-monokai-surface text-gray-900 dark:text-monokai-text';
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
@@ -160,7 +155,7 @@ export const NamespaceForm: React.FC<NamespaceFormProps> = ({
       <div>
         <label
           htmlFor="namespace-name"
-          className="block text-sm font-medium text-gray-700 dark:text-monokai-text mb-1"
+          className={labelMonokaiStyles}
         >
           Name *
         </label>
@@ -169,7 +164,7 @@ export const NamespaceForm: React.FC<NamespaceFormProps> = ({
           type="text"
           value={name}
           onChange={(e) => setName(e.target.value)}
-          className={inputClasses}
+          className={inputMonokaiStyles}
           placeholder="my-namespace"
           disabled={mode === 'edit'}
           required
@@ -185,7 +180,7 @@ export const NamespaceForm: React.FC<NamespaceFormProps> = ({
       <div>
         <label
           htmlFor="namespace-description"
-          className="block text-sm font-medium text-gray-700 dark:text-monokai-text mb-1"
+          className={labelMonokaiStyles}
         >
           Description
         </label>
@@ -193,7 +188,7 @@ export const NamespaceForm: React.FC<NamespaceFormProps> = ({
           id="namespace-description"
           value={description}
           onChange={(e) => setDescription(e.target.value)}
-          className={inputClasses}
+          className={inputMonokaiStyles}
           placeholder="Optional description for this namespace"
           rows={2}
         />
@@ -202,7 +197,7 @@ export const NamespaceForm: React.FC<NamespaceFormProps> = ({
       {/* Meta */}
       <div>
         <div className="flex items-center justify-between mb-1">
-          <label className="block text-sm font-medium text-gray-700 dark:text-monokai-text">
+          <label className={labelMonokaiStyles}>
             Metadata
           </label>
           <button
@@ -225,14 +220,14 @@ export const NamespaceForm: React.FC<NamespaceFormProps> = ({
                   type="text"
                   value={entry.key}
                   onChange={(e) => handleMetaKeyChange(index, e.target.value)}
-                  className={`${inputClasses} flex-1`}
+                  className={inputMonokaiFlexStyles}
                   placeholder="Key"
                 />
                 <input
                   type="text"
                   value={entry.value}
                   onChange={(e) => handleMetaValueChange(index, e.target.value)}
-                  className={`${inputClasses} flex-1`}
+                  className={inputMonokaiFlexStyles}
                   placeholder="Value"
                 />
                 <button
@@ -252,7 +247,7 @@ export const NamespaceForm: React.FC<NamespaceFormProps> = ({
 
       {/* Capabilities - Enabled Task Drivers */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 dark:text-monokai-text mb-1">
+        <label className={labelMonokaiStyles}>
           Enabled Task Drivers
         </label>
         <p className="text-xs text-gray-500 dark:text-monokai-muted mb-2">
@@ -269,7 +264,7 @@ export const NamespaceForm: React.FC<NamespaceFormProps> = ({
                 handleAddEnabledDriver();
               }
             }}
-            className={`${inputClasses} flex-1`}
+            className={inputMonokaiFlexStyles}
             placeholder="e.g., docker, exec"
           />
           <button
@@ -283,21 +278,13 @@ export const NamespaceForm: React.FC<NamespaceFormProps> = ({
         {enabledDrivers.length > 0 && (
           <div className="flex flex-wrap gap-2">
             {enabledDrivers.map((driver) => (
-              <span
+              <RemovableBadge
                 key={driver}
-                className="inline-flex items-center gap-1 px-2 py-1 bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 text-sm rounded"
+                variant="green"
+                onRemove={() => handleRemoveEnabledDriver(driver)}
               >
                 {driver}
-                <button
-                  type="button"
-                  onClick={() => handleRemoveEnabledDriver(driver)}
-                  className="hover:text-green-600 dark:hover:text-green-200"
-                >
-                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </span>
+              </RemovableBadge>
             ))}
           </div>
         )}
@@ -305,7 +292,7 @@ export const NamespaceForm: React.FC<NamespaceFormProps> = ({
 
       {/* Capabilities - Disabled Task Drivers */}
       <div>
-        <label className="block text-sm font-medium text-gray-700 dark:text-monokai-text mb-1">
+        <label className={labelMonokaiStyles}>
           Disabled Task Drivers
         </label>
         <p className="text-xs text-gray-500 dark:text-monokai-muted mb-2">
@@ -322,7 +309,7 @@ export const NamespaceForm: React.FC<NamespaceFormProps> = ({
                 handleAddDisabledDriver();
               }
             }}
-            className={`${inputClasses} flex-1`}
+            className={inputMonokaiFlexStyles}
             placeholder="e.g., raw_exec"
           />
           <button
@@ -336,50 +323,24 @@ export const NamespaceForm: React.FC<NamespaceFormProps> = ({
         {disabledDrivers.length > 0 && (
           <div className="flex flex-wrap gap-2">
             {disabledDrivers.map((driver) => (
-              <span
+              <RemovableBadge
                 key={driver}
-                className="inline-flex items-center gap-1 px-2 py-1 bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 text-sm rounded"
+                variant="red"
+                onRemove={() => handleRemoveDisabledDriver(driver)}
               >
                 {driver}
-                <button
-                  type="button"
-                  onClick={() => handleRemoveDisabledDriver(driver)}
-                  className="hover:text-red-600 dark:hover:text-red-200"
-                >
-                  <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                  </svg>
-                </button>
-              </span>
+              </RemovableBadge>
             ))}
           </div>
         )}
       </div>
 
       {/* Actions */}
-      <div className="flex justify-end gap-3 pt-4 border-t border-gray-200 dark:border-gray-700">
-        <button
-          type="button"
-          onClick={onCancel}
-          className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-md transition-colors"
-          disabled={isSubmitting}
-        >
-          Cancel
-        </button>
-        <button
-          type="submit"
-          className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 dark:bg-monokai-blue dark:hover:bg-blue-600 rounded-md transition-colors disabled:opacity-50"
-          disabled={isSubmitting}
-        >
-          {isSubmitting
-            ? mode === 'create'
-              ? 'Creating...'
-              : 'Saving...'
-            : mode === 'create'
-              ? 'Create Namespace'
-              : 'Save Changes'}
-        </button>
-      </div>
+      <FormActions
+        onCancel={onCancel}
+        isSubmitting={isSubmitting}
+        submitLabel={mode === 'create' ? 'Create Namespace' : 'Save Changes'}
+      />
     </form>
   );
 };

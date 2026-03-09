@@ -1,9 +1,18 @@
 import React from 'react';
+import { Badge } from '../../ui';
+import {
+  tableStyles,
+  tableHeaderStyles,
+  tableHeaderCellStyles,
+  tableBodyStyles,
+  tableCellStyles,
+} from '../../../lib/styles';
 
 interface Port {
   Label: string;
   Value?: number;
   To?: number;
+  TaskName?: string;
 }
 
 interface Network {
@@ -16,7 +25,11 @@ interface NetworkTableProps {
   networks: Network[];
 }
 
-export const NetworkTable: React.FC<NetworkTableProps> = ({ networks }) => {
+function hasTaskNames(ports?: Port[]): boolean {
+  return ports?.some((p) => !!p.TaskName) ?? false;
+}
+
+const NetworkTable: React.FC<NetworkTableProps> = ({ networks }) => {
   if (!networks?.length) {
     return null;
   }
@@ -31,6 +44,9 @@ export const NetworkTable: React.FC<NetworkTableProps> = ({ networks }) => {
           return null;
         }
 
+        const showTaskNameDynamic = hasTaskNames(network.DynamicPorts);
+        const showTaskNameReserved = hasTaskNames(network.ReservedPorts);
+
         return (
           <div key={index} className="mt-4">
             <h5 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -43,34 +59,26 @@ export const NetworkTable: React.FC<NetworkTableProps> = ({ networks }) => {
                   Dynamic Ports
                 </div>
                 <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                    <thead className="bg-gray-50 dark:bg-gray-700">
+                  <table className={tableStyles}>
+                    <thead className={tableHeaderStyles}>
                       <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                          Label
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                          Host Port
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                          Container Port
-                        </th>
+                        <th className={tableHeaderCellStyles}>Label</th>
+                        {showTaskNameDynamic && <th className={tableHeaderCellStyles}>Task</th>}
+                        <th className={tableHeaderCellStyles}>Host Port</th>
+                        <th className={tableHeaderCellStyles}>Container Port</th>
                       </tr>
                     </thead>
-                    <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                    <tbody className={tableBodyStyles}>
                       {network.DynamicPorts!.map((port, portIndex) => (
                         <tr key={portIndex}>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                            {port.Label}
+                          <td className={tableCellStyles}>{port.Label}</td>
+                          {showTaskNameDynamic && (
+                            <td className={tableCellStyles}>{port.TaskName || '-'}</td>
+                          )}
+                          <td className={tableCellStyles}>
+                            <Badge variant="yellow">Dynamic</Badge>
                           </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                            <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200">
-                              Dynamic
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                            {port.To || port.Value || '-'}
-                          </td>
+                          <td className={tableCellStyles}>{port.To || port.Value || '-'}</td>
                         </tr>
                       ))}
                     </tbody>
@@ -85,32 +93,24 @@ export const NetworkTable: React.FC<NetworkTableProps> = ({ networks }) => {
                   Static Ports
                 </div>
                 <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-                    <thead className="bg-gray-50 dark:bg-gray-700">
+                  <table className={tableStyles}>
+                    <thead className={tableHeaderStyles}>
                       <tr>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                          Label
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                          Host Port
-                        </th>
-                        <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                          Container Port
-                        </th>
+                        <th className={tableHeaderCellStyles}>Label</th>
+                        {showTaskNameReserved && <th className={tableHeaderCellStyles}>Task</th>}
+                        <th className={tableHeaderCellStyles}>Host Port</th>
+                        <th className={tableHeaderCellStyles}>Container Port</th>
                       </tr>
                     </thead>
-                    <tbody className="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
+                    <tbody className={tableBodyStyles}>
                       {network.ReservedPorts!.map((port, portIndex) => (
                         <tr key={portIndex}>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                            {port.Label}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                            {port.Value}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                            {port.To || port.Value || '-'}
-                          </td>
+                          <td className={tableCellStyles}>{port.Label}</td>
+                          {showTaskNameReserved && (
+                            <td className={tableCellStyles}>{port.TaskName || '-'}</td>
+                          )}
+                          <td className={tableCellStyles}>{port.Value}</td>
+                          <td className={tableCellStyles}>{port.To || port.Value || '-'}</td>
                         </tr>
                       ))}
                     </tbody>

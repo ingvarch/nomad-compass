@@ -12,6 +12,16 @@ interface NamespaceUsage {
   memory: number;
 }
 
+function formatValue(value: number, unit: string): string {
+  if (unit === 'MB' && value >= 1024) {
+    return `${(value / 1024).toFixed(1)} GB`;
+  }
+  if (unit === 'MHz' && value >= 1000) {
+    return `${(value / 1000).toFixed(1)} GHz`;
+  }
+  return `${value} ${unit}`;
+}
+
 interface ResourceBarProps {
   label: string;
   used: number;
@@ -24,22 +34,6 @@ function ResourceBar({ label, used, total, unit, color }: ResourceBarProps) {
   const percentage = total > 0 ? Math.min((used / total) * 100, 100) : 0;
   const percentageColor =
     percentage > 90 ? 'text-red-600 dark:text-red-400' : percentage > 70 ? 'text-yellow-600 dark:text-yellow-400' : '';
-
-  const formatValue = (value: number, unit: string) => {
-    if (unit === 'MB') {
-      if (value >= 1024) {
-        return `${(value / 1024).toFixed(1)} GB`;
-      }
-      return `${value} MB`;
-    }
-    if (unit === 'MHz') {
-      if (value >= 1000) {
-        return `${(value / 1000).toFixed(1)} GHz`;
-      }
-      return `${value} MHz`;
-    }
-    return `${value} ${unit}`;
-  };
 
   return (
     <div>
@@ -106,16 +100,6 @@ function calculateClusterResources(nodes: NomadNode[], allocations: NomadAllocat
     });
 
   return { totalCpu, usedCpu, totalMemory, usedMemory, totalDisk, usedDisk, byNamespace };
-}
-
-function formatValue(value: number, unit: 'MHz' | 'MB'): string {
-  if (unit === 'MB' && value >= 1024) {
-    return `${(value / 1024).toFixed(1)} GB`;
-  }
-  if (unit === 'MHz' && value >= 1000) {
-    return `${(value / 1000).toFixed(1)} GHz`;
-  }
-  return `${value} ${unit}`;
 }
 
 export function ClusterResources({ nodes, allocations, loading }: ClusterResourcesProps) {

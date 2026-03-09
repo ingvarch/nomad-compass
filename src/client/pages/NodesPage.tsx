@@ -1,7 +1,7 @@
-import { useState, useEffect, useCallback, useMemo } from 'react';
-import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { createNomadClient } from '../lib/api/nomad';
-import { NomadNode } from '../types/nomad';
+import type { NomadNode } from '../types/nomad';
 import {
   LoadingSpinner,
   ErrorAlert,
@@ -9,9 +9,12 @@ import {
   RefreshButton,
   FilterButtons,
   BackLink,
-  FilterOption,
+  DataTable,
+  type Column,
 } from '../components/ui';
 import { getNodeStatusColor, getStatusClasses } from '../lib/utils/statusColors';
+import { useFetch } from '../hooks/useFetch';
+import { useFilteredData } from '../hooks/useFilteredData';
 
 type StatusFilter = 'all' | 'ready' | 'down' | 'draining';
 
@@ -21,61 +24,102 @@ function formatResources(cpu: number, memoryMB: number): string {
 }
 
 export default function NodesPage() {
-  const [searchParams, setSearchParams] = useSearchParams();
   const navigate = useNavigate();
-  const [nodes, setNodes] = useState<NomadNode[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
 
-  const statusFilter = (searchParams.get('status') as StatusFilter) || 'all';
+  const { data: nodes, loading, error, refetch } = useFetch(
+    async () => {
+      const client = createNomadClient();
+      return client.getNodes();
+    },
+    [],
+    { initialData: [], errorMessage: 'Failed to fetch nodes' }
+  );
 
-  const fetchData = useCallback(async () => {
-    const client = createNomadClient();
+  const nodesList = useMemo(() => nodes || [], [nodes]);
 
-    try {
-      const nodesData = await client.getNodes();
-      setNodes(nodesData);
-      setError(null);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch nodes');
-    } finally {
-      setLoading(false);
+  const { activeFilter, filteredItems, filterOptions, setFilter } = useFilteredData<NomadNode, StatusFilter>(
+    nodesList,
+    {
+      defaultValue: 'all',
+      filters: [
+        { value: 'all', label: 'All', predicate: () => true },
+        { value: 'ready', label: 'Ready', predicate: (n) => n.Status === 'ready' && !n.Drain, color: 'bg-green-500' },
+        { value: 'down', label: 'Down', predicate: (n) => n.Status === 'down', color: 'bg-red-500' },
+        { value: 'draining', label: 'Draining', predicate: (n) => n.Drain, color: 'bg-yellow-500' },
+      ],
     }
-  }, []);
+  );
 
-  useEffect(() => {
-    fetchData();
-  }, [fetchData]);
-
-  const filteredNodes = nodes.filter((node) => {
-    if (statusFilter === 'all') return true;
-    if (statusFilter === 'draining') return node.Drain;
-    if (statusFilter === 'ready') return node.Status === 'ready' && !node.Drain;
-    if (statusFilter === 'down') return node.Status === 'down';
-    return true;
-  });
-
-  const stats = useMemo(() => ({
-    ready: nodes.filter((n) => n.Status === 'ready' && !n.Drain).length,
-    down: nodes.filter((n) => n.Status === 'down').length,
-    draining: nodes.filter((n) => n.Drain).length,
-  }), [nodes]);
-
-  const setFilter = (filter: StatusFilter) => {
-    if (filter === 'all') {
-      searchParams.delete('status');
-    } else {
-      searchParams.set('status', filter);
-    }
-    setSearchParams(searchParams);
-  };
-
-  const filterOptions: FilterOption<StatusFilter>[] = [
-    { value: 'all', label: 'All', count: nodes.length },
-    { value: 'ready', label: 'Ready', count: stats.ready, color: 'bg-green-500' },
-    { value: 'down', label: 'Down', count: stats.down, color: 'bg-red-500' },
-    { value: 'draining', label: 'Draining', count: stats.draining, color: 'bg-yellow-500' },
-  ];
+  const columns: Column<NomadNode>[] = useMemo(() => [
+    {
+      key: 'name',
+      header: 'Name',
+      render: (node) => (
+        <div className="flex items-center gap-2">
+          <span className="font-medium text-blue-600 dark:text-blue-400 hover:underline">
+            {node.Name}
+          </span>
+          <span className="text-xs text-gray-400 dark:text-gray-500 font-mono">
+            {node.ID.slice(0, 8)}
+          </span>
+        </div>
+      ),
+    },
+    {
+      key: 'status',
+      header: 'Status',
+      render: (node) => {
+        const statusColors = getNodeStatusColor(node.Status, node.Drain);
+        return (
+          <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${getStatusClasses(statusColors)}`}>
+            {node.Drain ? 'draining' : node.Status}
+          </span>
+        );
+      },
+    },
+    {
+      key: 'eligibility',
+      header: 'Eligibility',
+      render: (node) => (
+        <span className={`text-sm ${
+          node.SchedulingEligibility === 'eligible'
+            ? 'text-green-600 dark:text-green-400'
+            : 'text-gray-500 dark:text-gray-400'
+        }`}>
+          {node.SchedulingEligibility}
+        </span>
+      ),
+    },
+    {
+      key: 'datacenter',
+      header: 'Datacenter',
+      render: (node) => (
+        <span className="text-sm text-gray-600 dark:text-gray-400">
+          {node.Datacenter || '-'}
+        </span>
+      ),
+    },
+    {
+      key: 'resources',
+      header: 'Resources',
+      render: (node) => (
+        <span className="text-sm text-gray-600 dark:text-gray-400">
+          {node.NodeResources
+            ? formatResources(node.NodeResources.Cpu.CpuShares, node.NodeResources.Memory.MemoryMB)
+            : '-'}
+        </span>
+      ),
+    },
+    {
+      key: 'version',
+      header: 'Version',
+      render: (node) => (
+        <span className="text-sm text-gray-600 dark:text-gray-400">
+          {node.Version || '-'}
+        </span>
+      ),
+    },
+  ], []);
 
   if (loading) {
     return (
@@ -91,96 +135,24 @@ export default function NodesPage() {
       <PageHeader
         title="Nodes"
         description="View and manage cluster nodes"
-        actions={
-          <RefreshButton onClick={() => { setLoading(true); fetchData(); }} />
-        }
+        actions={<RefreshButton onClick={refetch} />}
       />
 
       {error && <ErrorAlert message={error} />}
 
-      {/* Status Filter */}
       <FilterButtons
         options={filterOptions}
-        activeValue={statusFilter}
+        activeValue={activeFilter}
         onFilterChange={setFilter}
       />
 
-      {/* Nodes Table */}
-      <div className="bg-white dark:bg-gray-800 shadow rounded-lg overflow-hidden">
-        {filteredNodes.length === 0 ? (
-          <div className="px-4 py-8 text-center text-gray-500 dark:text-gray-400">
-            No nodes found.
-          </div>
-        ) : (
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-              <thead className="bg-gray-50 dark:bg-gray-700/50">
-                <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Name</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Status</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Eligibility</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Datacenter</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Resources</th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Version</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                {filteredNodes.map((node) => {
-                  const statusColors = getNodeStatusColor(node.Status, node.Drain);
-                  return (
-                    <tr
-                      key={node.ID}
-                      className="hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer"
-                      onClick={() => navigate(`/nodes/${node.ID}`)}
-                    >
-                      <td className="px-4 py-3 whitespace-nowrap">
-                        <div className="flex items-center gap-2">
-                          <span className="font-medium text-blue-600 dark:text-blue-400 hover:underline">
-                            {node.Name}
-                          </span>
-                          <span className="text-xs text-gray-400 dark:text-gray-500 font-mono">
-                            {node.ID.slice(0, 8)}
-                          </span>
-                        </div>
-                      </td>
-                      <td className="px-4 py-3 whitespace-nowrap">
-                        <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${getStatusClasses(statusColors)}`}>
-                          {node.Drain ? 'draining' : node.Status}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 whitespace-nowrap">
-                        <span className={`text-sm ${
-                          node.SchedulingEligibility === 'eligible'
-                            ? 'text-green-600 dark:text-green-400'
-                            : 'text-gray-500 dark:text-gray-400'
-                        }`}>
-                          {node.SchedulingEligibility}
-                        </span>
-                      </td>
-                      <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
-                        {node.Datacenter || '-'}
-                      </td>
-                      <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
-                        {node.NodeResources ? (
-                          formatResources(
-                            node.NodeResources.Cpu.CpuShares,
-                            node.NodeResources.Memory.MemoryMB
-                          )
-                        ) : (
-                          '-'
-                        )}
-                      </td>
-                      <td className="px-4 py-3 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
-                        {node.Version || '-'}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        )}
-      </div>
+      <DataTable
+        items={filteredItems}
+        columns={columns}
+        keyExtractor={(node) => node.ID}
+        onRowClick={(node) => navigate(`/nodes/${node.ID}`)}
+        emptyState={{ message: 'No nodes found.' }}
+      />
 
       <BackLink to="/dashboard" />
     </div>

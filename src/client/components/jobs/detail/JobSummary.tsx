@@ -1,13 +1,15 @@
 import React from 'react';
-import StatusBadge from './StatusBadge';
+import { StatusBadge } from './StatusBadge';
+import { Badge } from '../../ui';
 import type { NomadAllocation } from '../../../types/nomad';
+import { formatDateLong } from '../../../lib/utils/dateFormatter';
 
 interface JobSummaryProps {
   job: {
     Status: string;
     Stop?: boolean;
     Type: string;
-    Priority: number;
+    Priority?: number;
     Datacenters?: string[];
     SubmitTime?: number;
     Namespace?: string;
@@ -17,23 +19,7 @@ interface JobSummaryProps {
   createTime?: number | null;
 }
 
-const NANOSECONDS_TO_MILLISECONDS = 1_000_000;
-
-const dateFormatter = new Intl.DateTimeFormat('en-GB', {
-  day: '2-digit',
-  month: 'short',
-  year: 'numeric',
-  hour: '2-digit',
-  minute: '2-digit',
-  second: '2-digit',
-  hour12: false,
-});
-
-const formatDate = (nanoseconds: number): string => {
-  return dateFormatter.format(new Date(nanoseconds / NANOSECONDS_TO_MILLISECONDS));
-};
-
-export const JobSummary: React.FC<JobSummaryProps> = ({ job, allocations, createTime }) => {
+const JobSummary: React.FC<JobSummaryProps> = ({ job, allocations, createTime }) => {
   return (
     <div className="bg-white dark:bg-gray-800 shadow rounded-lg overflow-hidden">
       <div className="px-6 py-5 border-b border-gray-200 dark:border-gray-700">
@@ -65,7 +51,7 @@ export const JobSummary: React.FC<JobSummaryProps> = ({ job, allocations, create
                 Priority
               </dt>
               <dd className="mt-1 text-sm text-gray-900 dark:text-white sm:mt-0 sm:col-span-2">
-                {job.Priority}
+                {job.Priority ?? 50}
               </dd>
             </div>
             <div className="px-4 py-3 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
@@ -85,7 +71,7 @@ export const JobSummary: React.FC<JobSummaryProps> = ({ job, allocations, create
                 Created
               </dt>
               <dd className="mt-1 text-sm text-gray-900 dark:text-white sm:mt-0 sm:col-span-2">
-                {createTime ? formatDate(createTime) : 'Unknown'}
+                {createTime ? formatDateLong(createTime) : 'Unknown'}
               </dd>
             </div>
             <div className="px-4 py-3 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">
@@ -93,7 +79,7 @@ export const JobSummary: React.FC<JobSummaryProps> = ({ job, allocations, create
                 Modified
               </dt>
               <dd className="mt-1 text-sm text-gray-900 dark:text-white sm:mt-0 sm:col-span-2">
-                {job.SubmitTime ? formatDate(job.SubmitTime) : 'Unknown'}
+                {job.SubmitTime ? formatDateLong(job.SubmitTime) : 'Unknown'}
               </dd>
             </div>
             <div className="bg-gray-50 dark:bg-gray-700 px-4 py-3 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6 rounded-md">
@@ -101,9 +87,7 @@ export const JobSummary: React.FC<JobSummaryProps> = ({ job, allocations, create
                 Namespace
               </dt>
               <dd className="mt-1 text-sm text-gray-900 dark:text-white sm:mt-0 sm:col-span-2">
-                <span className="px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
-                  {job.Namespace || 'default'}
-                </span>
+                <Badge variant="blue">{job.Namespace || 'default'}</Badge>
               </dd>
             </div>
             <div className="px-4 py-3 sm:grid sm:grid-cols-3 sm:gap-4 sm:px-6">

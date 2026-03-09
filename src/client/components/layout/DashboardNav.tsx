@@ -5,7 +5,40 @@ import { useAclPermissions } from '../../hooks/useAclPermissions';
 import { ThemeToggle } from '../ui/ThemeToggle';
 import { UserMenu } from '../ui/UserMenu';
 
-export const DashboardNav: React.FC = () => {
+const navLinkStyles = {
+  desktop: {
+    base: 'inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium',
+    active: 'border-blue-500 text-gray-900 dark:border-monokai-blue dark:text-monokai-text',
+    inactive: 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-monokai-muted dark:hover:border-monokai-surface dark:hover:text-monokai-text',
+  },
+  mobile: {
+    base: 'block pl-3 pr-4 py-2 border-l-4 text-base font-medium',
+    active: 'bg-blue-50 border-blue-500 text-blue-700 dark:bg-monokai-surface dark:border-monokai-blue dark:text-monokai-blue',
+    inactive: 'border-transparent text-gray-600 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-800 dark:text-monokai-muted dark:hover:bg-monokai-surface dark:hover:border-monokai-surface dark:hover:text-monokai-text',
+  },
+};
+
+function getNavLinkClasses(isActive: boolean, variant: 'desktop' | 'mobile'): string {
+  const styles = navLinkStyles[variant];
+  return `${styles.base} ${isActive ? styles.active : styles.inactive}`;
+}
+
+interface NavItem {
+  path: string;
+  label: string;
+  requiresManagement?: boolean;
+}
+
+const navItems: NavItem[] = [
+  { path: '/dashboard', label: 'Dashboard' },
+  { path: '/jobs', label: 'Jobs' },
+  { path: '/topology', label: 'Topology' },
+  { path: '/servers', label: 'Servers' },
+  { path: '/namespaces', label: 'Namespaces' },
+  { path: '/acl', label: 'ACL', requiresManagement: true },
+];
+
+const DashboardNav: React.FC = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [nomadAddr, setNomadAddr] = useState<string | null>(null);
   const location = useLocation();
@@ -13,7 +46,6 @@ export const DashboardNav: React.FC = () => {
   const { logout } = useAuth();
   const { hasManagementAccess } = useAclPermissions();
 
-  // Fetch Nomad address from server config
   useEffect(() => {
     fetch('/api/config')
       .then(res => res.json())
@@ -25,6 +57,10 @@ export const DashboardNav: React.FC = () => {
     return pathname === path || pathname?.startsWith(`${path}/`);
   };
 
+  const visibleNavItems = navItems.filter(
+    item => !item.requiresManagement || hasManagementAccess
+  );
+
   return (
     <nav className="bg-white dark:bg-monokai-bg shadow-sm border-b border-gray-200 dark:border-monokai-surface">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -34,68 +70,15 @@ export const DashboardNav: React.FC = () => {
               <span className="text-blue-600 dark:text-monokai-blue font-bold text-xl">Nomad Compass</span>
             </div>
             <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
-              <Link
-                to="/dashboard"
-                className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
-                  isActive('/dashboard')
-                    ? 'border-blue-500 text-gray-900 dark:border-monokai-blue dark:text-monokai-text'
-                    : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-monokai-muted dark:hover:border-monokai-surface dark:hover:text-monokai-text'
-                }`}
-              >
-                Dashboard
-              </Link>
-              <Link
-                to="/jobs"
-                className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
-                  isActive('/jobs')
-                    ? 'border-blue-500 text-gray-900 dark:border-monokai-blue dark:text-monokai-text'
-                    : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-monokai-muted dark:hover:border-monokai-surface dark:hover:text-monokai-text'
-                }`}
-              >
-                Jobs
-              </Link>
-              <Link
-                to="/topology"
-                className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
-                  isActive('/topology')
-                    ? 'border-blue-500 text-gray-900 dark:border-monokai-blue dark:text-monokai-text'
-                    : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-monokai-muted dark:hover:border-monokai-surface dark:hover:text-monokai-text'
-                }`}
-              >
-                Topology
-              </Link>
-              <Link
-                to="/servers"
-                className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
-                  isActive('/servers')
-                    ? 'border-blue-500 text-gray-900 dark:border-monokai-blue dark:text-monokai-text'
-                    : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-monokai-muted dark:hover:border-monokai-surface dark:hover:text-monokai-text'
-                }`}
-              >
-                Servers
-              </Link>
-              <Link
-                to="/namespaces"
-                className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
-                  isActive('/namespaces')
-                    ? 'border-blue-500 text-gray-900 dark:border-monokai-blue dark:text-monokai-text'
-                    : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-monokai-muted dark:hover:border-monokai-surface dark:hover:text-monokai-text'
-                }`}
-              >
-                Namespaces
-              </Link>
-              {hasManagementAccess && (
+              {visibleNavItems.map(item => (
                 <Link
-                  to="/acl"
-                  className={`inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium ${
-                    isActive('/acl')
-                      ? 'border-blue-500 text-gray-900 dark:border-monokai-blue dark:text-monokai-text'
-                      : 'border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 dark:text-monokai-muted dark:hover:border-monokai-surface dark:hover:text-monokai-text'
-                  }`}
+                  key={item.path}
+                  to={item.path}
+                  className={getNavLinkClasses(isActive(item.path), 'desktop')}
                 >
-                  ACL
+                  {item.label}
                 </Link>
-              )}
+              ))}
             </div>
           </div>
           <div className="hidden sm:ml-6 sm:flex sm:items-center">
@@ -111,7 +94,6 @@ export const DashboardNav: React.FC = () => {
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
             >
               <span className="sr-only">Open main menu</span>
-              {/* Icon when menu is closed */}
               <svg
                 className={`${isMobileMenuOpen ? 'hidden' : 'block'} h-6 w-6`}
                 xmlns="http://www.w3.org/2000/svg"
@@ -127,7 +109,6 @@ export const DashboardNav: React.FC = () => {
                   d="M4 6h16M4 12h16M4 18h16"
                 />
               </svg>
-              {/* Icon when menu is open */}
               <svg
                 className={`${isMobileMenuOpen ? 'block' : 'hidden'} h-6 w-6`}
                 xmlns="http://www.w3.org/2000/svg"
@@ -148,71 +129,17 @@ export const DashboardNav: React.FC = () => {
         </div>
       </div>
 
-      {/* Mobile menu, show/hide based on menu state */}
       <div className={`${isMobileMenuOpen ? 'block' : 'hidden'} sm:hidden`} id="mobile-menu">
         <div className="pt-2 pb-3 space-y-1">
-          <Link
-            to="/dashboard"
-            className={`block pl-3 pr-4 py-2 border-l-4 text-base font-medium ${
-              isActive('/dashboard')
-                ? 'bg-blue-50 border-blue-500 text-blue-700 dark:bg-monokai-surface dark:border-monokai-blue dark:text-monokai-blue'
-                : 'border-transparent text-gray-600 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-800 dark:text-monokai-muted dark:hover:bg-monokai-surface dark:hover:border-monokai-surface dark:hover:text-monokai-text'
-            }`}
-          >
-            Dashboard
-          </Link>
-          <Link
-            to="/jobs"
-            className={`block pl-3 pr-4 py-2 border-l-4 text-base font-medium ${
-              isActive('/jobs')
-                ? 'bg-blue-50 border-blue-500 text-blue-700 dark:bg-monokai-surface dark:border-monokai-blue dark:text-monokai-blue'
-                : 'border-transparent text-gray-600 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-800 dark:text-monokai-muted dark:hover:bg-monokai-surface dark:hover:border-monokai-surface dark:hover:text-monokai-text'
-            }`}
-          >
-            Jobs
-          </Link>
-          <Link
-            to="/topology"
-            className={`block pl-3 pr-4 py-2 border-l-4 text-base font-medium ${
-              isActive('/topology')
-                ? 'bg-blue-50 border-blue-500 text-blue-700 dark:bg-monokai-surface dark:border-monokai-blue dark:text-monokai-blue'
-                : 'border-transparent text-gray-600 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-800 dark:text-monokai-muted dark:hover:bg-monokai-surface dark:hover:border-monokai-surface dark:hover:text-monokai-text'
-            }`}
-          >
-            Topology
-          </Link>
-          <Link
-            to="/servers"
-            className={`block pl-3 pr-4 py-2 border-l-4 text-base font-medium ${
-              isActive('/servers')
-                ? 'bg-blue-50 border-blue-500 text-blue-700 dark:bg-monokai-surface dark:border-monokai-blue dark:text-monokai-blue'
-                : 'border-transparent text-gray-600 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-800 dark:text-monokai-muted dark:hover:bg-monokai-surface dark:hover:border-monokai-surface dark:hover:text-monokai-text'
-            }`}
-          >
-            Servers
-          </Link>
-          <Link
-            to="/namespaces"
-            className={`block pl-3 pr-4 py-2 border-l-4 text-base font-medium ${
-              isActive('/namespaces')
-                ? 'bg-blue-50 border-blue-500 text-blue-700 dark:bg-monokai-surface dark:border-monokai-blue dark:text-monokai-blue'
-                : 'border-transparent text-gray-600 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-800 dark:text-monokai-muted dark:hover:bg-monokai-surface dark:hover:border-monokai-surface dark:hover:text-monokai-text'
-            }`}
-          >
-            Namespaces
-          </Link>
-          {hasManagementAccess && (
+          {visibleNavItems.map(item => (
             <Link
-              to="/acl"
-              className={`block pl-3 pr-4 py-2 border-l-4 text-base font-medium ${
-                isActive('/acl')
-                  ? 'bg-blue-50 border-blue-500 text-blue-700 dark:bg-monokai-surface dark:border-monokai-blue dark:text-monokai-blue'
-                  : 'border-transparent text-gray-600 hover:bg-gray-50 hover:border-gray-300 hover:text-gray-800 dark:text-monokai-muted dark:hover:bg-monokai-surface dark:hover:border-monokai-surface dark:hover:text-monokai-text'
-              }`}
+              key={item.path}
+              to={item.path}
+              className={getNavLinkClasses(isActive(item.path), 'mobile')}
             >
-              ACL
+              {item.label}
             </Link>
-          )}
+          ))}
         </div>
         <div className="pt-4 pb-3 border-t border-gray-200 dark:border-monokai-surface">
           <div className="flex items-center px-4">

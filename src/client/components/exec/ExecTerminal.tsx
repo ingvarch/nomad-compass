@@ -11,7 +11,7 @@ interface ExecTerminalProps {
   onExit?: (exitCode: number) => void;
 }
 
-export function ExecTerminal({
+function ExecTerminal({
   allocId,
   task,
   command = ['/bin/sh'],
@@ -50,6 +50,20 @@ export function ExecTerminal({
     onData: handleData,
     onExit: handleExit,
     onError: handleError,
+  });
+
+  // Store functions in refs to avoid triggering useEffect on function identity changes
+  const connectRef = useRef(connect);
+  const disconnectRef = useRef(disconnect);
+  const sendInputRef = useRef(sendInput);
+  const sendResizeRef = useRef(sendResize);
+
+  // Keep refs updated
+  useEffect(() => {
+    connectRef.current = connect;
+    disconnectRef.current = disconnect;
+    sendInputRef.current = sendInput;
+    sendResizeRef.current = sendResize;
   });
 
   // Initialize terminal
@@ -96,13 +110,13 @@ export function ExecTerminal({
 
     // Handle input
     terminal.onData((data) => {
-      sendInput(data);
+      sendInputRef.current(data);
     });
 
     // Handle resize
     const handleResize = () => {
       fitAddon.fit();
-      sendResize(terminal.cols, terminal.rows);
+      sendResizeRef.current(terminal.cols, terminal.rows);
     };
 
     window.addEventListener('resize', handleResize);
@@ -111,14 +125,14 @@ export function ExecTerminal({
     terminal.write('\x1b[36mConnecting to container...\x1b[0m\r\n');
 
     // Auto-connect
-    connect();
+    connectRef.current();
 
     return () => {
       window.removeEventListener('resize', handleResize);
       terminal.dispose();
       xtermRef.current = null;
       fitAddonRef.current = null;
-      disconnect();
+      disconnectRef.current();
     };
   }, [allocId, task]); // Re-initialize when allocation or task changes
 

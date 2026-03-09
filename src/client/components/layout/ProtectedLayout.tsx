@@ -4,7 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import { LoadingSpinner } from '../ui';
 import DashboardNav from './DashboardNav';
 
-export const ProtectedLayout: React.FC = () => {
+const ProtectedLayout: React.FC = () => {
     const { isAuthenticated, isLoading } = useAuth();
     const navigate = useNavigate();
 

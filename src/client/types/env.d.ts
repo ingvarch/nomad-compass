@@ -1,1 +1,0 @@
-// Environment variable type declarations

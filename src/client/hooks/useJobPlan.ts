@@ -1,0 +1,213 @@
+import { useCallback } from 'react';
+import { useAuth } from '../context/AuthContext';
+import { useJobFormContext, jobFormActions } from '../context/JobFormContext';
+import { createNomadClient } from '../lib/api/nomad';
+import { isPermissionError, getPermissionErrorMessage, getErrorMessage } from '../lib/errors';
+import { createJobSpec, updateJobSpec } from '../lib/services/jobSpecService';
+import { useToast } from '../context/ToastContext';
+import { useDeploymentTracker } from './useDeploymentTracker';
+import { NomadJobFormData, TaskGroupFormData, TaskFormData, NomadEnvVar } from '../types/nomad';
+import { JOB_NAME_REGEX, JOB_NAME_ERROR } from '../lib/constants';
+
+interface UseJobPlanOptions {
+  mode: 'create' | 'edit';
+  jobId?: string;
+}
+
+// Clean empty env vars before submit
+function cleanFormData(data: NomadJobFormData): NomadJobFormData {
+  return {
+    ...data,
+    taskGroups: data.taskGroups.map((group: TaskGroupFormData) => ({
+      ...group,
+      tasks: group.tasks.map((task: TaskFormData) => ({
+        ...task,
+        envVars: (task.envVars || []).filter(
+          (ev: NomadEnvVar) => ev.key.trim() !== '' || ev.value.trim() !== ''
+        ),
+      })),
+    })),
+  };
+}
+
+// Form validation
+function validateForm(formData: NomadJobFormData | null, mode: 'create' | 'edit'): string | null {
+  if (!formData) return 'Form data is missing';
+
+  if (mode === 'create') {
+    if (!formData.name.trim()) return 'Job name is required';
+    if (!JOB_NAME_REGEX.test(formData.name)) {
+      return JOB_NAME_ERROR;
+    }
+  }
+
+  for (let i = 0; i < formData.taskGroups.length; i++) {
+    const group = formData.taskGroups[i];
+    if (!group.name.trim()) return `Group ${i + 1} name is required`;
+
+    for (let t = 0; t < group.tasks.length; t++) {
+      const task = group.tasks[t];
+      if (!task.name.trim()) return `Task ${t + 1} name is required in group ${i + 1}`;
+      if (!task.image.trim()) return `Image for task ${t + 1} in group ${i + 1} is required`;
+
+      if (task.usePrivateRegistry) {
+        if (!task.dockerAuth?.username)
+          return `Username is required for private registry in task ${t + 1} of group ${i + 1}`;
+        if (!task.dockerAuth?.password)
+          return `Password is required for private registry in task ${t + 1} of group ${i + 1}`;
+      }
+    }
+
+    if (group.enableNetwork && group.ports.length > 0) {
+      for (let j = 0; j < group.ports.length; j++) {
+        const port = group.ports[j];
+        if (!port.label) return `Port label is required for port ${j + 1} in group ${i + 1}`;
+        if (port.static && (!port.value || port.value <= 0 || port.value > 65535)) {
+          return `Valid port value (1-65535) is required for static port ${j + 1} in group ${i + 1}`;
+        }
+      }
+    }
+  }
+  return null;
+}
+
+interface ValidationResult {
+  isValid: boolean;
+  formData: NomadJobFormData | null;
+}
+
+export function useJobPlan({ mode, jobId }: UseJobPlanOptions) {
+  const { isAuthenticated } = useAuth();
+  const { addToast } = useToast();
+  const { state, dispatch } = useJobFormContext();
+  const { formData, initialJob } = state;
+  const deploymentTracker = useDeploymentTracker();
+
+  // Shared validation logic
+  const validateAndCheckAuth = useCallback((): ValidationResult => {
+    const validationError = validateForm(formData, mode);
+    if (validationError) {
+      dispatch(jobFormActions.setError(validationError));
+      if (mode === 'create' && validationError.includes('Job name')) {
+        dispatch(jobFormActions.setNameValid(false));
+      }
+      return { isValid: false, formData: null };
+    }
+
+    if (!isAuthenticated || !formData) {
+      dispatch(jobFormActions.setError('Authentication required'));
+      return { isValid: false, formData: null };
+    }
+
+    return { isValid: true, formData };
+  }, [formData, mode, isAuthenticated, dispatch]);
+
+  // Plan (dry-run)
+  const handlePlan = useCallback(async () => {
+    dispatch(jobFormActions.setPlanError(null));
+    dispatch(jobFormActions.setPlanResult(null));
+
+    const { isValid, formData: validFormData } = validateAndCheckAuth();
+    if (!isValid || !validFormData) return;
+
+    dispatch(jobFormActions.setPlanning(true));
+    dispatch(jobFormActions.setShowPlanPreview(true));
+
+    try {
+      const cleanedData = cleanFormData(validFormData);
+      const client = createNomadClient();
+
+      let jobSpec;
+      if (mode === 'create') {
+        jobSpec = createJobSpec(cleanedData);
+      } else {
+        if (!initialJob) throw new Error('Original job data missing');
+        jobSpec = updateJobSpec(initialJob, cleanedData);
+      }
+
+      const targetJobId = mode === 'create' ? validFormData.name : jobId!;
+      const result = await client.planJob(targetJobId, jobSpec, validFormData.namespace);
+      dispatch(jobFormActions.setPlanResult(result));
+    } catch (err) {
+      dispatch(jobFormActions.setPlanError(getErrorMessage(err, 'Failed to plan job')));
+    } finally {
+      dispatch(jobFormActions.setPlanning(false));
+    }
+  }, [validateAndCheckAuth, mode, initialJob, jobId, dispatch]);
+
+  // Submit
+  const handleSubmit = useCallback(
+    async (e: React.FormEvent) => {
+      e.preventDefault();
+      dispatch(jobFormActions.setError(null));
+      dispatch(jobFormActions.setSuccess(null));
+
+      const { isValid, formData: validFormData } = validateAndCheckAuth();
+      if (!isValid || !validFormData) return;
+
+      dispatch(jobFormActions.setSaving(true));
+      try {
+        const cleanedData = cleanFormData(validFormData);
+        const client = createNomadClient();
+
+        let response;
+        if (mode === 'create') {
+          const jobSpec = createJobSpec(cleanedData);
+          response = await client.createJob(jobSpec);
+        } else {
+          if (!initialJob) throw new Error('Original job data missing');
+          const jobSpec = updateJobSpec(initialJob, cleanedData);
+          response = await client.updateJob(jobSpec);
+        }
+
+        const evalId = response.EvalID;
+        const targetJobId = mode === 'create' ? validFormData.name : jobId!;
+        const targetNamespace = validFormData.namespace;
+
+        if (evalId) {
+          deploymentTracker.startTracking(targetJobId, targetNamespace, evalId);
+        } else {
+          dispatch(
+            jobFormActions.setSuccess(
+              `Job "${validFormData.name}" ${mode === 'create' ? 'created' : 'updated'} successfully!`
+            )
+          );
+        }
+      } catch (err) {
+        if (isPermissionError(err)) {
+          dispatch(
+            jobFormActions.setPermissionError(
+              getPermissionErrorMessage(mode === 'create' ? 'create-job' : 'update-job')
+            )
+          );
+        } else {
+          const message = getErrorMessage(err, `Failed to ${mode} job`);
+          dispatch(jobFormActions.setError(message));
+          addToast(message, 'error');
+        }
+      } finally {
+        dispatch(jobFormActions.setSaving(false));
+      }
+    },
+    [validateAndCheckAuth, mode, initialJob, jobId, dispatch, addToast, deploymentTracker]
+  );
+
+  // Submit from plan preview
+  const handleSubmitFromPlan = useCallback(async () => {
+    dispatch(jobFormActions.setShowPlanPreview(false));
+    const fakeEvent = { preventDefault: () => {} } as React.FormEvent;
+    await handleSubmit(fakeEvent);
+  }, [handleSubmit, dispatch]);
+
+  const closePlanPreview = useCallback(() => {
+    dispatch(jobFormActions.resetPlan());
+  }, [dispatch]);
+
+  return {
+    handlePlan,
+    handleSubmit,
+    handleSubmitFromPlan,
+    closePlanPreview,
+    deploymentTracker,
+  };
+}

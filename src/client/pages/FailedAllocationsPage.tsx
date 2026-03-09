@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { createNomadClient } from '../lib/api/nomad';
+import { getErrorMessage } from '../lib/errors';
 import { NomadAllocation, NomadJob } from '../types/nomad';
 import {
   LoadingSpinner,
@@ -8,6 +9,10 @@ import {
   PageHeader,
   RefreshButton,
   BackLink,
+  DataTable,
+  Badge,
+  Spinner,
+  type Column,
 } from '../components/ui';
 import { useToast } from '../context/ToastContext';
 import {
@@ -15,6 +20,7 @@ import {
   getJobStatusColor,
   getStatusClasses,
 } from '../lib/utils/statusColors';
+import { formatTimestamp } from '../lib/utils/dateFormatter';
 
 interface FailedAllocationInfo {
   allocation: NomadAllocation;
@@ -32,11 +38,6 @@ interface HistoricalJobInfo {
   job: NomadJob;
   failedCount: number;
   taskGroups: TaskGroupFailure[];
-}
-
-function formatTimestamp(nanoTimestamp: number): string {
-  const date = new Date(nanoTimestamp / 1000000);
-  return date.toLocaleString();
 }
 
 function getFailedTasks(alloc: NomadAllocation): string[] {
@@ -113,7 +114,7 @@ export default function FailedAllocationsPage() {
       setHistoricalJobs(historical);
       setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch data');
+      setError(getErrorMessage(err, 'Failed to fetch data'));
     } finally {
       setLoading(false);
     }
@@ -133,10 +134,7 @@ export default function FailedAllocationsPage() {
       setLoading(true);
       await fetchData();
     } catch (err) {
-      addToast(
-        `Failed to trigger GC: ${err instanceof Error ? err.message : 'Unknown error'}`,
-        'error'
-      );
+      addToast(`Failed to trigger GC: ${getErrorMessage(err)}`, 'error');
     } finally {
       setGcLoading(false);
     }
@@ -152,6 +150,69 @@ export default function FailedAllocationsPage() {
     [historicalJobs]
   );
 
+  const activeFailuresColumns: Column<FailedAllocationInfo>[] = useMemo(() => [
+    {
+      key: 'job',
+      header: 'Job',
+      render: ({ allocation, jobName }) => (
+        <Link
+          to={`/jobs/${allocation.JobID}?namespace=${allocation.Namespace}`}
+          className="text-blue-600 dark:text-blue-400 hover:underline"
+        >
+          {jobName}
+        </Link>
+      ),
+    },
+    {
+      key: 'allocation',
+      header: 'Allocation',
+      render: ({ allocation }) => (
+        <span className="text-sm font-mono text-gray-900 dark:text-gray-100">
+          {allocation.ID.slice(0, 8)}
+        </span>
+      ),
+    },
+    {
+      key: 'status',
+      header: 'Status',
+      render: ({ allocation }) => {
+        const statusColor = getAllocationStatusColor(allocation.ClientStatus);
+        return (
+          <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${getStatusClasses(statusColor)}`}>
+            {allocation.ClientStatus}
+          </span>
+        );
+      },
+    },
+    {
+      key: 'node',
+      header: 'Node',
+      render: ({ allocation }) => (
+        <span className="text-sm text-gray-600 dark:text-gray-400">
+          {allocation.NodeName || allocation.NodeID?.slice(0, 8) || '-'}
+        </span>
+      ),
+    },
+    {
+      key: 'time',
+      header: 'Time',
+      render: ({ allocation }) => (
+        <span className="text-sm text-gray-600 dark:text-gray-400">
+          {formatTimestamp(allocation.ModifyTime)}
+        </span>
+      ),
+    },
+    {
+      key: 'error',
+      header: 'Error',
+      render: ({ allocation, failedTasks }) => (
+        <span className="text-sm text-red-600 dark:text-red-400 truncate block max-w-xs">
+          {failedTasks.length > 0 ? failedTasks.join(', ') : allocation.ClientDescription || '-'}
+        </span>
+      ),
+    },
+  ], []);
+
   const headerActions = (
     <>
       <RefreshButton onClick={handleRefresh} />
@@ -162,10 +223,7 @@ export default function FailedAllocationsPage() {
       >
         {gcLoading ? (
           <>
-            <svg className="animate-spin -ml-1 mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z" />
-            </svg>
+            <Spinner size="sm" className="-ml-1 mr-2" />
             Running...
           </>
         ) : (
@@ -205,8 +263,8 @@ export default function FailedAllocationsPage() {
       {error && <ErrorAlert message={error} />}
 
       {/* Active Failures Section */}
-      <div className="bg-white dark:bg-gray-800 shadow rounded-lg overflow-hidden">
-        <div className="px-4 py-3 bg-gray-50 dark:bg-gray-700 border-b border-gray-200 dark:border-gray-600">
+      <div className="space-y-0">
+        <div className="bg-white dark:bg-gray-800 shadow rounded-t-lg px-4 py-3 border-b border-gray-200 dark:border-gray-600">
           <div className="flex items-center gap-2">
             <span className={`w-3 h-3 rounded-full ${activeFailures.length > 0 ? 'bg-red-500 animate-pulse' : 'bg-green-500'}`} />
             <h2 className="text-lg font-medium text-gray-900 dark:text-white">
@@ -219,7 +277,7 @@ export default function FailedAllocationsPage() {
         </div>
 
         {activeFailures.length === 0 ? (
-          <div className="px-4 py-8 text-center">
+          <div className="bg-white dark:bg-gray-800 shadow rounded-b-lg px-4 py-8 text-center">
             <svg className="mx-auto h-12 w-12 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
@@ -229,57 +287,12 @@ export default function FailedAllocationsPage() {
             </p>
           </div>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-              <thead className="bg-gray-50 dark:bg-gray-700/50">
-                <tr>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Job</th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Allocation</th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Status</th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Node</th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Time</th>
-                  <th className="px-4 py-2 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">Error</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                {activeFailures.map(({ allocation, jobName, failedTasks }) => {
-                  const statusColor = getAllocationStatusColor(allocation.ClientStatus);
-                  return (
-                    <tr key={allocation.ID} className="hover:bg-gray-50 dark:hover:bg-gray-700/50">
-                      <td className="px-4 py-2 whitespace-nowrap">
-                        <Link
-                          to={`/jobs/${allocation.JobID}?namespace=${allocation.Namespace}`}
-                          className="text-blue-600 dark:text-blue-400 hover:underline"
-                        >
-                          {jobName}
-                        </Link>
-                      </td>
-                      <td className="px-4 py-2 whitespace-nowrap">
-                        <span className="text-sm font-mono text-gray-900 dark:text-gray-100">
-                          {allocation.ID.slice(0, 8)}
-                        </span>
-                      </td>
-                      <td className="px-4 py-2 whitespace-nowrap">
-                        <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${getStatusClasses(statusColor)}`}>
-                          {allocation.ClientStatus}
-                        </span>
-                      </td>
-                      <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
-                        {allocation.NodeName || allocation.NodeID?.slice(0, 8) || '-'}
-                      </td>
-                      <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-600 dark:text-gray-400">
-                        {formatTimestamp(allocation.ModifyTime)}
-                      </td>
-                      <td className="px-4 py-2 max-w-xs">
-                        <span className="text-sm text-red-600 dark:text-red-400 truncate block">
-                          {failedTasks.length > 0 ? failedTasks.join(', ') : allocation.ClientDescription || '-'}
-                        </span>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+          <div className="[&>div]:rounded-t-none [&>div]:shadow-none [&>div]:border-t-0">
+            <DataTable
+              items={activeFailures}
+              columns={activeFailuresColumns}
+              keyExtractor={(item) => item.allocation.ID}
+            />
           </div>
         )}
       </div>
@@ -322,12 +335,8 @@ export default function FailedAllocationsPage() {
                       >
                         {job.Name}
                       </Link>
-                      <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-purple-100 dark:bg-purple-900/50 text-purple-800 dark:text-purple-200">
-                        {job.Type}
-                      </span>
-                      <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-200">
-                        {job.Namespace}
-                      </span>
+                      <Badge variant="purple">{job.Type}</Badge>
+                      <Badge variant="blue">{job.Namespace}</Badge>
                       <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${getStatusClasses(jobStatusColor)}`}>
                         {job.Status}
                       </span>

@@ -2,6 +2,8 @@ import {
   AclPolicyRules,
   NamespaceRule,
   NamespaceCapability,
+  NodePoolCapability,
+  HostVolumeCapability,
   PolicyLevel,
   VariableCapability,
   NamespaceVariablesPath,
@@ -81,7 +83,7 @@ export function parseHcl(hcl: string): AclPolicyRules | null {
         rules.nodePool = {
           name: nodePoolMatch.label,
           policy: policy || undefined,
-          capabilities: capabilities.length > 0 ? (capabilities as any) : undefined,
+          capabilities: capabilities.length > 0 ? (capabilities as NodePoolCapability[]) : undefined,
         };
       }
     }
@@ -96,7 +98,7 @@ export function parseHcl(hcl: string): AclPolicyRules | null {
         rules.hostVolumes.push({
           name: match.label || '*',
           policy: policy || undefined,
-          capabilities: capabilities.length > 0 ? (capabilities as any) : undefined,
+          capabilities: capabilities.length > 0 ? (capabilities as HostVolumeCapability[]) : undefined,
         });
       }
     }
@@ -267,42 +269,6 @@ function parseNamespaceBlock(name: string, body: string): NamespaceRule | null {
   }
 
   return rule;
-}
-
-/**
- * Check if HCL string is valid (basic validation)
- */
-export function isValidHcl(hcl: string): boolean {
-  if (!hcl || hcl.trim() === '') {
-    return false;
-  }
-
-  // Check for balanced braces
-  let depth = 0;
-  for (const char of hcl) {
-    if (char === '{') depth++;
-    else if (char === '}') depth--;
-    if (depth < 0) return false;
-  }
-
-  if (depth !== 0) return false;
-
-  // Try to parse and check if we got any rules
-  const rules = parseHcl(hcl);
-  if (!rules) return false;
-
-  // Check if at least one rule was parsed
-  const hasRules: boolean =
-    rules.namespaces.length > 0 ||
-    !!rules.node ||
-    !!rules.agent ||
-    !!rules.operator ||
-    !!rules.quota ||
-    !!rules.plugin ||
-    !!rules.nodePool ||
-    !!(rules.hostVolumes && rules.hostVolumes.length > 0);
-
-  return hasRules;
 }
 
 /**

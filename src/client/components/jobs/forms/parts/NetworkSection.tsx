@@ -16,7 +16,7 @@ interface NetworkSectionProps {
   groupIndex: number;
 }
 
-export const NetworkSection: React.FC<NetworkSectionProps> = ({
+const NetworkSection: React.FC<NetworkSectionProps> = ({
   enableNetwork,
   networkMode,
   ports,

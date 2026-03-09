@@ -1,7 +1,27 @@
 import { Hono } from 'hono'
-import { setCookie, deleteCookie, getCookie } from 'hono/cookie'
+import { deleteCookie, getCookie } from 'hono/cookie'
 import type { Env } from '../types'
 import { generateCSRFToken, createTicket, timingSafeEqual } from '../utils/crypto'
+import { badRequestResponse, unauthorizedResponse, forbiddenResponse, errorResponse } from '../utils/responses'
+import { setCSRFCookie, setNomadTokenCookie } from '../utils/cookies'
+
+/**
+ * Validates a Nomad token against the Nomad API
+ * @returns true if token is valid, false otherwise
+ */
+async function validateNomadToken(nomadAddr: string, token: string): Promise<boolean> {
+  try {
+    const response = await fetch(`${nomadAddr}/v1/agent/self`, {
+      headers: {
+        'X-Nomad-Token': token,
+        'Content-Type': 'application/json',
+      },
+    })
+    return response.ok
+  } catch {
+    return false
+  }
+}
 
 export const authRoutes = new Hono<{ Bindings: Env }>()
 
@@ -15,50 +35,30 @@ authRoutes.post('/login', async (c) => {
     const { token } = body as { token?: string }
 
     if (!token || typeof token !== 'string' || !token.trim()) {
-      return c.json({ error: 'Token is required' }, 400)
+      return badRequestResponse(c, 'Token is required')
     }
 
     const nomadAddr = c.env.NOMAD_ADDR
     if (!nomadAddr) {
-      return c.json({ error: 'Nomad server not configured' }, 500)
+      return errorResponse(c, 'Nomad server not configured')
     }
 
     // Validate token against Nomad API
-    const response = await fetch(`${nomadAddr}/v1/agent/self`, {
-      headers: {
-        'X-Nomad-Token': token.trim(),
-        'Content-Type': 'application/json',
-      },
-    })
-
-    if (!response.ok) {
-      return c.json({ error: 'Invalid token or failed to connect to Nomad' }, 401)
+    const isValid = await validateNomadToken(nomadAddr, token.trim())
+    if (!isValid) {
+      return unauthorizedResponse(c, 'Invalid token or failed to connect to Nomad')
     }
 
     // Set nomad-token with httpOnly flag for security
-    const isProduction = process.env.NODE_ENV === 'production'
-    setCookie(c, 'nomad-token', token.trim(), {
-      httpOnly: true,
-      secure: isProduction,
-      sameSite: 'Strict',
-      path: '/',
-      maxAge: 7 * 24 * 60 * 60, // 7 days
-    })
+    setNomadTokenCookie(c, token.trim());
 
     // Generate and set CSRF token (non-httpOnly so JS can access it)
-    const csrfToken = generateCSRFToken()
-    setCookie(c, 'csrf-token', csrfToken, {
-      httpOnly: false, // Needs to be accessible by JavaScript for API calls
-      secure: isProduction,
-      sameSite: 'Strict',
-      path: '/',
-      maxAge: 7 * 24 * 60 * 60, // 7 days
-    })
+    const csrfToken = generateCSRFToken();
+    setCSRFCookie(c, csrfToken);
 
     return c.json({ success: true })
-  } catch (error) {
-    console.error('Login error:', error)
-    return c.json({ error: 'Login failed' }, 500)
+  } catch {
+    return errorResponse(c, 'Login failed')
   }
 })
 
@@ -84,17 +84,20 @@ authRoutes.post('/ws-ticket', async (c) => {
   const csrfCookie = getCookie(c, 'csrf-token')
 
   if (!csrfHeader || !csrfCookie || !timingSafeEqual(csrfHeader, csrfCookie)) {
-    return c.json({ error: 'Invalid CSRF token' }, 403)
+    return forbiddenResponse(c, 'Invalid CSRF token')
   }
 
   // Check authentication
   const token = getCookie(c, 'nomad-token')
   if (!token) {
-    return c.json({ error: 'Not authenticated' }, 401)
+    return unauthorizedResponse(c, 'Not authenticated')
   }
 
-  // Generate ticket (default secret for dev, should be set via env in production)
-  const secret = c.env.TICKET_SECRET || 'nomad-compass-dev-secret-change-in-production'
+  // TICKET_SECRET must be set - no fallbacks for security
+  const secret = c.env.TICKET_SECRET
+  if (!secret) {
+    return errorResponse(c, 'Server misconfigured: TICKET_SECRET not set')
+  }
   const ticket = await createTicket(secret)
 
   return c.json({ ticket })
@@ -106,7 +109,6 @@ authRoutes.post('/ws-ticket', async (c) => {
  */
 authRoutes.get('/validate', async (c) => {
   const token = getCookie(c, 'nomad-token')
-
   if (!token) {
     return c.json({ authenticated: false })
   }
@@ -116,16 +118,6 @@ authRoutes.get('/validate', async (c) => {
     return c.json({ authenticated: false })
   }
 
-  try {
-    const response = await fetch(`${nomadAddr}/v1/agent/self`, {
-      headers: {
-        'X-Nomad-Token': token,
-        'Content-Type': 'application/json',
-      },
-    })
-
-    return c.json({ authenticated: response.ok })
-  } catch {
-    return c.json({ authenticated: false })
-  }
+  const isValid = await validateNomadToken(nomadAddr, token)
+  return c.json({ authenticated: isValid })
 })

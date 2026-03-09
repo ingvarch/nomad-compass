@@ -1,5 +1,6 @@
 import { NomadAgentSelf, NomadAgentMembers, NomadNode } from '../../types/nomad';
 import { clusterHealthColors, ClusterHealth as ClusterHealthType } from '../../lib/utils/statusColors';
+import { Badge } from '../ui';
 
 interface ClusterHealthProps {
   agentSelf: NomadAgentSelf | null;
@@ -91,14 +92,10 @@ export function ClusterHealth({ agentSelf, agentMembers, nodes, activeFailedAllo
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-gray-600 dark:text-gray-400">
             {leader && <span>Leader: {leader}</span>}
             {version && (
-              <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200">
-                v{version}
-              </span>
+              <Badge variant="gray">v{version}</Badge>
             )}
             {region && (
-              <span className="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 dark:bg-blue-900/50 text-blue-800 dark:text-blue-200">
-                {region}
-              </span>
+              <Badge variant="blue">{region}</Badge>
             )}
           </div>
         </div>

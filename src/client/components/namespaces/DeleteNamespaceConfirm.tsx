@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { NomadNamespace } from '../../types/nomad';
-import { isPermissionError, getPermissionErrorMessage } from '../../lib/api/errors';
+import { getErrorMessage } from '../../lib/errors';
+import { labelMonokaiStyles } from '../../lib/styles';
 
 interface DeleteNamespaceConfirmProps {
   namespace: NomadNamespace;
@@ -8,7 +9,7 @@ interface DeleteNamespaceConfirmProps {
   onCancel: () => void;
 }
 
-export const DeleteNamespaceConfirm: React.FC<DeleteNamespaceConfirmProps> = ({
+const DeleteNamespaceConfirm: React.FC<DeleteNamespaceConfirmProps> = ({
   namespace,
   onConfirm,
   onCancel,
@@ -29,11 +30,7 @@ export const DeleteNamespaceConfirm: React.FC<DeleteNamespaceConfirmProps> = ({
     try {
       await onConfirm();
     } catch (err) {
-      if (isPermissionError(err)) {
-        setError(getPermissionErrorMessage('delete-namespace'));
-      } else {
-        setError(err instanceof Error ? err.message : 'Failed to delete namespace');
-      }
+      setError(getErrorMessage(err, 'Failed to delete namespace', 'delete-namespace'));
       setIsDeleting(false);
     }
   };
@@ -97,7 +94,7 @@ export const DeleteNamespaceConfirm: React.FC<DeleteNamespaceConfirmProps> = ({
           <div>
             <label
               htmlFor="confirm-name"
-              className="block text-sm font-medium text-gray-700 dark:text-monokai-text mb-1"
+              className={labelMonokaiStyles}
             >
               Type <span className="font-mono font-bold">{namespace.Name}</span> to confirm
             </label>

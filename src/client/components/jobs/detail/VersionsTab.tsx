@@ -1,66 +1,44 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState } from 'react';
 import { createNomadClient } from '../../../lib/api/nomad';
 import { useToast } from '../../../context/ToastContext';
 import { LoadingSpinner, ErrorAlert, RefreshButton, Modal } from '../../ui';
+import { getVersionStatusColor } from '../../../lib/utils/statusColors';
+import { formatTimestamp } from '../../../lib/utils/dateFormatter';
+import { getErrorMessage } from '../../../lib/errors';
+import { useFetch } from '../../../hooks/useFetch';
+import type { NomadJobVersion, NomadTaskGroup, NomadTask } from '../../../types/nomad';
+import {
+  tableStyles,
+  tableHeaderStyles,
+  tableHeaderCellStyles,
+  tableBodyStyles,
+  tableRowHoverStyles,
+} from '../../../lib/styles';
 
 interface VersionsTabProps {
   jobId: string;
   namespace: string;
 }
 
-interface JobVersion {
-  ID: string;
-  Name: string;
-  Version: number;
-  SubmitTime: number;
-  Stable: boolean;
-  Status: string;
-  TaskGroups?: any[];
-  Meta?: Record<string, string>;
-}
-
-function formatTimestamp(nanos: number): string {
-  if (!nanos) return '-';
-  const date = new Date(nanos / 1_000_000);
-  return date.toLocaleString();
-}
-
-function getVersionStatusColor(stable: boolean): { bg: string; text: string } {
-  if (stable) {
-    return { bg: 'bg-green-100 dark:bg-green-900/30', text: 'text-green-800 dark:text-green-300' };
-  }
-  return { bg: 'bg-gray-100 dark:bg-gray-700', text: 'text-gray-800 dark:text-gray-300' };
-}
-
 export function VersionsTab({ jobId, namespace }: VersionsTabProps) {
   const { addToast } = useToast();
-  const [versions, setVersions] = useState<JobVersion[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
   const [selectedVersions, setSelectedVersions] = useState<[number | null, number | null]>([null, null]);
   const [showDiff, setShowDiff] = useState(false);
   const [revertingVersion, setRevertingVersion] = useState<number | null>(null);
   const [showRevertConfirm, setShowRevertConfirm] = useState(false);
 
-  const fetchVersions = useCallback(async () => {
-    setLoading(true);
-    try {
+  const { data, loading, error, refetch } = useFetch<NomadJobVersion[]>(
+    async () => {
       const client = createNomadClient();
-      const data = await client.getJobVersions(jobId, namespace);
+      const result = await client.getJobVersions(jobId, namespace);
       // Sort by version number descending (newest first)
-      const sorted = [...(data.Versions || [])].sort((a, b) => b.Version - a.Version);
-      setVersions(sorted);
-      setError(null);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to fetch versions');
-    } finally {
-      setLoading(false);
-    }
-  }, [jobId, namespace]);
+      return [...(result.Versions || [])].sort((a, b) => b.Version - a.Version);
+    },
+    [jobId, namespace],
+    { errorMessage: 'Failed to fetch versions' }
+  );
 
-  useEffect(() => {
-    fetchVersions();
-  }, [fetchVersions]);
+  const versions = data || [];
 
   const handleRevert = async () => {
     if (revertingVersion === null) return;
@@ -71,10 +49,9 @@ export function VersionsTab({ jobId, namespace }: VersionsTabProps) {
       addToast(`Job reverted to version ${revertingVersion}. Evaluation ID: ${result.EvalID.slice(0, 8)}`, 'success');
       setShowRevertConfirm(false);
       setRevertingVersion(null);
-      // Refresh versions
-      await fetchVersions();
+      await refetch();
     } catch (err) {
-      addToast(err instanceof Error ? err.message : 'Failed to revert job', 'error');
+      addToast(getErrorMessage(err, 'Failed to revert job'), 'error');
     }
   };
 
@@ -88,12 +65,11 @@ export function VersionsTab({ jobId, namespace }: VersionsTabProps) {
     } else if (selectedVersions[1] === null) {
       setSelectedVersions([selectedVersions[0], version]);
     } else {
-      // Replace first selection
       setSelectedVersions([version, selectedVersions[1]]);
     }
   };
 
-  const getVersionById = (version: number): JobVersion | undefined => {
+  const getVersionById = (version: number): NomadJobVersion | undefined => {
     return versions.find((v) => v.Version === version);
   };
 
@@ -128,17 +104,16 @@ export function VersionsTab({ jobId, namespace }: VersionsTabProps) {
               Compare v{selectedVersions[0]} vs v{selectedVersions[1]}
             </button>
           )}
-          <RefreshButton onClick={fetchVersions} />
+          <RefreshButton onClick={refetch} />
         </div>
       </div>
 
       {selectedVersions[0] !== null || selectedVersions[1] !== null ? (
         <div className="text-sm text-gray-500 dark:text-gray-400">
-          Selected for comparison: {' '}
+          Selected for comparison:{' '}
           {selectedVersions[0] !== null && <span className="font-medium">v{selectedVersions[0]}</span>}
           {selectedVersions[0] !== null && selectedVersions[1] !== null && ' vs '}
-          {selectedVersions[1] !== null && <span className="font-medium">v{selectedVersions[1]}</span>}
-          {' '}
+          {selectedVersions[1] !== null && <span className="font-medium">v{selectedVersions[1]}</span>}{' '}
           <button
             onClick={() => setSelectedVersions([null, null])}
             className="text-blue-600 dark:text-blue-400 hover:underline"
@@ -159,27 +134,17 @@ export function VersionsTab({ jobId, namespace }: VersionsTabProps) {
       ) : (
         <div className="bg-white dark:bg-gray-800 shadow rounded-lg overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200 dark:divide-gray-700">
-              <thead className="bg-gray-50 dark:bg-gray-700/50">
+            <table className={tableStyles}>
+              <thead className={tableHeaderStyles}>
                 <tr>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
-                    Version
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
-                    Status
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
-                    Submitted
-                  </th>
-                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
-                    Task Groups
-                  </th>
-                  <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase">
-                    Actions
-                  </th>
+                  <th className={tableHeaderCellStyles}>Version</th>
+                  <th className={tableHeaderCellStyles}>Status</th>
+                  <th className={tableHeaderCellStyles}>Submitted</th>
+                  <th className={tableHeaderCellStyles}>Task Groups</th>
+                  <th className={`${tableHeaderCellStyles} text-right`}>Actions</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+              <tbody className={tableBodyStyles}>
                 {versions.map((version, index) => {
                   const statusColors = getVersionStatusColor(version.Stable);
                   const isSelected = selectedVersions.includes(version.Version);
@@ -188,16 +153,12 @@ export function VersionsTab({ jobId, namespace }: VersionsTabProps) {
                   return (
                     <tr
                       key={version.Version}
-                      className={`hover:bg-gray-50 dark:hover:bg-gray-700/50 cursor-pointer ${
-                        isSelected ? 'bg-blue-50 dark:bg-blue-900/20' : ''
-                      }`}
+                      className={`${tableRowHoverStyles} cursor-pointer ${isSelected ? 'bg-blue-50 dark:bg-blue-900/20' : ''}`}
                       onClick={() => toggleVersionSelection(version.Version)}
                     >
                       <td className="px-4 py-3 whitespace-nowrap">
                         <div className="flex items-center gap-2">
-                          <span className="font-medium text-gray-900 dark:text-white">
-                            v{version.Version}
-                          </span>
+                          <span className="font-medium text-gray-900 dark:text-white">v{version.Version}</span>
                           {isLatest && (
                             <span className="px-1.5 py-0.5 text-xs rounded bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-300">
                               current
@@ -247,9 +208,8 @@ export function VersionsTab({ jobId, namespace }: VersionsTabProps) {
       {/* Revert Confirmation Modal */}
       <Modal isOpen={showRevertConfirm} onClose={() => setShowRevertConfirm(false)} title="Confirm Revert">
         <p className="text-gray-600 dark:text-gray-400 mb-6">
-          Are you sure you want to revert job <strong>{jobId}</strong> to version{' '}
-          <strong>{revertingVersion}</strong>? This will create a new deployment with
-          the configuration from that version.
+          Are you sure you want to revert job <strong>{jobId}</strong> to version <strong>{revertingVersion}</strong>?
+          This will create a new deployment with the configuration from that version.
         </p>
         <div className="flex justify-end gap-3">
           <button
@@ -279,9 +239,7 @@ export function VersionsTab({ jobId, namespace }: VersionsTabProps) {
             const version = v !== null ? getVersionById(v) : null;
             return (
               <div key={v} className="bg-gray-50 dark:bg-gray-700 rounded-lg p-4">
-                <h4 className="font-medium text-gray-900 dark:text-white mb-2">
-                  Version {v}
-                </h4>
+                <h4 className="font-medium text-gray-900 dark:text-white mb-2">Version {v}</h4>
                 {version && (
                   <pre className="text-xs bg-gray-100 dark:bg-gray-600 p-3 rounded overflow-auto max-h-96 text-gray-900 dark:text-gray-100">
                     {JSON.stringify(
@@ -290,10 +248,10 @@ export function VersionsTab({ jobId, namespace }: VersionsTabProps) {
                         Version: version.Version,
                         Stable: version.Stable,
                         SubmitTime: formatTimestamp(version.SubmitTime),
-                        TaskGroups: version.TaskGroups?.map((tg: any) => ({
+                        TaskGroups: version.TaskGroups?.map((tg: NomadTaskGroup) => ({
                           Name: tg.Name,
                           Count: tg.Count,
-                          Tasks: tg.Tasks?.map((t: any) => ({
+                          Tasks: tg.Tasks?.map((t: NomadTask) => ({
                             Name: t.Name,
                             Driver: t.Driver,
                             Image: t.Config?.image,

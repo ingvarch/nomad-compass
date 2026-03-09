@@ -1,16 +1,6 @@
 import { useState, useRef, useCallback, useEffect } from 'react';
-
-interface ExecMessage {
-  // From Nomad
-  stdout?: { data: string };
-  stderr?: { data: string };
-  exited?: boolean;
-  result?: { exit_code: number };
-
-  // To Nomad
-  stdin?: { data?: string; close?: boolean };
-  tty_size?: { height: number; width: number };
-}
+import type { ExecMessage } from '../../shared/types/exec';
+import { encodeBase64, decodeBase64 } from '../lib/utils/encoding';
 
 interface UseExecSessionOptions {
   allocId: string;
@@ -31,20 +21,6 @@ interface UseExecSessionReturn {
   disconnect: () => void;
   sendInput: (data: string) => void;
   sendResize: (cols: number, rows: number) => void;
-}
-
-/**
- * Base64 encode string for Nomad exec protocol.
- */
-function encodeBase64(data: string): string {
-  return btoa(data);
-}
-
-/**
- * Base64 decode string from Nomad exec protocol.
- */
-function decodeBase64(data: string): string {
-  return atob(data);
 }
 
 /**
@@ -224,5 +200,3 @@ export function useExecSession({
     sendResize,
   };
 }
-
-export default useExecSession;

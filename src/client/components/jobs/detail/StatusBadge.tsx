@@ -89,5 +89,3 @@ export const StatusBadge: React.FC<StatusBadgeProps> = ({ status, isStopped, all
     </span>
   );
 };
-
-export default StatusBadge;

@@ -1,6 +1,95 @@
 // src/types/nomad.ts
 // Nomad API types
 
+// Constraint types for job/task group/task level constraints
+export interface NomadConstraint {
+    LTarget?: string;  // Left operand (e.g., "${attr.kernel.name}")
+    RTarget?: string;  // Right operand (e.g., "linux")
+    Operand?: string;  // Operator (e.g., "=", "!=", "regexp", "set_contains")
+}
+
+// Service check configuration (health checks)
+export interface NomadServiceCheck {
+    Type: 'http' | 'tcp' | 'script' | 'grpc';
+    Path?: string;              // For HTTP checks
+    Command?: string;           // For script checks
+    Args?: string[];            // For script checks
+    Protocol?: string;          // For HTTP checks
+    PortLabel?: string;
+    Interval: number;           // Nanoseconds
+    Timeout: number;            // Nanoseconds
+    InitialStatus?: 'passing' | 'warning' | 'critical';
+    Header?: Record<string, string[]>;
+    Method?: string;            // HTTP method
+    Body?: string;              // HTTP body
+    TLSSkipVerify?: boolean;
+    GRPCService?: string;
+    GRPCUseTLS?: boolean;
+    CheckRestart?: {
+        Limit: number;
+        Grace: number;          // Nanoseconds
+        IgnoreWarnings: boolean;
+    };
+    OnUpdate?: 'require_healthy' | 'ignore_warnings' | 'ignore';
+}
+
+// Service definition for task groups
+export interface NomadServiceDefinition {
+    Name: string;
+    TaskName?: string;
+    PortLabel?: string;
+    AddressMode?: 'alloc' | 'auto' | 'host' | 'driver';
+    Provider?: 'nomad' | 'consul';
+    Tags?: string[];
+    CanaryTags?: string[];
+    Checks?: NomadServiceCheck[];
+    Connect?: {
+        SidecarService?: Record<string, unknown>;
+        SidecarTask?: Record<string, unknown>;
+    };
+    Meta?: Record<string, string>;
+}
+
+// Template configuration for tasks
+export interface NomadTemplate {
+    SourcePath?: string;
+    DestPath: string;
+    EmbeddedTmpl?: string;
+    ChangeMode?: 'noop' | 'restart' | 'signal' | 'script';
+    ChangeSignal?: string;
+    ChangeScript?: {
+        Command: string;
+        Args?: string[];
+    };
+    Splay?: number;
+    Perms?: string;
+    Uid?: number;
+    Gid?: number;
+    LeftDelim?: string;
+    RightDelim?: string;
+    Envvars?: boolean;
+    VaultGrace?: number;
+    ErrMissingKey?: boolean;
+}
+
+// Task config for Docker/Podman drivers
+export interface NomadTaskDriverConfig {
+    image?: string;
+    command?: string;
+    args?: string[];
+    ports?: string[];
+    volumes?: string[];
+    auth?: {
+        username: string;
+        password: string;
+    };
+    logging?: {
+        type: string;
+        config?: Record<string, string>;
+    };
+    [key: string]: unknown;  // Allow additional driver-specific options
+}
+
 export interface NomadJob {
     ID: string;
     Name: string;
@@ -25,7 +114,7 @@ export interface NomadJob {
     TaskGroups?: NomadTaskGroup[];
     Datacenters?: string[];
     Meta?: Record<string, string>;
-    Constraints?: any[];
+    Constraints?: NomadConstraint[];
     Priority?: number;
 }
 
@@ -34,20 +123,20 @@ export interface NomadTaskGroup {
     Count: number;
     Tasks: NomadTask[];
     Networks?: NomadNetwork[];
-    Services?: any[];
+    Services?: NomadServiceDefinition[];
     Meta?: Record<string, string>;
-    Constraints?: any[];
+    Constraints?: NomadConstraint[];
 }
 
 export interface NomadTask {
     Name: string;
     Driver: string;
-    Config: any;
+    Config: NomadTaskDriverConfig;
     Resources: NomadResource;
     Env?: Record<string, string>;
     Meta?: Record<string, string>;
-    Constraints?: any[];
-    Templates?: any[];
+    Constraints?: NomadConstraint[];
+    Templates?: NomadTemplate[];
     Leader?: boolean;
     KillTimeout?: number;
     ShutdownDelay?: number;
@@ -102,6 +191,16 @@ export interface DockerAuth {
     password: string;
 }
 
+export interface TaskFormData {
+    name: string;
+    image: string;
+    plugin: string;
+    resources: NomadResource;
+    envVars: NomadEnvVar[];
+    usePrivateRegistry: boolean;
+    dockerAuth?: DockerAuth;
+}
+
 // Service Discovery & Ingress types
 export interface NomadServiceTag {
     key: string;
@@ -128,12 +227,7 @@ export interface NomadServiceConfig {
 export interface TaskGroupFormData {
     name: string;
     count: number;
-    image: string;
-    plugin: string;
-    resources: NomadResource;
-    envVars: NomadEnvVar[];
-    usePrivateRegistry: boolean;
-    dockerAuth?: DockerAuth;
+    tasks: TaskFormData[];
     enableNetwork: boolean;
     networkMode: 'none' | 'host' | 'bridge';
     ports: NomadPort[];
@@ -467,4 +561,56 @@ export interface NomadServiceRegistration {
     Port: number;
     ServiceName: string;
     Tags?: string[];
+}
+
+// Job version from history
+export interface NomadJobVersion extends NomadJob {
+    CreateIndex?: number;
+    ModifyIndex?: number;
+    JobModifyIndex?: number;
+    Stable?: boolean;
+}
+
+// Job input type for submission (without server-assigned fields)
+// TaskGroups can be any task group format (response or submission format)
+export interface NomadJobInput {
+    ID: string;
+    Name: string;
+    Namespace: string;
+    Type: string;
+    Datacenters: string[];
+    TaskGroups?: NomadTaskGroup[] | unknown[];
+    Meta?: Record<string, string>;
+    Constraints?: NomadConstraint[];
+    Priority?: number;
+}
+
+// Job submission wrapper (for create/update)
+export interface JobSubmission {
+    Job: NomadJobInput | NomadJob;
+    EnforceIndex?: boolean;
+    JobModifyIndex?: number;
+    PolicyOverride?: boolean;
+}
+
+// Job submit response
+export interface JobSubmitResponse {
+    EvalID: string;
+    EvalCreateIndex: number;
+    JobModifyIndex: number;
+    Warnings?: string;
+}
+
+// Job stop/delete response
+export interface JobStopResponse {
+    EvalID: string;
+    EvalCreateIndex: number;
+    JobModifyIndex: number;
+}
+
+// Log response from allocation logs endpoint
+export interface LogResponse {
+    Data: string;
+    File?: string;
+    Offset?: number;
 }
