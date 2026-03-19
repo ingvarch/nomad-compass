@@ -178,12 +178,13 @@ export interface NomadPort {
 export interface NomadHealthCheck {
     type: 'http' | 'tcp' | 'script';
     path?: string;
+    method?: string;
     command?: string;
     interval: number;
     timeout: number;
     initialDelay?: number;
     failuresBeforeUnhealthy: number;
-    successesBeforeHealthy: number;
+    ignoreWarnings: boolean;
 }
 
 export interface DockerAuth {

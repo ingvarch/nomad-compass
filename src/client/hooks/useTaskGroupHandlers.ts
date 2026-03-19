@@ -66,7 +66,7 @@ export function useTaskGroupHandlers(groupIndex: number) {
 
   // Health check
   const onHealthCheckChange = useCallback(
-    (field: keyof NomadHealthCheck, value: string | number) => {
+    (field: keyof NomadHealthCheck, value: string | number | boolean) => {
       dispatch(jobFormActions.updateHealthCheck(groupIndex, field, value));
     },
     [groupIndex, dispatch]

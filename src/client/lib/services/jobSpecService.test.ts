@@ -232,7 +232,7 @@ describe('createJobSpec', () => {
                     timeout: 5,
                     initialDelay: 10,
                     failuresBeforeUnhealthy: 3,
-                    successesBeforeHealthy: 2,
+                    ignoreWarnings: false,
                 },
             }],
         });
@@ -247,6 +247,133 @@ describe('createJobSpec', () => {
         expect(services![0].Checks![0].Path).toBe('/health');
         expect(services![0].Checks![0].Interval).toBe(30000000000); // nanoseconds
         expect(services![0].Checks![0].Timeout).toBe(5000000000);
+    });
+
+    test('uses failuresBeforeUnhealthy for CheckRestart.Limit', () => {
+        const formData = createMinimalFormData({
+            taskGroups: [{
+                ...createMinimalFormData().taskGroups[0],
+                enableNetwork: true,
+                networkMode: 'bridge',
+                ports: [{ label: 'http', value: 0, to: 8080, static: false }],
+                enableHealthCheck: true,
+                healthCheck: {
+                    type: 'http',
+                    path: '/health',
+                    interval: 30,
+                    timeout: 5,
+                    initialDelay: 15,
+                    failuresBeforeUnhealthy: 5,
+                    ignoreWarnings: false,
+                },
+            }],
+        });
+        const result = createJobSpec(formData);
+        const check = result.Job.TaskGroups[0].Services![0].Checks![0];
+
+        expect(check.CheckRestart.Limit).toBe(5);
+        expect(check.CheckRestart.Grace).toBe(15000000000); // 15s in nanoseconds
+    });
+
+    test('uses ignoreWarnings for CheckRestart.IgnoreWarnings', () => {
+        const formData = createMinimalFormData({
+            taskGroups: [{
+                ...createMinimalFormData().taskGroups[0],
+                enableNetwork: true,
+                networkMode: 'bridge',
+                ports: [{ label: 'http', value: 0, to: 8080, static: false }],
+                enableHealthCheck: true,
+                healthCheck: {
+                    type: 'http',
+                    path: '/health',
+                    interval: 30,
+                    timeout: 5,
+                    initialDelay: 5,
+                    failuresBeforeUnhealthy: 3,
+                    ignoreWarnings: true,
+                },
+            }],
+        });
+        const result = createJobSpec(formData);
+        const check = result.Job.TaskGroups[0].Services![0].Checks![0];
+
+        expect(check.CheckRestart.IgnoreWarnings).toBe(true);
+    });
+
+    test('with failuresBeforeUnhealthy 0 produces Limit 0 (disables restart)', () => {
+        const formData = createMinimalFormData({
+            taskGroups: [{
+                ...createMinimalFormData().taskGroups[0],
+                enableNetwork: true,
+                networkMode: 'bridge',
+                ports: [{ label: 'http', value: 0, to: 8080, static: false }],
+                enableHealthCheck: true,
+                healthCheck: {
+                    type: 'http',
+                    path: '/health',
+                    interval: 30,
+                    timeout: 5,
+                    initialDelay: 5,
+                    failuresBeforeUnhealthy: 0,
+                    ignoreWarnings: false,
+                },
+            }],
+        });
+        const result = createJobSpec(formData);
+        const check = result.Job.TaskGroups[0].Services![0].Checks![0];
+
+        expect(check.CheckRestart.Limit).toBe(0);
+    });
+
+    test('uses method for HTTP health check', () => {
+        const formData = createMinimalFormData({
+            taskGroups: [{
+                ...createMinimalFormData().taskGroups[0],
+                enableNetwork: true,
+                networkMode: 'bridge',
+                ports: [{ label: 'http', value: 0, to: 8080, static: false }],
+                enableHealthCheck: true,
+                healthCheck: {
+                    type: 'http',
+                    path: '/health',
+                    method: 'HEAD',
+                    interval: 30,
+                    timeout: 5,
+                    initialDelay: 5,
+                    failuresBeforeUnhealthy: 3,
+                    ignoreWarnings: false,
+                },
+            }],
+        });
+        const result = createJobSpec(formData);
+        const check = result.Job.TaskGroups[0].Services![0].Checks![0];
+
+        expect(check.Method).toBe('HEAD');
+    });
+
+    test('defaults method to GET when not specified', () => {
+        const formData = createMinimalFormData({
+            taskGroups: [{
+                ...createMinimalFormData().taskGroups[0],
+                enableNetwork: true,
+                networkMode: 'bridge',
+                ports: [{ label: 'http', value: 0, to: 8080, static: false }],
+                enableHealthCheck: true,
+                healthCheck: {
+                    type: 'http',
+                    path: '/health',
+                    interval: 30,
+                    timeout: 5,
+                    initialDelay: 5,
+                    failuresBeforeUnhealthy: 3,
+                    ignoreWarnings: false,
+                },
+            }],
+        });
+        const result = createJobSpec(formData);
+        const check = result.Job.TaskGroups[0].Services![0].Checks![0];
+
+        expect(check.Method).toBeUndefined();
     });
 
     test('creates service with Traefik tags for simple mode ingress', () => {
@@ -384,6 +511,30 @@ describe('updateJobSpec', () => {
 });
 
 describe('convertJobToFormData', () => {
+    test('provides default healthCheck object when job has no checks', () => {
+        const job: Partial<NomadJob> = {
+            ID: 'test',
+            Name: 'test',
+            Namespace: 'default',
+            TaskGroups: [{
+                Name: 'web',
+                Count: 1,
+                Tasks: [{
+                    Name: 'web',
+                    Driver: 'docker',
+                    Config: { image: 'nginx' },
+                    Resources: { CPU: 100, MemoryMB: 256, DiskMB: 500 },
+                }],
+            }],
+        };
+        const result = convertJobToFormData(job as NomadJob);
+
+        expect(result.taskGroups[0].enableHealthCheck).toBe(false);
+        expect(result.taskGroups[0].healthCheck).toBeDefined();
+        expect(result.taskGroups[0].healthCheck?.type).toBe('http');
+        expect(result.taskGroups[0].healthCheck?.interval).toBe(30);
+    });
+
     test('converts basic job structure', () => {
         const job: Partial<NomadJob> = {
             ID: 'api-server',
@@ -499,6 +650,109 @@ describe('convertJobToFormData', () => {
         expect(task.usePrivateRegistry).toBe(true);
         expect(task.dockerAuth?.username).toBe('deploy');
         expect(task.dockerAuth?.password).toBe('secret');
+    });
+
+    test('extracts CheckRestart.Limit into failuresBeforeUnhealthy', () => {
+        const job: Partial<NomadJob> = {
+            ID: 'test',
+            Name: 'test',
+            Namespace: 'default',
+            TaskGroups: [{
+                Name: 'web',
+                Count: 1,
+                Tasks: [{
+                    Name: 'web',
+                    Driver: 'docker',
+                    Config: { image: 'nginx' },
+                    Resources: { CPU: 100, MemoryMB: 256, DiskMB: 500 },
+                }],
+                Services: [{
+                    Name: 'web-service',
+                    Checks: [{
+                        Type: 'http',
+                        Path: '/health',
+                        Interval: 30000000000,
+                        Timeout: 5000000000,
+                        CheckRestart: {
+                            Limit: 7,
+                            Grace: 10000000000,
+                            IgnoreWarnings: false,
+                        },
+                    }],
+                }],
+            }],
+        };
+        const result = convertJobToFormData(job as NomadJob);
+        const hc = result.taskGroups[0].healthCheck;
+
+        expect(hc?.failuresBeforeUnhealthy).toBe(7);
+        expect(hc?.initialDelay).toBe(10);
+    });
+
+    test('extracts CheckRestart.IgnoreWarnings into ignoreWarnings', () => {
+        const job: Partial<NomadJob> = {
+            ID: 'test',
+            Name: 'test',
+            Namespace: 'default',
+            TaskGroups: [{
+                Name: 'web',
+                Count: 1,
+                Tasks: [{
+                    Name: 'web',
+                    Driver: 'docker',
+                    Config: { image: 'nginx' },
+                    Resources: { CPU: 100, MemoryMB: 256, DiskMB: 500 },
+                }],
+                Services: [{
+                    Name: 'web-service',
+                    Checks: [{
+                        Type: 'http',
+                        Path: '/health',
+                        Interval: 30000000000,
+                        Timeout: 5000000000,
+                        CheckRestart: {
+                            Limit: 3,
+                            Grace: 5000000000,
+                            IgnoreWarnings: true,
+                        },
+                    }],
+                }],
+            }],
+        };
+        const result = convertJobToFormData(job as NomadJob);
+
+        expect(result.taskGroups[0].healthCheck?.ignoreWarnings).toBe(true);
+    });
+
+    test('extracts Method into method field', () => {
+        const job: Partial<NomadJob> = {
+            ID: 'test',
+            Name: 'test',
+            Namespace: 'default',
+            TaskGroups: [{
+                Name: 'web',
+                Count: 1,
+                Tasks: [{
+                    Name: 'web',
+                    Driver: 'docker',
+                    Config: { image: 'nginx' },
+                    Resources: { CPU: 100, MemoryMB: 256, DiskMB: 500 },
+                }],
+                Services: [{
+                    Name: 'web-service',
+                    Checks: [{
+                        Type: 'http',
+                        Path: '/health',
+                        Method: 'HEAD',
+                        Interval: 30000000000,
+                        Timeout: 5000000000,
+                    }],
+                }],
+            }],
+        };
+        const result = convertJobToFormData(job as NomadJob);
+
+        expect(result.taskGroups[0].healthCheck?.method).toBe('HEAD');
     });
 
     test('converts multiple tasks per group', () => {

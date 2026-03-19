@@ -6,7 +6,7 @@ interface HealthCheckSectionProps {
   enableHealthCheck: boolean;
   healthCheck?: NomadHealthCheck;
   onCheckboxChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => void;
-  onHealthCheckChange: (field: keyof NomadHealthCheck, value: string | number) => void;
+  onHealthCheckChange: (field: keyof NomadHealthCheck, value: string | number | boolean) => void;
   isLoading: boolean;
   groupIndex: number;
 }
@@ -19,8 +19,6 @@ const HealthCheckSection: React.FC<HealthCheckSectionProps> = ({
   isLoading,
   groupIndex
 }) => {
-  if (!healthCheck) return null;
-
   return (
     <div className="mb-4">
       <div className="flex items-center mb-2">
@@ -36,9 +34,12 @@ const HealthCheckSection: React.FC<HealthCheckSectionProps> = ({
         />
       </div>
 
-      {enableHealthCheck && (
-        <div className="border p-4 rounded-md bg-white">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      {enableHealthCheck && healthCheck && (
+        <div className="border p-4 rounded-md bg-white dark:bg-gray-800">
+          {/* Check type row: HTTP = 3 cols, Script = 2 cols, TCP = 1 col */}
+          <div className={`grid grid-cols-1 gap-4 ${
+            healthCheck.type === 'http' ? 'md:grid-cols-3' : healthCheck.type === 'script' ? 'md:grid-cols-2' : ''
+          }`}>
             <FormInputField
               id={`group-${groupIndex}-healthCheck-type`}
               name="healthCheck.type"
@@ -67,6 +68,24 @@ const HealthCheckSection: React.FC<HealthCheckSectionProps> = ({
               />
             )}
 
+            {healthCheck.type === 'http' && (
+              <FormInputField
+                id={`group-${groupIndex}-healthCheck-method`}
+                name="healthCheck.method"
+                label="HTTP Method"
+                type="select"
+                value={healthCheck.method || 'GET'}
+                onChange={(e) => onHealthCheckChange('method', e.target.value === 'GET' ? '' : e.target.value)}
+                disabled={isLoading}
+                options={[
+                  { value: 'GET', label: 'GET' },
+                  { value: 'HEAD', label: 'HEAD' },
+                  { value: 'POST', label: 'POST' },
+                  { value: 'PUT', label: 'PUT' },
+                ]}
+              />
+            )}
+
             {healthCheck.type === 'script' && (
               <FormInputField
                 id={`group-${groupIndex}-healthCheck-command`}
@@ -79,11 +98,15 @@ const HealthCheckSection: React.FC<HealthCheckSectionProps> = ({
                 disabled={isLoading}
               />
             )}
+          </div>
 
+          <hr className="my-4 border-gray-200 dark:border-gray-700" />
+
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <FormInputField
               id={`group-${groupIndex}-healthCheck-interval`}
               name="healthCheck.interval"
-              label="Check Interval (seconds)"
+              label="Interval (s)"
               type="number"
               value={healthCheck.interval}
               onChange={(e) => onHealthCheckChange('interval', e.target.value)}
@@ -94,11 +117,47 @@ const HealthCheckSection: React.FC<HealthCheckSectionProps> = ({
             <FormInputField
               id={`group-${groupIndex}-healthCheck-timeout`}
               name="healthCheck.timeout"
-              label="Timeout (seconds)"
+              label="Timeout (s)"
               type="number"
               value={healthCheck.timeout}
               onChange={(e) => onHealthCheckChange('timeout', e.target.value)}
               min={1}
+              disabled={isLoading}
+            />
+
+            <FormInputField
+              id={`group-${groupIndex}-healthCheck-initialDelay`}
+              name="healthCheck.initialDelay"
+              label="Grace Period (s)"
+              type="number"
+              value={healthCheck.initialDelay ?? 5}
+              onChange={(e) => onHealthCheckChange('initialDelay', e.target.value)}
+              min={0}
+              disabled={isLoading}
+              helpText="Delay before failures count"
+            />
+
+            <FormInputField
+              id={`group-${groupIndex}-healthCheck-failuresBeforeUnhealthy`}
+              name="healthCheck.failuresBeforeUnhealthy"
+              label="Failures to Restart"
+              type="number"
+              value={healthCheck.failuresBeforeUnhealthy}
+              onChange={(e) => onHealthCheckChange('failuresBeforeUnhealthy', e.target.value)}
+              min={0}
+              disabled={isLoading}
+              helpText="0 = disable restart"
+            />
+          </div>
+
+          <div className="mt-3">
+            <FormInputField
+              id={`group-${groupIndex}-healthCheck-ignoreWarnings`}
+              name="healthCheck.ignoreWarnings"
+              label="Ignore Warnings"
+              type="checkbox"
+              value={healthCheck.ignoreWarnings ?? false}
+              onChange={(e) => onHealthCheckChange('ignoreWarnings', (e.target as HTMLInputElement).checked)}
               disabled={isLoading}
             />
           </div>

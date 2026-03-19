@@ -62,7 +62,7 @@ export type JobFormAction =
   | { type: 'UPDATE_PORT'; payload: { groupIndex: number; portIndex: number; field: keyof NomadPort; value: string } }
   | { type: 'ADD_PORT'; payload: number }
   | { type: 'REMOVE_PORT'; payload: { groupIndex: number; portIndex: number } }
-  | { type: 'UPDATE_HEALTH_CHECK'; payload: { groupIndex: number; field: keyof NomadHealthCheck; value: string | number } }
+  | { type: 'UPDATE_HEALTH_CHECK'; payload: { groupIndex: number; field: keyof NomadHealthCheck; value: string | number | boolean } }
   | { type: 'UPDATE_SERVICE_CONFIG'; payload: { groupIndex: number; config: Partial<NomadServiceConfig> } }
   | { type: 'UPDATE_INGRESS'; payload: { groupIndex: number; field: keyof IngressConfig; value: string | boolean } }
   | { type: 'UPDATE_SERVICE_TAG'; payload: { groupIndex: number; tagIndex: number; field: 'key' | 'value'; value: string } }
@@ -332,9 +332,11 @@ export function jobFormReducer(state: JobFormState, action: JobFormAction): JobF
               [field]:
                 field === 'type'
                   ? (value as 'http' | 'tcp' | 'script')
-                  : typeof value === 'string'
-                    ? value
-                    : parseInt(String(value), 10) || 0,
+                  : field === 'ignoreWarnings'
+                    ? Boolean(value)
+                    : typeof value === 'string'
+                      ? value
+                      : parseInt(String(value), 10) || 0,
             },
           };
         }),

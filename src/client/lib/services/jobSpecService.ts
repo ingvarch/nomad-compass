@@ -19,6 +19,7 @@ import {
   parseTraefikTagsToIngress,
 } from './traefikTagsService';
 import { NANOSECONDS_TO_SECONDS, nanosToSeconds } from '../utils/dateFormatter';
+import { defaultTaskGroupData } from '../../context/jobFormDefaults';
 
 // Re-export clone utilities for external use
 export { prepareCloneFormData } from './jobCloneService';
@@ -195,13 +196,14 @@ function createHealthCheckConfig(groupData: TaskGroupFormData): NomadServiceChec
   return {
     Type: healthCheck.type,
     ...(healthCheck.type === 'http' ? { Path: healthCheck.path } : {}),
+    ...(healthCheck.type === 'http' && healthCheck.method ? { Method: healthCheck.method } : {}),
     ...(healthCheck.type === 'script' ? { Command: healthCheck.command } : {}),
     Interval: healthCheck.interval * NANOSECONDS_TO_SECONDS,
     Timeout: healthCheck.timeout * NANOSECONDS_TO_SECONDS,
     CheckRestart: {
-      Limit: 3,
+      Limit: healthCheck.failuresBeforeUnhealthy,
       Grace: (healthCheck.initialDelay || 5) * NANOSECONDS_TO_SECONDS,
-      IgnoreWarnings: false,
+      IgnoreWarnings: healthCheck.ignoreWarnings ?? false,
     },
   };
 }
@@ -420,6 +422,10 @@ export function convertJobToFormData(job: NomadJob): NomadJobFormData {
             (healthCheck as unknown as NomadServiceCheck).Type === 'http'
               ? (healthCheck as unknown as NomadServiceCheck).Path
               : '/health',
+          method:
+            (healthCheck as unknown as NomadServiceCheck).Type === 'http'
+              ? (healthCheck as unknown as NomadServiceCheck).Method
+              : undefined,
           command:
             (healthCheck as unknown as NomadServiceCheck).Type === 'script'
               ? (healthCheck as unknown as NomadServiceCheck).Command
@@ -429,10 +435,14 @@ export function convertJobToFormData(job: NomadJob): NomadJobFormData {
           initialDelay: (healthCheck as unknown as NomadServiceCheck).CheckRestart
             ? nanosToSeconds((healthCheck as unknown as NomadServiceCheck).CheckRestart!.Grace)
             : 5,
-          failuresBeforeUnhealthy: 3,
-          successesBeforeHealthy: 2,
+          failuresBeforeUnhealthy: (healthCheck as unknown as NomadServiceCheck).CheckRestart
+            ? (healthCheck as unknown as NomadServiceCheck).CheckRestart!.Limit
+            : 3,
+          ignoreWarnings: (healthCheck as unknown as NomadServiceCheck).CheckRestart
+            ? (healthCheck as unknown as NomadServiceCheck).CheckRestart!.IgnoreWarnings ?? false
+            : false,
         }
-      : undefined;
+      : { ...defaultTaskGroupData.healthCheck! };
 
     return {
       name: group.Name,

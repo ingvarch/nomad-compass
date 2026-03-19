@@ -51,7 +51,7 @@ export const defaultTaskGroupData: TaskGroupFormData = {
     timeout: 5,
     initialDelay: 5,
     failuresBeforeUnhealthy: 3,
-    successesBeforeHealthy: 2,
+    ignoreWarnings: false,
   },
   enableService: false,
   serviceConfig: { ...defaultServiceConfig },

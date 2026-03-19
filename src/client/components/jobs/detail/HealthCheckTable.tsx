@@ -11,12 +11,14 @@ import { formatNanosAsSeconds, nanosToSeconds } from '../../../lib/utils/dateFor
 interface Check {
   Type: string;
   Path?: string;
+  Method?: string;
   Command?: string;
   Interval?: number;
   Timeout?: number;
   CheckRestart?: {
     Limit: number;
     Grace: number;
+    IgnoreWarnings?: boolean;
   };
 }
 
@@ -61,7 +63,11 @@ const HealthCheckTable: React.FC<HealthCheckTableProps> = ({ services }) => {
                   {service.Checks.map((check, checkIndex) => (
                     <tr key={checkIndex}>
                       <td className={tableCellLargeStyles}>{check.Type}</td>
-                      <td className={tableCellLargeStyles}>{check.Path || check.Command || '-'}</td>
+                      <td className={tableCellLargeStyles}>
+                        {check.Path
+                          ? `${check.Method || 'GET'} ${check.Path}`
+                          : check.Command || '-'}
+                      </td>
                       <td className={tableCellLargeStyles}>{formatNanosAsSeconds(check.Interval)}</td>
                       <td className={tableCellLargeStyles}>{formatNanosAsSeconds(check.Timeout)}</td>
                       <td className={tableCellLargeStyles}>
@@ -70,6 +76,12 @@ const HealthCheckTable: React.FC<HealthCheckTableProps> = ({ services }) => {
                             <span>Limit: {check.CheckRestart.Limit}</span>
                             <br />
                             <span>Grace: {nanosToSeconds(check.CheckRestart.Grace)}s</span>
+                            {check.CheckRestart.IgnoreWarnings && (
+                              <>
+                                <br />
+                                <span>Ignore Warnings: Yes</span>
+                              </>
+                            )}
                           </div>
                         ) : (
                           '-'
