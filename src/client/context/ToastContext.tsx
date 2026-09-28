@@ -17,6 +17,9 @@ interface ToastContextType {
 
 const ToastContext = createContext<ToastContextType | undefined>(undefined);
 
+// Unique even within one millisecond; crypto.randomUUID works only on HTTPS or localhost
+let lastToastId = 0;
+
 export const useToast = () => {
     const context = useContext(ToastContext);
     if (!context) {
@@ -34,7 +37,7 @@ export const ToastProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     }, []);
 
     const addToast = useCallback((message: string, type: ToastType, duration = 5000) => {
-        const id = Date.now().toString();
+        const id = String(++lastToastId);
         const newToast = { id, message, type, duration };
 
         setToasts((prevToasts) => [...prevToasts, newToast]);
