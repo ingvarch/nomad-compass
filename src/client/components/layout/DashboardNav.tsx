@@ -67,7 +67,7 @@ const DashboardNav: React.FC = () => {
         <div className="flex justify-between h-16">
           <div className="flex">
             <div className="flex-shrink-0 flex items-center">
-              <span className="text-blue-600 dark:text-monokai-blue font-bold text-xl">Nomad Compass</span>
+              <span className="text-blue-600 dark:text-monokai-blue font-bold text-xl">ovoo</span>
             </div>
             <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
               {visibleNavItems.map(item => (

@@ -116,7 +116,7 @@ Create `/etc/traefik/dynamic.yml`:
 
 http:
   routers:
-    # Nomad API access (for Nomad Compass)
+    # Nomad API access (for ovoo)
     nomad-api:
       rule: "Host(`nomad.example.com`)"  # Change this!
       service: nomad-api
@@ -272,17 +272,17 @@ This allows:
 - Automatic certificate issuance for any domain
 - Wildcard certificate support (`*.example.com`)
 
-## Using Ingress in Nomad Compass
+## Using Ingress in ovoo
 
-Once Traefik is running, you can expose your Nomad jobs through it using the Service Discovery & Ingress feature in Nomad Compass:
+Once Traefik is running, you can expose your Nomad jobs through it using the Service Discovery & Ingress feature in ovoo:
 
-1. Create or edit a job in Nomad Compass
+1. Create or edit a job in ovoo
 2. In the task group, enable "Service Discovery & Ingress"
 3. Enter your domain (e.g., `myapp.example.com`)
 4. Enable HTTPS if using Let's Encrypt or Cloudflare Origin Certificate
 5. Deploy the job
 
-Nomad Compass will generate the appropriate Traefik tags:
+ovoo will generate the appropriate Traefik tags:
 
 ```
 traefik.enable=true

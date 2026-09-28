@@ -172,7 +172,7 @@ INF Testing certificate renew...
 
 ## Step 6: Test Certificate Issuance
 
-Deploy a test service in Nomad with Traefik tags (via Nomad Compass):
+Deploy a test service in Nomad with Traefik tags (via ovoo):
 
 1. Create a new Job (e.g., nginx)
 2. Enable **Network** with port `http` → `80`

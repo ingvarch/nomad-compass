@@ -1,4 +1,4 @@
-// Status color configurations for different contexts in Nomad Compass
+// Status color configurations for different contexts in ovoo
 
 export type AllocationStatus = 'running' | 'pending' | 'complete' | 'failed' | 'lost';
 export type JobStatus = 'running' | 'pending' | 'dead' | 'stopped' | 'degraded';

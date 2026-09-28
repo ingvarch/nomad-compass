@@ -1,6 +1,6 @@
 # Traefik Documentation
 
-Guides for setting up Traefik reverse proxy with Nomad and Nomad Compass.
+Guides for setting up Traefik reverse proxy with Nomad and ovoo.
 
 ## Guides
 
@@ -13,4 +13,4 @@ Guides for setting up Traefik reverse proxy with Nomad and Nomad Compass.
 
 1. Follow [00-basic-setup.md](./00-basic-setup.md) to install Traefik
 2. If using Cloudflare, follow [01-cloudflare-dns-challenge.md](./01-cloudflare-dns-challenge.md) for DNS Challenge setup
-3. Create jobs in Nomad Compass with "Service Discovery & Ingress" enabled
+3. Create jobs in ovoo with "Service Discovery & Ingress" enabled

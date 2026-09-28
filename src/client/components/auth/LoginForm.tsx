@@ -61,7 +61,7 @@ const LoginForm: React.FC = () => {
         </div>
         <div className="max-w-md w-full p-6 bg-white dark:bg-monokai-surface rounded-lg shadow-md">
           <div className="text-center mb-8">
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-monokai-text">Nomad Compass</h1>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-monokai-text">ovoo</h1>
             <p className="text-gray-600 dark:text-monokai-muted">Sign in to manage your Nomad cluster</p>
           </div>
 

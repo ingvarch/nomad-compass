@@ -3,7 +3,7 @@
   "configVersion": 1,
   "workspaces": {
     "": {
-      "name": "nomad-compass",
+      "name": "ovoo",
       "dependencies": {
         "@xterm/addon-fit": "^0.11.0",
         "hono": "^4.13.10",
