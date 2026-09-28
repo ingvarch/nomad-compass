@@ -90,6 +90,16 @@ export interface NomadTaskDriverConfig {
     [key: string]: unknown;  // Allow additional driver-specific options
 }
 
+// Periodic (cron) block of a batch or sysbatch job
+export interface NomadPeriodicConfig {
+    Enabled: boolean;
+    Spec?: string;              // Deprecated single cron expression
+    Specs?: string[];           // Cron expressions, Nomad 1.6.2+
+    SpecType: string;           // Always "cron"
+    ProhibitOverlap: boolean;
+    TimeZone?: string;
+}
+
 export interface NomadJob {
     ID: string;
     Name: string;
@@ -116,6 +126,9 @@ export interface NomadJob {
     Meta?: Record<string, string>;
     Constraints?: NomadConstraint[];
     Priority?: number;
+    ParentID?: string;
+    Periodic?: NomadPeriodicConfig | null;
+    JobModifyIndex?: number;
 }
 
 export interface NomadTaskGroup {
@@ -241,12 +254,23 @@ export interface TaskGroupFormData {
     serviceConfig?: NomadServiceConfig;
 }
 
+export type JobType = 'service' | 'batch';
+
+export interface PeriodicFormData {
+    crons: string[];
+    timeZone: string;
+    prohibitOverlap: boolean;
+    enabled: boolean;           // Not shown in the form; kept so Edit does not resume a paused schedule
+}
+
 export interface NomadJobFormData {
     name: string;
     namespace: string;
+    type: JobType;
     taskGroups: TaskGroupFormData[];
     serviceProvider: 'nomad';
     datacenters: string[];
+    periodic: PeriodicFormData | null;
 }
 
 export interface NomadNamespaceCapabilities {
@@ -546,7 +570,7 @@ export interface NomadJobPlanResponse {
     Annotations?: NomadJobPlanAnnotations;
     FailedTGAllocs?: Record<string, NomadFailedTGAlloc>;
     Warnings?: string;
-    NextPeriodicLaunch?: string;
+    NextPeriodicLaunch?: string | null;
     CreatedEvals?: NomadEvaluation[];
 }
 
@@ -570,7 +594,6 @@ export interface NomadServiceRegistration {
 export interface NomadJobVersion extends NomadJob {
     CreateIndex?: number;
     ModifyIndex?: number;
-    JobModifyIndex?: number;
     Stable?: boolean;
 }
 
@@ -586,6 +609,7 @@ export interface NomadJobInput {
     Meta?: Record<string, string>;
     Constraints?: NomadConstraint[];
     Priority?: number;
+    Periodic?: NomadPeriodicConfig;
 }
 
 // Job submission wrapper (for create/update)

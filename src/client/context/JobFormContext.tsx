@@ -15,11 +15,13 @@ import {
   NomadHealthCheck,
   NomadServiceConfig,
   IngressConfig,
+  JobType,
+  PeriodicFormData,
 } from '../types/nomad';
 import { jobFormReducer, initialState, JobFormState, JobFormAction } from './jobFormReducer';
 
 // Re-export from submodules for backward compatibility
-export { defaultTaskGroupData, defaultTaskData, defaultFormValues } from './jobFormDefaults';
+export { defaultTaskGroupData, defaultTaskData, defaultFormValues, defaultPeriodicData } from './jobFormDefaults';
 export { jobFormReducer, initialState } from './jobFormReducer';
 export type { JobFormState, JobFormAction } from './jobFormReducer';
 
@@ -100,4 +102,7 @@ export const jobFormActions = {
   removeServiceTag: (groupIndex: number, tagIndex: number): JobFormAction => ({ type: 'REMOVE_SERVICE_TAG', payload: { groupIndex, tagIndex } }),
   enableNetwork: (groupIndex: number, enabled: boolean): JobFormAction => ({ type: 'ENABLE_NETWORK', payload: { groupIndex, enabled } }),
   enableService: (groupIndex: number, enabled: boolean): JobFormAction => ({ type: 'ENABLE_SERVICE', payload: { groupIndex, enabled } }),
+  setJobType: (type: JobType): JobFormAction => ({ type: 'SET_JOB_TYPE', payload: type }),
+  setScheduleEnabled: (enabled: boolean): JobFormAction => ({ type: 'SET_SCHEDULE_ENABLED', payload: enabled }),
+  updatePeriodic: (updates: Partial<PeriodicFormData>): JobFormAction => ({ type: 'UPDATE_PERIODIC', payload: updates }),
 };

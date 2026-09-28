@@ -18,8 +18,10 @@ function createMinimalFormData(overrides: Partial<NomadJobFormData> = {}): Nomad
     return {
         name: 'test-job',
         namespace: 'default',
+        type: 'service',
         serviceProvider: 'nomad',
         datacenters: ['dc1'],
+        periodic: null,
         taskGroups: [{
             name: 'test-group',
             count: 1,
@@ -946,5 +948,102 @@ describe('task command and args', () => {
         const task = readTask({ image: 'busybox', args: ['-f', 1] as unknown as string[] });
 
         expect(task.args).toEqual(['-f', '1']);
+    });
+});
+
+describe('job type and schedule', () => {
+    const schedule = { crons: ['0 3 * * *', ' ', '@hourly'], timeZone: 'Europe/Berlin', prohibitOverlap: true, enabled: true };
+
+    test('writes the job type', () => {
+        expect(createJobSpec(createMinimalFormData({ type: 'batch' })).Job.Type).toBe('batch');
+    });
+
+    test('writes the periodic block without empty expressions', () => {
+        const result = createJobSpec(createMinimalFormData({ type: 'batch', periodic: schedule }));
+
+        expect(result.Job.Periodic).toEqual({
+            Enabled: true,
+            Specs: ['0 3 * * *', '@hourly'],
+            SpecType: 'cron',
+            ProhibitOverlap: true,
+            TimeZone: 'Europe/Berlin',
+        });
+    });
+
+    test('defaults an empty time zone to UTC', () => {
+        const result = createJobSpec(createMinimalFormData({ type: 'batch', periodic: { ...schedule, timeZone: ' ' } }));
+        expect(result.Job.Periodic?.TimeZone).toBe('UTC');
+    });
+
+    test('has no periodic block without a schedule', () => {
+        expect(createJobSpec(createMinimalFormData()).Job.Periodic).toBeUndefined();
+    });
+
+    test('update keeps the original job type', () => {
+        const originalJob: Partial<NomadJob> = { ID: 'cleanup', Name: 'cleanup', Namespace: 'default', Type: 'sysbatch' };
+        const result = updateJobSpec(originalJob as NomadJob, createMinimalFormData());
+        expect(result.Job.Type).toBe('sysbatch');
+    });
+
+    test('update keeps a paused schedule paused', () => {
+        const originalJob: Partial<NomadJob> = { ID: 'backup', Name: 'backup', Namespace: 'default', Type: 'batch' };
+        const result = updateJobSpec(originalJob as NomadJob, createMinimalFormData({ type: 'batch', periodic: { ...schedule, enabled: false } }));
+        expect(result.Job.Periodic?.Enabled).toBe(false);
+    });
+
+    test('reads a batch job with a schedule', () => {
+        const job: Partial<NomadJob> = {
+            ID: 'backup',
+            Name: 'backup',
+            Namespace: 'default',
+            Type: 'batch',
+            Periodic: { Enabled: false, Spec: '', Specs: ['0 3 * * *'], SpecType: 'cron', ProhibitOverlap: true, TimeZone: 'Europe/Berlin' },
+            TaskGroups: [],
+        };
+        const result = convertJobToFormData(job as NomadJob);
+
+        expect(result.type).toBe('batch');
+        expect(result.periodic).toEqual({ crons: ['0 3 * * *'], timeZone: 'Europe/Berlin', prohibitOverlap: true, enabled: false });
+    });
+
+    test('reads the deprecated single cron and defaults the time zone', () => {
+        const job: Partial<NomadJob> = {
+            ID: 'report',
+            Name: 'report',
+            Namespace: 'default',
+            Type: 'batch',
+            Periodic: { Enabled: true, Spec: '@daily', SpecType: 'cron', ProhibitOverlap: false },
+            TaskGroups: [],
+        };
+        expect(convertJobToFormData(job as NomadJob).periodic).toEqual({
+            crons: ['@daily'],
+            timeZone: 'UTC',
+            prohibitOverlap: false,
+            enabled: true,
+        });
+    });
+
+    test('reads a service job without a schedule', () => {
+        const job: Partial<NomadJob> = { ID: 'web', Name: 'web', Namespace: 'default', Type: 'service', Periodic: null, TaskGroups: [] };
+        const result = convertJobToFormData(job as NomadJob);
+
+        expect(result.type).toBe('service');
+        expect(result.periodic).toBeNull();
+    });
+
+    test('clone keeps the job type and schedule', () => {
+        const result = prepareCloneFormData(createMinimalFormData({ type: 'batch', periodic: schedule }));
+
+        expect(result.type).toBe('batch');
+        expect(result.periodic).toEqual(schedule);
+    });
+
+    test('clone of a paused schedule creates an active one', () => {
+        const result = prepareCloneFormData(createMinimalFormData({ type: 'batch', periodic: { ...schedule, enabled: false } }));
+        expect(result.periodic).toEqual(schedule);
+    });
+
+    test('clone of a job without a schedule has none', () => {
+        expect(prepareCloneFormData(createMinimalFormData()).periodic).toBeNull();
     });
 });

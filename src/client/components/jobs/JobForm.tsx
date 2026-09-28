@@ -5,6 +5,7 @@ import { useJobForm } from '../../hooks/useJobForm';
 import BasicJobInfoForm from './forms/BasicJobInfoForm';
 import JobFormLayout from './forms/JobFormLayout';
 import TaskGroupsSection from './forms/parts/TaskGroupsSection';
+import JobTypeSection from './forms/parts/JobTypeSection';
 import AdvancedSettingsSection from './forms/parts/AdvancedSettingsSection';
 import FormInputField from '../ui/forms/FormInputField';
 import { ErrorAlert, LoadingSpinner } from '../ui';
@@ -201,6 +202,9 @@ const JobFormContent: React.FC<JobFormProps> = ({
             isNameValid={isNameValid}
           />
         )}
+
+        {/* Job type and schedule */}
+        <JobTypeSection isEditMode={isEditMode} />
 
         {/* Task Groups - uses context internally, no props needed */}
         <TaskGroupsSection />

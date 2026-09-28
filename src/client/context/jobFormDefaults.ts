@@ -1,7 +1,7 @@
 /**
  * Default values for job form data structures.
  */
-import { NomadJobFormData, TaskGroupFormData, TaskFormData, NomadServiceConfig } from '../types/nomad';
+import { NomadJobFormData, TaskGroupFormData, TaskFormData, NomadServiceConfig, PeriodicFormData } from '../types/nomad';
 import { DEFAULT_NAMESPACE } from '../lib/constants';
 
 // Default service configuration
@@ -59,10 +59,20 @@ export const defaultTaskGroupData: TaskGroupFormData = {
   serviceConfig: { ...defaultServiceConfig },
 };
 
+// Schedule used when "Run on a schedule" is turned on
+export const defaultPeriodicData: PeriodicFormData = {
+  crons: [''],
+  timeZone: 'UTC',
+  prohibitOverlap: true,
+  enabled: true,
+};
+
 export const defaultFormValues: NomadJobFormData = {
   name: '',
   namespace: DEFAULT_NAMESPACE,
+  type: 'service',
   taskGroups: [{ ...defaultTaskGroupData }],
   serviceProvider: 'nomad',
   datacenters: ['dc1'],
+  periodic: null,
 };

@@ -66,6 +66,8 @@ export function prepareCloneFormData(formData: NomadJobFormData): NomadJobFormDa
   return {
     ...formData,
     name: cloneName,
+    // A clone starts with an active schedule, even if the source schedule is paused
+    periodic: formData.periodic && { ...formData.periodic, enabled: true },
     taskGroups: formData.taskGroups.map((group) => {
       // Generate new task group name
       const newGroupName = `${group.name}${cloneSuffix}`;

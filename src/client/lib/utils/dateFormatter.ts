@@ -28,8 +28,8 @@ export function formatNanosAsSeconds(nanos: number | undefined): string {
   return `${nanosToSeconds(nanos)}s`;
 }
 
-/** Reusable date formatter for long format */
-const longDateFormatter = new Intl.DateTimeFormat('en-GB', {
+/** Options of the long date format */
+const longDateOptions: Intl.DateTimeFormatOptions = {
   day: '2-digit',
   month: 'short',
   year: 'numeric',
@@ -37,7 +37,13 @@ const longDateFormatter = new Intl.DateTimeFormat('en-GB', {
   minute: '2-digit',
   second: '2-digit',
   hour12: false,
-});
+};
+
+/** Reusable date formatter for long format */
+const longDateFormatter = new Intl.DateTimeFormat('en-GB', longDateOptions);
+
+/** Long format with the short zone name */
+const longZonedDateFormatter = new Intl.DateTimeFormat('en-GB', { ...longDateOptions, timeZoneName: 'short' });
 
 /**
  * Format a nanosecond timestamp to a localized date string.
@@ -59,6 +65,17 @@ export function formatDateLong(nanos: number): string {
   if (!nanos) return 'Unknown';
   const date = new Date(nanos / NANOSECONDS_TO_MS);
   return longDateFormatter.format(date);
+}
+
+/**
+ * Format an ISO 8601 date (e.g. Nomad's NextPeriodicLaunch) like formatDateLong, plus the local zone name.
+ * @param iso - Date string such as "2026-09-28T18:15:00+02:00"
+ * @returns Formatted date string (e.g., "28 Sep 2026 at 18:15:00 CEST") or 'Unknown' if invalid
+ */
+export function formatIsoDateLong(iso: string): string {
+  const date = new Date(iso);
+  if (Number.isNaN(date.getTime())) return 'Unknown';
+  return longZonedDateFormatter.format(date);
 }
 
 /**

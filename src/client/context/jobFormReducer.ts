@@ -11,8 +11,10 @@ import {
   NomadHealthCheck,
   NomadServiceConfig,
   IngressConfig,
+  JobType,
+  PeriodicFormData,
 } from '../types/nomad';
-import { defaultTaskGroupData, defaultServiceConfig, defaultTaskData } from './jobFormDefaults';
+import { defaultTaskGroupData, defaultServiceConfig, defaultTaskData, defaultPeriodicData } from './jobFormDefaults';
 
 // State type
 export interface JobFormState {
@@ -70,6 +72,9 @@ export type JobFormAction =
   | { type: 'REMOVE_SERVICE_TAG'; payload: { groupIndex: number; tagIndex: number } }
   | { type: 'ENABLE_NETWORK'; payload: { groupIndex: number; enabled: boolean } }
   | { type: 'ENABLE_SERVICE'; payload: { groupIndex: number; enabled: boolean } }
+  | { type: 'SET_JOB_TYPE'; payload: JobType }
+  | { type: 'SET_SCHEDULE_ENABLED'; payload: boolean }
+  | { type: 'UPDATE_PERIODIC'; payload: Partial<PeriodicFormData> }
   | { type: 'RESET_PLAN' };
 
 // Initial state
@@ -475,6 +480,42 @@ export function jobFormReducer(state: JobFormState, action: JobFormAction): JobF
           }
           return { ...group, ...updates };
         }),
+      };
+
+    case 'SET_JOB_TYPE':
+      if (!state.formData) return state;
+      // Batch jobs run to completion: service discovery and health checks do not apply
+      return {
+        ...state,
+        formData:
+          action.payload === 'batch'
+            ? {
+                ...state.formData,
+                type: 'batch',
+                taskGroups: state.formData.taskGroups.map((group) => ({
+                  ...group,
+                  enableService: false,
+                  enableHealthCheck: false,
+                })),
+              }
+            : { ...state.formData, type: 'service', periodic: null },
+      };
+
+    case 'SET_SCHEDULE_ENABLED':
+      if (!state.formData) return state;
+      return {
+        ...state,
+        formData: {
+          ...state.formData,
+          periodic: action.payload ? { ...defaultPeriodicData, crons: [...defaultPeriodicData.crons] } : null,
+        },
+      };
+
+    case 'UPDATE_PERIODIC':
+      if (!state.formData?.periodic) return state;
+      return {
+        ...state,
+        formData: { ...state.formData, periodic: { ...state.formData.periodic, ...action.payload } },
       };
 
     default:
