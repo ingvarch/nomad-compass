@@ -47,6 +47,18 @@ routes = [
 ]
 ```
 
+With the repository connected to Workers Builds, other branches deploy as
+Previews (`wrangler preview`). Previews do not inherit the Worker's secrets:
+set them once in the Preview base config, and use a different
+`TICKET_SECRET` than production:
+
+```bash
+wrangler preview base-config secret put NOMAD_ADDR
+wrangler preview base-config secret put TICKET_SECRET
+```
+
+Preview URLs are public; Cloudflare Access can require sign-in for them.
+
 ## Docker
 
 For self-hosted, on-premise, or air-gapped environments.
