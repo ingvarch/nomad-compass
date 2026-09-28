@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { createNomadClient } from '../lib/api/nomad';
 import { getErrorMessage } from '../lib/errors';
-import { NomadAllocation, NomadJob } from '../types/nomad';
+import { NomadAllocation, NomadJobListStub } from '../types/nomad';
 import {
   LoadingSpinner,
   ErrorAlert,
@@ -36,7 +36,7 @@ interface TaskGroupFailure {
 }
 
 interface HistoricalJobInfo {
-  job: NomadJob;
+  job: NomadJobListStub;
   failedCount: number;
   taskGroups: TaskGroupFailure[];
 }

@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { createNomadClient } from '../lib/api/nomad';
-import type { NomadAllocation, NomadJob } from '../types/nomad';
+import type { NomadAllocation, NomadJobListStub } from '../types/nomad';
 import { useFetch } from '../hooks/useFetch';
 import { useFilteredData } from '../hooks/useFilteredData';
 import {
@@ -32,7 +32,7 @@ type StatusFilter = 'all' | 'running' | 'pending' | 'complete' | 'failed';
 
 interface AllocationsData {
   allocations: NomadAllocation[];
-  jobs: Map<string, NomadJob>;
+  jobs: Map<string, NomadJobListStub>;
 }
 
 export default function AllocationsPage() {
@@ -54,7 +54,7 @@ export default function AllocationsPage() {
   );
 
   const allocations = useMemo(() => data?.allocations || [], [data]);
-  const jobs = useMemo(() => data?.jobs || new Map<string, NomadJob>(), [data]);
+  const jobs = useMemo(() => data?.jobs || new Map<string, NomadJobListStub>(), [data]);
 
   const { activeFilter, filteredItems, filterOptions, setFilter } = useFilteredData<NomadAllocation, StatusFilter>(
     allocations,

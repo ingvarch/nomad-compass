@@ -1,6 +1,7 @@
 // src/lib/api/nomad.ts
 import {
   NomadJobsResponse,
+  NomadJobListStub,
   ApiError,
   NomadNamespace,
   NomadNode,
@@ -185,7 +186,7 @@ export class NomadClient {
       namespace: namespace || '*'
     };
 
-    const response = await this.request<NomadJob[]>('/v1/jobs', {
+    const response = await this.request<NomadJobListStub[]>('/v1/jobs', {
       method: 'GET',
       params
     });

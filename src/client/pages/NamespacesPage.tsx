@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { createNomadClient } from '../lib/api/nomad';
 import { getErrorMessage } from '../lib/errors';
-import { NomadNamespace, NomadJob } from '../types/nomad';
+import { NomadNamespace } from '../types/nomad';
 import Modal from '../components/ui/Modal';
 import {
   LoadingSpinner,
@@ -16,6 +16,7 @@ import {
 import NamespaceForm from '../components/namespaces/NamespaceForm';
 import DeleteNamespaceConfirm from '../components/namespaces/DeleteNamespaceConfirm';
 import { useToast } from '../context/ToastContext';
+import { countJobsByNamespace } from '../lib/services/jobCounts';
 
 interface NamespaceInfo {
   namespace: NomadNamespace;
@@ -46,14 +47,7 @@ export default function NamespacesPage() {
       const jobs = jobsResponse.Jobs || [];
 
       // Count jobs per namespace
-      const jobCountByNamespace = new Map<string, { total: number; running: number }>();
-      jobs.forEach((job: NomadJob) => {
-        const ns = job.Namespace;
-        const current = jobCountByNamespace.get(ns) || { total: 0, running: 0 };
-        current.total++;
-        if (job.Status === 'running') current.running++;
-        jobCountByNamespace.set(ns, current);
-      });
+      const jobCountByNamespace = countJobsByNamespace(jobs);
 
       const namespacesWithCounts = namespacesData.map((ns) => ({
         namespace: ns,

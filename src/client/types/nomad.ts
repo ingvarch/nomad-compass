@@ -100,6 +100,32 @@ export interface NomadPeriodicConfig {
     TimeZone?: string;
 }
 
+export interface NomadJobSummary {
+    JobID: string;
+    Summary: Record<string, {
+        Running: number;
+        Starting: number;
+        Failed: number;
+        Complete: number;
+        Lost: number;
+        Unknown: number;
+    }>;
+}
+
+// Job as returned by the jobs list (GET /v1/jobs). Periodic is a flag here, not the block.
+export interface NomadJobListStub {
+    ID: string;
+    ParentID: string;
+    Name: string;
+    Namespace: string;
+    Type: string;
+    Status: string;
+    Stop: boolean;
+    Periodic: boolean;
+    JobSummary?: NomadJobSummary;
+    SubmitTime: number;
+}
+
 export interface NomadJob {
     ID: string;
     Name: string;
@@ -108,17 +134,6 @@ export interface NomadJob {
     Stop: boolean;
     StatusDescription?: string;
     Namespace: string;
-    JobSummary?: {
-        JobID: string;
-        Summary: Record<string, {
-            Running: number;
-            Starting: number;
-            Failed: number;
-            Complete: number;
-            Lost: number;
-            Unknown: number;
-        }>;
-    };
     SubmitTime: number;
     Version: number;
     TaskGroups?: NomadTaskGroup[];
@@ -162,7 +177,7 @@ export interface NomadNetwork {
 }
 
 export interface NomadJobsResponse {
-    Jobs?: NomadJob[];
+    Jobs?: NomadJobListStub[];
 }
 
 export interface ApiError {
