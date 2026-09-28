@@ -109,7 +109,7 @@ export function createBunWebSocketHandlers(config: BunWebSocketConfig) {
     message(ws: WebSocket, message: string | Buffer) {
       const nomadWs = wsConnections.get(ws);
       if (nomadWs && nomadWs.readyState === WebSocket.OPEN) {
-        nomadWs.send(message);
+        nomadWs.send(typeof message === 'string' ? message : new Uint8Array(message));
       }
     },
 

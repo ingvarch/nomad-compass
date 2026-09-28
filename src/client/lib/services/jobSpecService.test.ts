@@ -271,8 +271,8 @@ describe('createJobSpec', () => {
         const result = createJobSpec(formData);
         const check = result.Job.TaskGroups[0].Services![0].Checks![0];
 
-        expect(check.CheckRestart.Limit).toBe(5);
-        expect(check.CheckRestart.Grace).toBe(15000000000); // 15s in nanoseconds
+        expect(check.CheckRestart?.Limit).toBe(5);
+        expect(check.CheckRestart?.Grace).toBe(15000000000); // 15s in nanoseconds
     });
 
     test('uses ignoreWarnings for CheckRestart.IgnoreWarnings', () => {
@@ -297,7 +297,7 @@ describe('createJobSpec', () => {
         const result = createJobSpec(formData);
         const check = result.Job.TaskGroups[0].Services![0].Checks![0];
 
-        expect(check.CheckRestart.IgnoreWarnings).toBe(true);
+        expect(check.CheckRestart?.IgnoreWarnings).toBe(true);
     });
 
     test('with failuresBeforeUnhealthy 0 produces Limit 0 (disables restart)', () => {
@@ -322,7 +322,7 @@ describe('createJobSpec', () => {
         const result = createJobSpec(formData);
         const check = result.Job.TaskGroups[0].Services![0].Checks![0];
 
-        expect(check.CheckRestart.Limit).toBe(0);
+        expect(check.CheckRestart?.Limit).toBe(0);
     });
 
     test('uses method for HTTP health check', () => {

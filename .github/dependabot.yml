@@ -1,6 +1,6 @@
 version: 2
 updates:
-  # npm dependencies (handled by pnpm)
+  # npm dependencies (handled by bun, lockfile: bun.lock)
   - package-ecosystem: "npm"
     directory: "/"
     schedule:
