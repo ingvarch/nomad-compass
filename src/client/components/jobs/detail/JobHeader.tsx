@@ -8,6 +8,7 @@ import { buttonPrimaryStyles, buttonDangerStyles, buttonSecondaryStyles, buttonS
 import PermissionErrorModal from '../../ui/PermissionErrorModal';
 import { ConfirmationDialog } from '../../ui/ConfirmationDialog';
 import { Badge } from '../../ui';
+import { jobPath, jobClonePath } from '../../../lib/utils/jobPath';
 
 interface JobHeaderProps {
   jobName: string;
@@ -79,7 +80,7 @@ const JobHeader: React.FC<JobHeaderProps> = ({ jobName, jobId, namespace }) => {
         </div>
         <div className="flex space-x-2">
           <Link
-            to={`/jobs/${jobId}/edit?namespace=${namespace}`}
+            to={jobPath(jobId, namespace, 'edit')}
             className={`${buttonSuccessStyles} shadow-sm`}
           >
             <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -89,7 +90,7 @@ const JobHeader: React.FC<JobHeaderProps> = ({ jobName, jobId, namespace }) => {
           </Link>
 
           <Link
-            to={`/jobs/create?clone=${jobId}&namespace=${namespace}`}
+            to={jobClonePath(jobId, namespace)}
             className={`${buttonPrimaryStyles} shadow-sm`}
           >
             <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">

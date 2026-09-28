@@ -38,4 +38,12 @@ describe('Nomad proxy', () => {
     expect(res.status).toBe(502);
     expect((await res.json()).message).toBe('An error occurred while processing your request');
   });
+
+  test('forwards an encoded job ID unchanged', async () => {
+    const calls = mockFetch();
+
+    await proxy('/api/nomad/v1/job/backup%2Fperiodic-1790611797?namespace=default');
+
+    expect(calls[0].url).toBe('http://nomad.test:4646/v1/job/backup%2Fperiodic-1790611797?namespace=default');
+  });
 });

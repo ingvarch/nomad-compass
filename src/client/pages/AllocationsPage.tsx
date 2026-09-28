@@ -18,6 +18,7 @@ import {
 import { getAllocationStatusColor, getStatusClasses } from '../lib/utils/statusColors';
 import { formatTimestamp } from '../lib/utils/dateFormatter';
 import { Terminal } from 'lucide-react';
+import { jobPath } from '../lib/utils/jobPath';
 
 function getFirstTask(alloc: NomadAllocation): string | null {
   if (alloc.TaskStates) {
@@ -86,7 +87,7 @@ export default function AllocationsPage() {
         const job = jobs.get(alloc.JobID);
         return (
           <Link
-            to={`/jobs/${alloc.JobID}?namespace=${alloc.Namespace}`}
+            to={jobPath(alloc.JobID, alloc.Namespace)}
             className="text-blue-600 dark:text-blue-400 hover:underline"
           >
             {job?.Name || alloc.JobID}

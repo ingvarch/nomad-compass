@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { createNomadClient } from '../lib/api/nomad';
 import type { DeploymentState, DeploymentStep } from '../types/deployment';
 import { STEP_PROGRESS, DEPLOYMENT_STEPS } from '../lib/constants/deployment';
+import { jobPath } from '../lib/utils/jobPath';
 
 interface TaskEvent {
   Type: string;
@@ -100,7 +101,7 @@ export function useDeploymentTracker(options: UseDeploymentTrackerOptions = {}) 
     const data = dataRef.current;
     setTimeout(() => {
       if (data) {
-        navigate(`/jobs/${data.jobId}?namespace=${data.namespace}`);
+        navigate(jobPath(data.jobId, data.namespace));
       }
       options.onComplete?.();
     }, SUCCESS_REDIRECT_DELAY);
@@ -278,7 +279,7 @@ export function useDeploymentTracker(options: UseDeploymentTrackerOptions = {}) 
   const navigateToJob = useCallback(() => {
     const data = dataRef.current;
     if (data) {
-      navigate(`/jobs/${data.jobId}?namespace=${data.namespace}`);
+      navigate(jobPath(data.jobId, data.namespace));
     }
     stopTracking();
   }, [navigate, stopTracking]);

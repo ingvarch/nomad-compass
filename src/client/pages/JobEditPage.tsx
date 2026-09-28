@@ -3,6 +3,7 @@ import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import JobForm from '../components/jobs/JobForm';
 import { PageHeader, Button, ConfirmationDialog } from '../components/ui';
 import { DEFAULT_NAMESPACE } from '../lib/constants';
+import { jobPath } from '../lib/utils/jobPath';
 
 export default function JobEditPage() {
   const navigate = useNavigate();
@@ -28,7 +29,7 @@ export default function JobEditPage() {
       <ConfirmationDialog
         isOpen={showCancelConfirm}
         onClose={() => setShowCancelConfirm(false)}
-        onConfirm={() => navigate(`/jobs/${jobId}?namespace=${namespace}`)}
+        onConfirm={() => navigate(jobPath(jobId, namespace))}
         title="Cancel Editing"
         message="Are you sure you want to cancel? All unsaved changes will be lost."
         mode="discard"

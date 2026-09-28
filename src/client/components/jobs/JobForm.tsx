@@ -12,6 +12,7 @@ import PermissionErrorModal from '../ui/PermissionErrorModal';
 import DeploymentOverlay from './DeploymentOverlay';
 import JobPlanPreview from './JobPlanPreview';
 import { DEFAULT_NAMESPACE } from '../../lib/constants';
+import { jobPath } from '../../lib/utils/jobPath';
 
 interface JobFormProps {
   mode: 'create' | 'edit';
@@ -82,7 +83,7 @@ const JobFormContent: React.FC<JobFormProps> = ({
       <ErrorAlert message={error}>
         <div className="mt-4">
           <Link
-            to={`/jobs/${jobId}?namespace=${namespace}`}
+            to={jobPath(jobId!, namespace)}
             className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 shadow-sm text-sm font-medium rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
           >
             Back to Job
@@ -118,7 +119,7 @@ const JobFormContent: React.FC<JobFormProps> = ({
 
   const title = isEditMode ? `Edit Job: ${formData.name}` : 'Create New Job';
   const submitButtonText = isEditMode ? 'Save Changes' : 'Create Job';
-  const cancelHref = isEditMode ? `/jobs/${jobId}?namespace=${namespace}` : undefined;
+  const cancelHref = isEditMode ? jobPath(jobId!, namespace) : undefined;
   const loadingState = isEditMode ? isSaving : isLoading;
 
   return (

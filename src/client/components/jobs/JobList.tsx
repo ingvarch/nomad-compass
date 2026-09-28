@@ -7,6 +7,7 @@ import { NomadJob, NomadNamespace } from '../../types/nomad';
 import { LoadingSpinner, ErrorAlert, Badge } from '../ui';
 import DataTable, { type Column } from '../ui/DataTable';
 import { StatusBadge } from './detail/StatusBadge';
+import { jobPath } from '../../lib/utils/jobPath';
 
 const jobColumns: Column<NomadJob>[] = [
   {
@@ -17,7 +18,7 @@ const jobColumns: Column<NomadJob>[] = [
         <div className="ml-4">
           <div className="text-sm font-medium text-gray-900 dark:text-monokai-text">
             <Link
-              to={`/jobs/${job.ID}?namespace=${job.Namespace || 'default'}`}
+              to={jobPath(job.ID, job.Namespace || 'default')}
               className="text-blue-600 hover:text-blue-800 dark:text-monokai-blue dark:hover:text-monokai-blue"
             >
               {job.Name}
