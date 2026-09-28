@@ -9,8 +9,9 @@ Nomad Compass supports two deployment targets from the same codebase:
 
 ## Cloudflare Workers
 
-Recommended for global edge performance. Your app runs on Cloudflare's
-network close to users.
+Your app runs on Cloudflare's network close to users. Cloudflare must be able
+to reach your Nomad API: give it a public HTTPS address, for example through
+a Cloudflare Tunnel, and keep Nomad ACLs on.
 
 **Prerequisites:**
 
@@ -36,29 +37,40 @@ bun run deploy:cf
 ```
 
 Your app will be available at
-`https://nomad-compass.<your-subdomain>.workers.dev`. A secret is set with
-`wrangler secret put` in the Workers deploy steps — see
-[Configuration](configuration.md) for the full list.
+`https://nomad-compass.<your-subdomain>.workers.dev`.
+
+A custom domain is an optional `wrangler.toml` addition:
+
+```toml
+routes = [
+  { pattern = "nomad.example.com", custom_domain = true }
+]
+```
 
 ## Docker
 
 For self-hosted, on-premise, or air-gapped environments.
 
-**Build and run:**
+A release tag (`v*.*.*`) builds a multi-arch image (amd64, arm64) and pushes
+it to `ghcr.io/ingvarch/nomad-compass` as the version tag and as `latest`.
+
+**Run the published image:**
 
 ```bash
-# Build the image
-bun run docker:build
-# or directly with Docker
-docker build -t nomad-compass .
-
-# Run
 docker run -d \
   --name nomad-compass \
   -p 3000:3000 \
   -e NOMAD_ADDR=http://your-nomad-server:4646 \
   -e TICKET_SECRET=your-generated-secret \
-  nomad-compass
+  ghcr.io/ingvarch/nomad-compass:latest
+```
+
+**Build it yourself:**
+
+```bash
+bun run docker:build
+# or directly with Docker
+docker build -t nomad-compass .
 ```
 
 **Docker Compose:**
@@ -66,8 +78,8 @@ docker run -d \
 ```yaml
 services:
   nomad-compass:
-    build: .
-    # or use pre-built: image: ghcr.io/ingvarch/nomad-compass:latest
+    image: ghcr.io/ingvarch/nomad-compass:latest
+    # or build from source: build: .
     ports:
       - "3000:3000"
     environment:
@@ -76,15 +88,16 @@ services:
     restart: unless-stopped
 ```
 
-A release tag (`v*.*.*`) builds and pushes a multi-arch image to
-`ghcr.io/ingvarch/nomad-compass:<tag>`.
+## Behind a reverse proxy
 
-**With reverse proxy (Traefik example):**
+Terminate TLS at the proxy. Nomad Compass reads `X-Forwarded-Proto` to mark
+its cookies `Secure` and to send HSTS, and `X-Real-IP` or `X-Forwarded-For`
+for rate limits. Traefik sets these headers by default.
 
 ```yaml
 services:
   nomad-compass:
-    build: .
+    image: ghcr.io/ingvarch/nomad-compass:latest
     environment:
       - NOMAD_ADDR=http://nomad:4646
       - TICKET_SECRET=your-generated-secret
@@ -94,4 +107,5 @@ services:
       - "traefik.http.services.nomad-compass.loadbalancer.server.port=3000"
 ```
 
-Step-by-step Traefik guides live in [traefik/](traefik/).
+The guides in [traefik/](traefik/) set up Traefik as ingress for Nomad jobs,
+together with the ingress options of the job form.

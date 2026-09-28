@@ -16,9 +16,11 @@ Configure your Nomad server and ticket secret in `.dev.vars` (see
 ## Bun development
 
 Uses the Bun backend directly, useful for Docker deployment testing.
+`NOMAD_ADDR` and `TICKET_SECRET` come from the environment, and the server
+does not start without `TICKET_SECRET`:
 
 ```bash
-bun run dev:bun      # Vite (frontend) + Bun API server
+NOMAD_ADDR=http://localhost:4646 TICKET_SECRET=$(openssl rand -hex 32) bun run dev:bun
 ```
 
 ## Other commands
@@ -41,16 +43,21 @@ bun test             # Run tests
 
 ```
 src/
-├── api/              # Hono API layer
-│   ├── app.ts        # App factory
-│   ├── routes/       # API routes
-│   └── middleware/   # Auth middleware
-├── client/           # React SPA
-│   ├── pages/        # Page components
-│   ├── components/   # Reusable components
-│   ├── hooks/        # Custom hooks
-│   ├── lib/          # Utilities and API client
-│   └── context/      # React contexts
+├── api/                 # Hono API layer
+│   ├── app.ts           # App factory
+│   ├── routes/          # Auth routes and the Nomad API proxy
+│   ├── handlers/        # Remote exec WebSocket relay
+│   ├── middleware/      # Auth, CSRF, rate limits, security headers
+│   └── utils/           # Cookies, crypto, responses
+├── client/              # React SPA
+│   ├── pages/           # Page components
+│   ├── components/      # Reusable components
+│   ├── hooks/           # Custom hooks
+│   ├── lib/             # Utilities and API client
+│   ├── context/         # React contexts
+│   └── types/           # Nomad API types
+├── lib/                 # Bun server setup
+├── shared/              # Types shared by API and client
 ├── entry.cloudflare.ts  # Cloudflare Workers entry
 ├── entry.bun.ts         # Bun production entry
 └── entry.bun.dev.ts     # Bun dev entry (API only)

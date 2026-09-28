@@ -10,7 +10,7 @@ the change is agreed before the work is done.
 
 ## Build and run
 
-You need [Bun](https://bun.sh/) 1.0+ and a running Nomad cluster with an ACL
+You need [Bun](https://bun.sh/) 1.2+ and a running Nomad cluster with an ACL
 token:
 
 ```sh

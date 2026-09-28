@@ -4,9 +4,13 @@
 
 | Variable | Description | Default | Used in |
 |----------|-------------|---------|---------|
-| `NOMAD_ADDR` | Nomad server address | `http://localhost:4646` | Both targets |
-| `PORT` | Server port | `3000` | Docker only |
-| `TICKET_SECRET` | HMAC secret for WebSocket auth tickets (`openssl rand -hex 32`) | None, required | Both targets |
+| `NOMAD_ADDR` | Nomad API address | Docker: `http://localhost:4646`. Workers: none, required | Both targets |
+| `TICKET_SECRET` | HMAC secret for remote exec tickets (`openssl rand -hex 32`) | None, required | Both targets |
+| `ALLOWED_ORIGINS` | Comma-separated origins allowed by CORS | `http://localhost:5173,http://localhost:3000` | Workers only |
+| `PORT` | Port of the Bun server | `3000` | Docker, `bun run dev:bun` |
+
+`bun run dev:bun` expects the Bun server on port 3000: the Vite dev proxy is
+fixed to it.
 
 ## Ticket secret
 
@@ -17,10 +21,10 @@ fails:
 ```bash
 # Generate a secure secret
 openssl rand -hex 32
-
-# Set in your environment
-export TICKET_SECRET="your-generated-secret"
 ```
+
+On Workers it is set with `wrangler secret put TICKET_SECRET`, see
+[Deployment](deployment.md).
 
 ## Local development
 
@@ -36,24 +40,4 @@ For Bun development, pass the variables in the environment:
 
 ```bash
 NOMAD_ADDR=http://localhost:4646 TICKET_SECRET=$(openssl rand -hex 32) bun run dev:bun
-```
-
-## Cloudflare Workers
-
-Secrets are set with Wrangler, never committed:
-
-```bash
-wrangler secret put NOMAD_ADDR
-# Enter: https://your-nomad-server.example.com
-
-wrangler secret put TICKET_SECRET
-# Enter the output of: openssl rand -hex 32
-```
-
-A custom domain is an optional `wrangler.toml` addition:
-
-```toml
-routes = [
-  { pattern = "nomad.example.com", custom_domain = true }
-]
 ```
