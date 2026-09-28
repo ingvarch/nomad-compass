@@ -1,6 +1,23 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+  --color-nomad-500: #0073ec;
+  --color-nomad-600: #0062c3;
+  --color-nomad-700: #004e9e;
+
+  --color-monokai-bg: #272822;
+  --color-monokai-surface: #3E3D32;
+  --color-monokai-text: #F8F8F2;
+  --color-monokai-muted: #75715E;
+  --color-monokai-green: #A6E22E;
+  --color-monokai-red: #F92672;
+  --color-monokai-yellow: #E6DB74;
+  --color-monokai-blue: #66D9EF;
+  --color-monokai-orange: #FD971F;
+  --color-monokai-purple: #AE81FF;
+}
 
 :root {
   --foreground-rgb: 0, 0, 0;
