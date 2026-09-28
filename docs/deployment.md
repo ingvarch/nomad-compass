@@ -119,5 +119,12 @@ services:
       - "traefik.http.services.ovoo.loadbalancer.server.port=3000"
 ```
 
+Launch pages of periodic jobs and their API calls have `%2F` in the path
+(`/jobs/backup%2Fperiodic-1790611797`); the proxy must pass it unchanged.
+Traefik v3.6.4 to v3.6.6 and v2.11.32 to v2.11.34 reject it by default. Allow
+it with `entryPoints.<name>.http.encodedCharacters.allowEncodedSlash=true`. In
+nginx, give `proxy_pass` no URI part (`proxy_pass http://ovoo:3000;`): with a
+URI part, even `/`, nginx forwards the decoded path.
+
 The guides in [traefik/](traefik/) set up Traefik as ingress for Nomad jobs,
 together with the ingress options of the job form.
