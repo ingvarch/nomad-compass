@@ -1,6 +1,6 @@
 import { describe, test, expect } from 'bun:test';
 import { render, screen, fireEvent } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, Routes, Route, useParams } from 'react-router-dom';
 import { AuthProvider } from '../../context/AuthContext';
 import { ToastProvider } from '../../context/ToastContext';
 import { mockFetch } from '../../../test/mockFetch';
@@ -17,12 +17,20 @@ const launchJob = {
   Version: 0, JobModifyIndex: 12, Periodic: null,
 };
 
+function EditRoute() {
+  const { id } = useParams<{ id: string }>();
+  return <JobForm mode="edit" jobId={id!} namespace="default" />;
+}
+
+// On a route, so links to another edit page work
 function renderEditForm(jobId: string) {
   render(
-    <MemoryRouter>
+    <MemoryRouter initialEntries={[`/jobs/${encodeURIComponent(jobId)}/edit?namespace=default`]}>
       <ToastProvider>
         <AuthProvider>
-          <JobForm mode="edit" jobId={jobId} namespace="default" />
+          <Routes>
+            <Route path="/jobs/:id/edit" element={<EditRoute />} />
+          </Routes>
         </AuthProvider>
       </ToastProvider>
     </MemoryRouter>
@@ -61,7 +69,23 @@ describe('JobForm', () => {
       )
     ).toBeTruthy();
     expect(screen.getByRole('link', { name: 'Back to Job' })).toBeTruthy();
+    expect(screen.getByRole('link', { name: 'Edit backup' }).getAttribute('href')).toBe('/jobs/backup/edit?namespace=default');
     expect(screen.queryByRole('button', { name: 'Save Changes' })).toBeNull();
     expect(calls.filter((c) => c.method === 'POST')).toEqual([]);
+  });
+
+  test('a failed load of the parent does not link to the parent again', async () => {
+    mockFetch(({ url }) => {
+      if (url.startsWith('/api/auth/validate')) return { body: { authenticated: true } };
+      if (url.startsWith('/api/nomad/v1/job/backup%2Fperiodic-1790611797?')) return { body: launchJob };
+      if (url.startsWith('/api/nomad/v1/job/backup?')) return { status: 500, body: { message: 'No cluster leader' } };
+      return undefined;
+    });
+    renderEditForm(launchJob.ID);
+
+    fireEvent.click(await screen.findByRole('link', { name: 'Edit backup' }));
+
+    expect(await screen.findByText('No cluster leader')).toBeTruthy();
+    expect(screen.queryByRole('link', { name: 'Edit backup' })).toBeNull();
   });
 });

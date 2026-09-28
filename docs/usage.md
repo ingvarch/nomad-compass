@@ -18,9 +18,9 @@ login the token lives in an `httpOnly` cookie, and JavaScript cannot read it
    checks, private registries and Traefik ingress are all configured there.
    The plan diff is shown before the job is submitted.
 4. **Edit and clone jobs**: edit a job through the same form, or clone it
-   into a new one. Dispatched jobs, like launches of periodic jobs, have no
-   Edit, Clone or Start: Nomad drops `ParentID` when a job is registered
-   again, so edit the parent job instead.
+   into a new one. Child jobs, that is dispatched jobs and launches of
+   periodic jobs, have no Edit, Clone or Start, and their edit page refuses
+   them: Nomad drops `ParentID` when a job is registered again.
 5. **Revert**: the Versions tab lists every version of a job and reverts to
    any of them.
 
@@ -60,7 +60,8 @@ run is a child job, a launch, with the ID `<job>/periodic-<time>`.
 Nomad does not allow changing the job type or turning the schedule on or off
 for an existing job, so the edit form locks both. A clone of a periodic job
 starts with an active schedule. The form makes service and batch jobs, so a
-clone of a sysbatch or system job creates a service job.
+clone of a sysbatch or system job creates a service job; for a periodic
+sysbatch job Nomad rejects that clone.
 
 ## Viewing logs
 

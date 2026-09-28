@@ -1,4 +1,4 @@
-import { describe, test, expect } from 'bun:test';
+import { describe, test, expect, spyOn } from 'bun:test';
 import type { ComponentProps } from 'react';
 import { render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
@@ -41,6 +41,18 @@ describe('ScheduleCard', () => {
     expect(screen.getByText('@hourly')).toBeTruthy();
     expect(screen.getByText('Europe/Berlin')).toBeTruthy();
     expect(screen.getByText('Active')).toBeTruthy();
+  });
+
+  test('lists a cron expression given twice on two rows', () => {
+    const consoleError = spyOn(console, 'error');
+    try {
+      // Nomad accepts duplicate expressions
+      renderCard({ periodic: { ...periodic, Specs: ['@daily', '@daily'] } });
+      expect(screen.getAllByText('@daily')).toHaveLength(2);
+      expect(consoleError.mock.calls.flat().join(' ')).not.toContain('same key');
+    } finally {
+      consoleError.mockRestore();
+    }
   });
 
   test('says that a launch is skipped while the previous one runs', () => {

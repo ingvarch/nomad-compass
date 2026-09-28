@@ -76,8 +76,9 @@ export function ScheduleCard({
       </div>
       <dl className="py-2">
         <Row label="Cron">
-          {cronsOf(periodic).map((cron) => (
-            <div key={cron} className="font-mono">
+          {/* Nomad accepts duplicate expressions; the list never reorders */}
+          {cronsOf(periodic).map((cron, index) => (
+            <div key={index} className="font-mono">
               {cron}
             </div>
           ))}

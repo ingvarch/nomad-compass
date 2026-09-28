@@ -14,6 +14,7 @@ import DeploymentOverlay from './DeploymentOverlay';
 import JobPlanPreview from './JobPlanPreview';
 import { DEFAULT_NAMESPACE } from '../../lib/constants';
 import { jobPath } from '../../lib/utils/jobPath';
+import { buttonPrimaryStyles } from '../../lib/styles';
 
 interface JobFormProps {
   mode: 'create' | 'edit';
@@ -52,6 +53,7 @@ const JobFormContent: React.FC<JobFormProps> = ({
 
   const {
     formData,
+    initialJob,
     isLoading,
     isSaving,
     isLoadingNamespaces,
@@ -78,17 +80,23 @@ const JobFormContent: React.FC<JobFormProps> = ({
     return <LoadingSpinner />;
   }
 
-  // Error state (edit mode only - when job not found)
+  // Error state (edit mode only - when job not found or it is a child job)
   if (error && !formData && isEditMode) {
+    const parentId = initialJob?.ParentID;
     return (
       <ErrorAlert message={error}>
-        <div className="mt-4">
+        <div className="mt-4 flex gap-3">
           <Link
             to={jobPath(jobId!, namespace)}
             className="inline-flex items-center px-4 py-2 border border-gray-300 dark:border-gray-600 shadow-sm text-sm font-medium rounded-md text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
           >
             Back to Job
           </Link>
+          {parentId && (
+            <Link to={jobPath(parentId, namespace, 'edit')} className={`${buttonPrimaryStyles} shadow-sm`}>
+              Edit {parentId}
+            </Link>
+          )}
         </div>
       </ErrorAlert>
     );
