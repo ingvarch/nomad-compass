@@ -64,7 +64,8 @@ Preview URLs are public; Cloudflare Access can require sign-in for them.
 For self-hosted, on-premise, or air-gapped environments.
 
 A release tag (`v*.*.*`) builds a multi-arch image (amd64, arm64) and pushes
-it to `ghcr.io/ingvarch/ovoo` as the version tag and as `latest`.
+it to `ghcr.io/ingvarch/ovoo` as the version tag and as `latest`. Any `v*`
+tag also creates a GitHub Release with auto-generated notes.
 
 **Run the published image:**
 
