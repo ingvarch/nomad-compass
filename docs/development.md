@@ -58,6 +58,7 @@ src/
 │   └── types/           # Nomad API types
 ├── lib/                 # Bun server setup
 ├── shared/              # Types shared by API and client
+├── test/                # Test preload (happy-dom) and helpers
 ├── entry.cloudflare.ts  # Cloudflare Workers entry
 ├── entry.bun.ts         # Bun production entry
 └── entry.bun.dev.ts     # Bun dev entry (API only)
