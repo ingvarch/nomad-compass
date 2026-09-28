@@ -5,7 +5,7 @@ import { AuthProvider } from '../context/AuthContext';
 import { ToastProvider } from '../context/ToastContext';
 import { ToastContainer } from '../components/ui/Toast';
 import { mockFetch, type FetchCall } from '../../test/mockFetch';
-import { formatIsoDateLong } from '../lib/utils/dateFormatter';
+import { formatDateLongZoned, formatIsoDateLong } from '../lib/utils/dateFormatter';
 import JobDetailPage from './JobDetailPage';
 
 const parent = {
@@ -19,6 +19,9 @@ const launch = {
   Type: 'batch', Status: 'dead', Stop: false, Periodic: false, SubmitTime: 1790611797886474000,
 };
 const launchJob = { ...launch, Version: 0, JobModifyIndex: 12, TaskGroups: [], Periodic: null };
+const dispatchedJob = {
+  ...launchJob, ID: 'report/dispatch-1790611797-8a1b2c3d', ParentID: 'report', Name: 'report/dispatch-1790611797-8a1b2c3d',
+};
 const service = {
   ID: 'web', Name: 'web', Namespace: 'default', Type: 'service', Status: 'running', Stop: false,
   SubmitTime: 1790611000000000000, Version: 0, JobModifyIndex: 5, ParentID: '', TaskGroups: [],
@@ -36,6 +39,16 @@ function nomad(routes: Record<string, unknown>) {
     if (url.startsWith('/api/auth/validate')) return { body: { authenticated: true } };
     const match = Object.keys(routes).find((prefix) => url.startsWith(prefix));
     return match ? { body: routes[match] } : undefined;
+  };
+}
+
+// Routes of a job without allocations or versions
+function jobRoutes<T extends { ID: string }>(job: T) {
+  const path = `/api/nomad/v1/job/${encodeURIComponent(job.ID)}`;
+  return {
+    [`${path}/allocations`]: [],
+    [`${path}/versions`]: { Versions: [] },
+    [`${path}?`]: job,
   };
 }
 
@@ -145,17 +158,24 @@ describe('JobDetailPage for a periodic job', () => {
   });
 
   test('a launch links to its periodic job and cannot be edited or cloned', async () => {
-    mockFetch(nomad({
-      '/api/nomad/v1/job/backup%2Fperiodic-1790611797/allocations': [],
-      '/api/nomad/v1/job/backup%2Fperiodic-1790611797/versions': { Versions: [] },
-      '/api/nomad/v1/job/backup%2Fperiodic-1790611797?': launchJob,
-    }));
+    mockFetch(nomad(jobRoutes(launchJob)));
     renderPage('/jobs/backup%2Fperiodic-1790611797?namespace=default');
 
     const parentLink = await screen.findByRole('link', { name: 'backup' });
     expect(parentLink.getAttribute('href')).toBe('/jobs/backup?namespace=default');
     expect(screen.queryByRole('link', { name: /Edit/ })).toBeNull();
     expect(screen.queryByRole('link', { name: /Clone/ })).toBeNull();
+  });
+
+  test('opening a launch does not ask for launches of the launch', async () => {
+    const calls = mockFetch(nomad({ ...parentRoutes, ...jobRoutes(launchJob) }));
+    renderPage('/jobs/backup?namespace=default&tab=launches');
+
+    fireEvent.click(await screen.findByRole('link', { name: formatDateLongZoned(launch.SubmitTime) }));
+    expect(await screen.findByRole('link', { name: 'backup' })).toBeTruthy();
+
+    const launchLists = calls.filter((c) => c.url.startsWith('/api/nomad/v1/jobs?')).map((c) => c.url);
+    expect(launchLists).toEqual(['/api/nomad/v1/jobs?namespace=default&prefix=backup%2Fperiodic-']);
   });
 
   test('run now does not reload the job', async () => {
@@ -263,6 +283,29 @@ describe('JobDetailPage for a periodic job', () => {
 
     expect(await screen.findByText('Paused')).toBeTruthy();
     expect(screen.getByText('dump')).toBeTruthy();
+  });
+});
+
+describe('JobDetailPage for a child job', () => {
+  // Nomad drops ParentID when a job is registered again: Start would turn the child into an ordinary job
+  test.each([
+    ['launch', launchJob],
+    ['dispatched job', dispatchedJob],
+  ])('a finished %s cannot be started again', async (_, child) => {
+    mockFetch(nomad(jobRoutes(child)));
+    renderPage(`/jobs/${encodeURIComponent(child.ID)}?namespace=default`);
+
+    expect(await screen.findByText(`Job ID: ${child.ID}`)).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Start' })).toBeNull();
+    // Header and bottom actions
+    expect(screen.getAllByRole('button', { name: 'Delete' })).toHaveLength(2);
+  });
+
+  test('a running launch can be stopped', async () => {
+    mockFetch(nomad(jobRoutes({ ...launchJob, Status: 'running' })));
+    renderPage('/jobs/backup%2Fperiodic-1790611797?namespace=default');
+
+    expect(await screen.findByRole('button', { name: 'Stop' })).toBeTruthy();
   });
 });
 

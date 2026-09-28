@@ -140,7 +140,8 @@ export default function JobDetailPage() {
     }
   }, [loadJob]);
 
-  const isPeriodic = !!job?.Periodic;
+  // While another job's page loads, `job` is still the previous job
+  const isPeriodic = !!job?.Periodic && job.ID === jobId;
   const activeTab = useActiveJobTab(isPeriodic);
   const launches = usePeriodicLaunches(jobId, namespace, isPeriodic);
   const periodic = usePeriodicActions(isPeriodic ? job : null, {
@@ -301,6 +302,7 @@ export default function JobDetailPage() {
           <JobActions
             jobId={job.ID}
             jobStatus={job.Status}
+            parentId={job.ParentID}
             onStatusChange={refreshJob}
           />
         </div>

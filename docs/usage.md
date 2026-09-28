@@ -50,8 +50,8 @@ run is a child job, a launch, with the ID `<job>/periodic-<time>`.
    pages.
 4. **Launches**: the Launches tab lists the launches newest first, with their
    status and allocation counts. A launch page links back to its job and has
-   no Edit or Clone. The jobs list hides launches and marks periodic jobs
-   with a `periodic` badge. The job counts on the Dashboard and the
+   no Edit, Clone or Start. The jobs list hides launches and marks periodic
+   jobs with a `periodic` badge. The job counts on the Dashboard and the
    Namespaces page skip launches. Nomad removes finished launches during
    garbage collection (`job_gc_threshold`, 4 hours by default).
 

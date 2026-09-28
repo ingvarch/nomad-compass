@@ -11,6 +11,7 @@ import { ConfirmationDialog } from '../ui/ConfirmationDialog';
 interface JobActionsProps {
     jobId: string;
     jobStatus?: string;
+    parentId?: string;
     // Awaited, so the buttons stay busy until the page shows the new status
     onStatusChange?: () => void | Promise<void>;
 }
@@ -38,7 +39,7 @@ const actionConfig = {
     },
 };
 
-const JobActions: React.FC<JobActionsProps> = ({ jobId, jobStatus, onStatusChange }) => {
+const JobActions: React.FC<JobActionsProps> = ({ jobId, jobStatus, parentId, onStatusChange }) => {
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
     const { isAuthenticated } = useAuth();
@@ -49,6 +50,8 @@ const JobActions: React.FC<JobActionsProps> = ({ jobId, jobStatus, onStatusChang
     const [permissionError, setPermissionError] = useState<string | null>(null);
 
     const isStopped = jobStatus?.toLowerCase() === 'dead' || false;
+    // Nomad drops ParentID on register: a restarted launch or dispatched job would become an ordinary job
+    const canStart = !parentId;
 
     const executeAction = async (action: ActionType) => {
         if (!action) return;
@@ -136,13 +139,15 @@ const JobActions: React.FC<JobActionsProps> = ({ jobId, jobStatus, onStatusChang
 
                 {isStopped ? (
                     <>
-                        <button
-                            onClick={() => setConfirmingAction('start')}
-                            disabled={isLoading}
-                            className={`${buttonSuccessSmallStyles} shadow-sm disabled:opacity-50`}
-                        >
-                            {isLoading ? 'Working...' : 'Start'}
-                        </button>
+                        {canStart && (
+                            <button
+                                onClick={() => setConfirmingAction('start')}
+                                disabled={isLoading}
+                                className={`${buttonSuccessSmallStyles} shadow-sm disabled:opacity-50`}
+                            >
+                                {isLoading ? 'Working...' : 'Start'}
+                            </button>
+                        )}
                         <button
                             onClick={() => setConfirmingAction('delete')}
                             disabled={isLoading}
