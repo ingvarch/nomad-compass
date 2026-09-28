@@ -19,6 +19,22 @@
   --color-monokai-purple: #AE81FF;
 }
 
+/* Tailwind v3 defaults the UI was built on: gray borders, pointer on buttons */
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: var(--color-gray-200, currentColor);
+  }
+
+  button:not(:disabled),
+  [role="button"]:not(:disabled) {
+    cursor: pointer;
+  }
+}
+
 :root {
   --foreground-rgb: 0, 0, 0;
   --background-start-rgb: 245, 247, 250;
