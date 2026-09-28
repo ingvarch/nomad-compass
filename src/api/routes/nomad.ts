@@ -2,6 +2,7 @@ import { Hono } from 'hono'
 import { getCookie } from 'hono/cookie'
 import type { Env } from '../types'
 import { badRequestResponse, errorResponse } from '../utils/responses'
+import { nomadErrorMessage } from '../utils/nomadError'
 
 // Valid Nomad API paths regex - only allow legitimate Nomad API endpoints
 const VALID_NOMAD_PATHS = /^\/v1\/(agent|allocations|allocation|client|eval|evaluation|jobs|job|nodes|node|regions|status|operator|acl|sentinel|validate|deployment|deployments|search|namespaces|namespace|quota|quotas|system|variables|variable|vault|consul|services|service)\/?.*/
@@ -58,32 +59,17 @@ nomadRoutes.all('/*', async (c) => {
 
   // Sanitize error responses to prevent information disclosure
   if (!response.ok) {
-    // For error responses, we should not expose internal details
-    const errorBody = await response.text();
-    let responseBody;
-
-    try {
-      // Try to parse the error as JSON to extract only the essential message
-      const errorJson = JSON.parse(errorBody);
-      // Only return safe error information
-      responseBody = JSON.stringify({
-        error: 'Request to Nomad API failed',
-        status: response.status,
-        message: errorJson.Message || errorJson.message || 'An error occurred while processing your request'
-      });
-    } catch {
-      // If it's not JSON, return a generic error
-      responseBody = JSON.stringify({
-        error: 'Request to Nomad API failed',
-        status: response.status,
-        message: 'An error occurred while processing your request'
-      });
-    }
+    // Only Nomad's error message goes back, never its headers or other internals
+    const responseBody = JSON.stringify({
+      error: 'Request to Nomad API failed',
+      status: response.status,
+      message: nomadErrorMessage(await response.text(), response.headers.get('Content-Type') ?? ''),
+    })
 
     return new Response(responseBody, {
       status: response.status,
       headers: { 'Content-Type': 'application/json' },
-    });
+    })
   }
 
   const contentType = response.headers.get('Content-Type') || 'application/json'

@@ -5,6 +5,8 @@
  * Use these functions instead of inline error handling in components.
  */
 
+import type { ApiError } from '../types/nomad';
+
 /**
  * Custom error for permission-related failures (403 Forbidden)
  */
@@ -35,6 +37,18 @@ export function isPermissionError(error: unknown): error is PermissionError {
 }
 
 /**
+ * Type guard for errors that NomadClient throws on non-2xx responses
+ */
+export function isApiError(error: unknown): error is ApiError {
+  return (
+    error !== null &&
+    typeof error === 'object' &&
+    typeof (error as ApiError).statusCode === 'number' &&
+    typeof (error as ApiError).message === 'string'
+  );
+}
+
+/**
  * Permission error messages by operation
  */
 const permissionMessages: Record<string, string> = {
@@ -60,6 +74,7 @@ export function getPermissionErrorMessage(operation: string): string {
  *
  * Handles:
  * - PermissionError: returns operation-specific or generic permission message
+ * - ApiError: returns its message
  * - Error: returns error.message
  * - string: returns the string directly
  * - unknown: returns fallback message
@@ -75,6 +90,9 @@ export function getErrorMessage(
 ): string {
   if (isPermissionError(error)) {
     return operation ? getPermissionErrorMessage(operation) : error.message;
+  }
+  if (isApiError(error)) {
+    return error.message;
   }
   if (error instanceof Error) {
     return error.message;

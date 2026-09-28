@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { createNomadClient } from '../../lib/api/nomad';
-import { isPermissionError, getErrorMessage } from '../../lib/errors';
+import { isPermissionError, isApiError, getErrorMessage } from '../../lib/errors';
 import { LoadingSpinner, ErrorAlert } from '../ui';
 import InfoBox from '../ui/InfoBox';
 import { RefreshCw, Radio } from 'lucide-react';
@@ -13,6 +13,18 @@ interface JobLogsProps {
     allocId?: string;
     taskName?: string;
     initialTaskGroup?: string | null;
+}
+
+/** Error text for a failed logs request */
+export function logsErrorMessage(err: unknown): string {
+    if (isPermissionError(err)) {
+        return 'You do not have permission to view logs. The read-logs capability is required.';
+    }
+    // Check if this might be a permission issue disguised as 500
+    if (isApiError(err) && err.statusCode === 500) {
+        return `Unable to fetch logs: ${err.message}. This may be due to insufficient permissions (read-logs capability required) or the allocation may no longer be available.`;
+    }
+    return getErrorMessage(err, 'Failed to load logs');
 }
 
 /** Get CSS classes for log container based on allocation status and streaming mode */
@@ -231,17 +243,7 @@ const JobLogs: React.FC<JobLogsProps> = ({ jobId, allocId, taskName, initialTask
             setLastRefreshed(new Date());
             setError(null);
         } catch (err) {
-            if (isPermissionError(err)) {
-                setError('You do not have permission to view logs. The read-logs capability is required.');
-            } else {
-                const message = getErrorMessage(err, 'Failed to load logs');
-                // Check if this might be a permission issue disguised as 500
-                if (message.includes('500') || message.includes('Internal Server Error')) {
-                    setError('Unable to fetch logs. This may be due to insufficient permissions (read-logs capability required) or the allocation may no longer be available.');
-                } else {
-                    setError(message);
-                }
-            }
+            setError(logsErrorMessage(err));
             setLogs('');
         } finally {
             setIsLoading(false);
