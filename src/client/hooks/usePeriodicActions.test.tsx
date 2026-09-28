@@ -26,6 +26,11 @@ function wrapper({ children }: { children: ReactNode }) {
   );
 }
 
+// Fails if `check` passes within `ms`. Unlike a wait inside act(), React keeps rendering meanwhile.
+async function expectNotWithin(ms: number, check: () => void) {
+  await expect(waitFor(check, { timeout: ms })).rejects.toThrow();
+}
+
 function renderActions(target: NomadJob = job) {
   const handlers = { onLaunched: mock(() => {}), onScheduleChanged: mock(() => {}) };
   const { result, unmount } = renderHook(() => usePeriodicActions(target, handlers), { wrapper });
@@ -50,6 +55,22 @@ describe('usePeriodicActions', () => {
 
     await waitFor(() => expect(result.current.nextLaunch).toBe(nextLaunch));
     expect(calls).toHaveLength(2);
+    expect(handlers.onLaunched).toHaveBeenCalledTimes(1);
+  });
+
+  test('reads a next launch that has passed once more, not in a loop', async () => {
+    // Nomad's clock is behind the browser's, so the plan keeps returning the same time
+    const passed = new Date(Date.now() - 60_000).toISOString();
+    const calls = mockFetch(async () => {
+      // Answers later, like a real request, so React renders while it runs
+      await new Promise((resolve) => setTimeout(resolve, 5));
+      return { body: { NextPeriodicLaunch: passed } };
+    });
+    const { handlers } = renderActions();
+
+    await waitFor(() => expect(calls.length).toBeGreaterThanOrEqual(2));
+    await expectNotWithin(150, () => expect(calls.length).toBeGreaterThan(2));
+
     expect(handlers.onLaunched).toHaveBeenCalledTimes(1);
   });
 

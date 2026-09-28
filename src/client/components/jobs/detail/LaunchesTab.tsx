@@ -46,7 +46,8 @@ const launchColumns: Column<NomadJobListStub>[] = [
 ];
 
 export function LaunchesTab({ launches, loading, error, onRefresh }: LaunchesTabProps) {
-  if (loading) {
+  // A reload keeps the list, so it does not blink at every launch
+  if (loading && launches.length === 0) {
     return (
       <div className="py-8">
         <LoadingSpinner />

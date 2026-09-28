@@ -11,10 +11,15 @@ const launch: NomadJobListStub = {
   JobSummary: { JobID: 'backup/periodic-1790611797', Summary: { backup: { Running: 0, Starting: 0, Failed: 0, Complete: 1, Lost: 0, Unknown: 0 } } },
 };
 
-function renderTab(props: { launches?: NomadJobListStub[]; error?: string | null } = {}) {
+function renderTab(props: { launches?: NomadJobListStub[]; loading?: boolean; error?: string | null } = {}) {
   render(
     <MemoryRouter>
-      <LaunchesTab launches={props.launches ?? [launch]} loading={false} error={props.error ?? null} onRefresh={() => {}} />
+      <LaunchesTab
+        launches={props.launches ?? [launch]}
+        loading={props.loading ?? false}
+        error={props.error ?? null}
+        onRefresh={() => {}}
+      />
     </MemoryRouter>
   );
 }
@@ -35,6 +40,17 @@ describe('LaunchesTab', () => {
   test('explains an empty list', () => {
     renderTab({ launches: [] });
     expect(screen.getByText(/garbage collection/)).toBeTruthy();
+  });
+
+  test('keeps the list while it reloads', () => {
+    renderTab({ loading: true });
+    expect(screen.getByText('Launches (1)')).toBeTruthy();
+    expect(screen.queryByRole('status')).toBeNull();
+  });
+
+  test('shows a spinner while the first load runs', () => {
+    renderTab({ launches: [], loading: true });
+    expect(screen.getByRole('status')).toBeTruthy();
   });
 
   test('shows a load error', () => {

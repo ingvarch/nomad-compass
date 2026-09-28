@@ -34,22 +34,22 @@ run is a child job, a launch, with the ID `<job>/periodic-<time>`.
    expressions the job runs at the earliest match. The time zone is UTC by
    default. **Don't start a new run while the previous one is running** is on
    by default: Nomad then skips a launch while the previous run is still
-   running. **Plan** shows the next launch. If Nomad rejects a cron
-   expression or a time zone, ovoo shows Nomad's error message. For a batch
-   job the form hides service discovery and the health check, unless the job
-   already has them.
+   running. **Plan** shows the next launch and says that Nomad creates
+   allocations at each launch. If Nomad rejects a cron expression or a time
+   zone, ovoo shows Nomad's error message. For a batch job the form hides
+   service discovery and the health check, unless the job already has them.
 2. **Command and arguments**: **Command** on a task replaces the image `CMD`;
    the image `ENTRYPOINT` still runs. In **Arguments**, put one argument per
    row, without shell quoting. Nomad replaces `${...}` references in them.
 3. **Job page**: the Schedule card shows the cron expressions, the time zone,
    the overlap setting, the state (Active, Paused or Stopped) and the next
-   and last launch. **Run now** starts a launch right away; it works only
-   while the schedule is active. **Pause** and **Resume** turn the schedule
-   off and on. Each one creates a new job version, which the Versions tab
-   shows and can revert. Both are disabled while the job is stopped. A
-   periodic job has no allocations of its own, so its page has the Overview,
-   Launches, Versions and Evaluations tabs. Logs and exec are on the launch
-   pages.
+   and last launch, and updates both on its own after each launch.
+   **Run now** starts a launch right away; it works only while the schedule
+   is active. **Pause** and **Resume** turn the schedule off and on. Each one
+   creates a new job version, which the Versions tab shows and can revert.
+   Both are disabled while the job is stopped. A periodic job has no
+   allocations of its own, so its page has the Overview, Launches, Versions
+   and Evaluations tabs. Logs and exec are on the launch pages.
 4. **Launches**: the Launches tab lists the launches newest first, with their
    status and allocation counts. A launch page links back to its job and has
    no Edit, Clone or Start. The jobs list hides launches and marks periodic

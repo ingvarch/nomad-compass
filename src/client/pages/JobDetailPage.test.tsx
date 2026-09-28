@@ -1,6 +1,7 @@
 import { describe, test, expect } from 'bun:test';
 import { render, screen, fireEvent, waitFor, act, within } from '@testing-library/react';
-import { MemoryRouter, Routes, Route } from 'react-router-dom';
+import type { ReactNode } from 'react';
+import { MemoryRouter, Routes, Route, Link } from 'react-router-dom';
 import { AuthProvider } from '../context/AuthContext';
 import { ToastProvider } from '../context/ToastContext';
 import { ToastContainer } from '../components/ui/Toast';
@@ -116,7 +117,8 @@ async function stopJob() {
   fireEvent.click(within(dialog).getByRole('button', { name: 'Stop' }));
 }
 
-function renderPage(route: string) {
+// `extra` renders next to the page, e.g. a link to another job
+function renderPage(route: string, extra?: ReactNode) {
   render(
     <MemoryRouter initialEntries={[route]}>
       <ToastProvider>
@@ -124,6 +126,7 @@ function renderPage(route: string) {
           <Routes>
             <Route path="/jobs/:id" element={<JobDetailPage />} />
           </Routes>
+          {extra}
         </AuthProvider>
         <ToastContainer />
       </ToastProvider>
@@ -202,6 +205,21 @@ describe('JobDetailPage for a periodic job', () => {
 
     fireEvent.click(await screen.findByRole('link', { name: formatDateLongZoned(launch.SubmitTime) }));
     expect(await screen.findByRole('link', { name: 'backup' })).toBeTruthy();
+
+    const launchLists = calls.filter((c) => c.url.startsWith('/api/nomad/v1/jobs?')).map((c) => c.url);
+    expect(launchLists).toEqual(['/api/nomad/v1/jobs?namespace=default&prefix=backup%2Fperiodic-']);
+  });
+
+  test('opening a job with the same ID in another namespace does not ask for launches there', async () => {
+    const otherBackup = { ...service, ID: 'backup', Name: 'backup', Namespace: 'other' };
+    const calls = mockFetch((call) =>
+      call.url.startsWith('/api/nomad/v1/job/backup?namespace=other') ? { body: otherBackup } : nomad(parentRoutes)(call)
+    );
+    renderPage('/jobs/backup?namespace=default', <Link to="/jobs/backup?namespace=other">backup in other</Link>);
+
+    await waitForNextAndLastLaunch();
+    fireEvent.click(screen.getByRole('link', { name: 'backup in other' }));
+    expect(await screen.findByText('Namespace: other')).toBeTruthy();
 
     const launchLists = calls.filter((c) => c.url.startsWith('/api/nomad/v1/jobs?')).map((c) => c.url);
     expect(launchLists).toEqual(['/api/nomad/v1/jobs?namespace=default&prefix=backup%2Fperiodic-']);

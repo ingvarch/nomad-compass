@@ -141,7 +141,7 @@ export default function JobDetailPage() {
   }, [loadJob]);
 
   // While another job's page loads, `job` is still the previous job
-  const isPeriodic = !!job?.Periodic && job.ID === jobId;
+  const isPeriodic = !!job?.Periodic && job.ID === jobId && (job.Namespace || DEFAULT_NAMESPACE) === namespace;
   const activeTab = useActiveJobTab(isPeriodic);
   const launches = usePeriodicLaunches(jobId, namespace, isPeriodic);
   const periodic = usePeriodicActions(isPeriodic ? job : null, {
