@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, DependencyList } from 'react';
+import { useState, useEffect, useCallback, useRef, DependencyList } from 'react';
 import { getErrorMessage } from '../lib/errors';
 
 export interface UseFetchResult<T> {
@@ -33,17 +33,21 @@ export function useFetch<T>(
   const [data, setData] = useState<T | null>(options.initialData ?? null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  // A slow reply of an earlier call must not overwrite the result of a later one
+  const latestCall = useRef(0);
 
   const refetch = useCallback(async () => {
+    const call = ++latestCall.current;
+    const isLatest = () => call === latestCall.current;
     setLoading(true);
     setError(null);
     try {
       const result = await fetchFn();
-      setData(result);
+      if (isLatest()) setData(result);
     } catch (err) {
-      setError(getErrorMessage(err, options.errorMessage));
+      if (isLatest()) setError(getErrorMessage(err, options.errorMessage));
     } finally {
-      setLoading(false);
+      if (isLatest()) setLoading(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, deps);
