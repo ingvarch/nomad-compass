@@ -1,5 +1,10 @@
 <div align="center">
 
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="docs/images/logo-dark.png">
+  <img src="docs/images/logo-light.png" alt="ovoo" width="112">
+</picture>
+
 # ovoo
 
 **A web UI for HashiCorp Nomad that runs on Cloudflare Workers or in Docker.**
