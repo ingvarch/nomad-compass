@@ -26,7 +26,7 @@ Nomad Compass is designed with security in mind:
 
 ### WebSocket Security (Remote Exec)
 
-The Remote Exec feature uses a secure one-time ticket pattern:
+The Remote Exec feature uses short-lived signed tickets:
 
 1. **No Token in URL**: The actual Nomad token never appears in WebSocket URLs
 2. **HMAC-Signed Tickets**: Short-lived tickets (30 seconds) are cryptographically signed
@@ -47,9 +47,9 @@ Browser                          Server                         Nomad
    │<═══════════ relay ════════════>│<═════════════════════════════│
 ```
 
-### Production Recommendations
+### Ticket Secret
 
-For production deployments, set a strong `TICKET_SECRET` environment variable:
+`TICKET_SECRET` is required everywhere, including local development. Without it the Docker server does not start, and on Cloudflare Workers remote exec fails:
 
 ```bash
 # Generate a secure secret
@@ -148,6 +148,10 @@ wrangler login
 wrangler secret put NOMAD_ADDR
 # Enter: https://your-nomad-server.example.com
 
+# Set the ticket secret
+wrangler secret put TICKET_SECRET
+# Enter the output of: openssl rand -hex 32
+
 # Deploy
 bun run deploy:cf
 ```
@@ -180,6 +184,7 @@ docker run -d \
   --name nomad-compass \
   -p 3000:3000 \
   -e NOMAD_ADDR=http://your-nomad-server:4646 \
+  -e TICKET_SECRET=your-generated-secret \
   nomad-compass
 ```
 
@@ -194,6 +199,7 @@ services:
       - "3000:3000"
     environment:
       - NOMAD_ADDR=http://nomad:4646
+      - TICKET_SECRET=your-generated-secret
     restart: unless-stopped
 ```
 
@@ -205,6 +211,7 @@ services:
     build: .
     environment:
       - NOMAD_ADDR=http://nomad:4646
+      - TICKET_SECRET=your-generated-secret
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.nomad-compass.rule=Host(`nomad.example.com`)"
@@ -217,7 +224,7 @@ services:
 |----------|-------------|---------|---------|
 | `NOMAD_ADDR` | Nomad server address | `http://localhost:4646` | Both |
 | `PORT` | Server port | `3000` | Docker only |
-| `TICKET_SECRET` | HMAC secret for WebSocket auth tickets | Auto-generated | Both |
+| `TICKET_SECRET` | HMAC secret for WebSocket auth tickets (`openssl rand -hex 32`) | None, required | Both |
 
 ## Development
 
@@ -231,10 +238,11 @@ Uses Wrangler to emulate the Cloudflare Workers environment locally.
 bun run dev          # Vite (frontend) + Wrangler (API)
 ```
 
-Configure your Nomad server in `.dev.vars`:
+Configure your Nomad server and ticket secret in `.dev.vars`:
 
 ```bash
-echo 'NOMAD_ADDR=http://localhost:4646' > .dev.vars
+cp .dev.vars.example .dev.vars
+# then set TICKET_SECRET to the output of: openssl rand -hex 32
 ```
 
 ### Bun Development
@@ -245,10 +253,10 @@ Uses the Bun backend directly, useful for Docker deployment testing.
 bun run dev:bun      # Vite (frontend) + Bun API server
 ```
 
-Set your Nomad server via environment variable:
+Set your Nomad server and ticket secret via environment variables:
 
 ```bash
-NOMAD_ADDR=http://localhost:4646 bun run dev:bun
+NOMAD_ADDR=http://localhost:4646 TICKET_SECRET=$(openssl rand -hex 32) bun run dev:bun
 ```
 
 ### Other Commands
