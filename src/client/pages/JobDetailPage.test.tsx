@@ -1,5 +1,5 @@
 import { describe, test, expect } from 'bun:test';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from '../context/AuthContext';
 import { ToastProvider } from '../context/ToastContext';
@@ -36,6 +36,15 @@ function nomad(routes: Record<string, unknown>) {
     const match = Object.keys(routes).find((prefix) => url.startsWith(prefix));
     return match ? { body: routes[match] } : undefined;
   };
+}
+
+// GET requests of the job itself, not of its allocations or versions
+function jobGets(calls: FetchCall[], id: string) {
+  return calls.filter((c) => c.method === 'GET' && c.url.startsWith(`/api/nomad/v1/job/${id}?`)).length;
+}
+
+function wait(ms: number) {
+  return act(() => new Promise((resolve) => setTimeout(resolve, ms)));
 }
 
 function renderPage(route: string) {
@@ -99,6 +108,39 @@ describe('JobDetailPage for a periodic job', () => {
     expect(parentLink.getAttribute('href')).toBe('/jobs/backup?namespace=default');
     expect(screen.queryByRole('link', { name: /Edit/ })).toBeNull();
     expect(screen.queryByRole('link', { name: /Clone/ })).toBeNull();
+  });
+
+  test('run now does not reload the job', async () => {
+    const calls = mockFetch(nomad({
+      ...parentRoutes,
+      '/api/nomad/v1/job/backup/periodic/force': { EvalID: '198c9740-1446-82a5', EvalCreateIndex: 12 },
+    }));
+    renderPage('/jobs/backup?namespace=default');
+
+    const runNow = await screen.findByRole('button', { name: 'Run now' });
+    const loads = jobGets(calls, 'backup');
+    fireEvent.click(runNow);
+    await waitFor(() => expect(calls.some((c) => c.url.includes('/periodic/force'))).toBe(true));
+    await wait(50);
+
+    expect(jobGets(calls, 'backup')).toBe(loads);
+  });
+});
+
+describe('JobDetailPage for a missing job', () => {
+  test('requests the job once', async () => {
+    const calls = mockFetch((call) =>
+      call.url.startsWith('/api/nomad/v1/job/gone?')
+        ? { status: 404, body: { message: 'job not found' } }
+        : nomad({})(call)
+    );
+    renderPage('/jobs/gone?namespace=default');
+
+    expect(await screen.findByText('Failed to load job details: job not found')).toBeTruthy();
+    await wait(50);
+
+    // The first render has no auth yet and requests nothing; the auth check then starts the one load
+    expect(jobGets(calls, 'gone')).toBe(1);
   });
 });
 

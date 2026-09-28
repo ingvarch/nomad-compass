@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useCallback, useContext, useMemo, useState, ReactNode } from 'react';
 
 export type ToastType = 'success' | 'error' | 'info' | 'warning';
 
@@ -28,7 +28,12 @@ export const useToast = () => {
 export const ToastProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const [toasts, setToasts] = useState<Toast[]>([]);
 
-    const addToast = (message: string, type: ToastType, duration = 5000) => {
+    // Stable callbacks: consumers list addToast in effect deps
+    const removeToast = useCallback((id: string) => {
+        setToasts((prevToasts) => prevToasts.filter((toast) => toast.id !== id));
+    }, []);
+
+    const addToast = useCallback((message: string, type: ToastType, duration = 5000) => {
         const id = Date.now().toString();
         const newToast = { id, message, type, duration };
 
@@ -41,14 +46,12 @@ export const ToastProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         }
 
         return id;
-    };
+    }, [removeToast]);
 
-    const removeToast = (id: string) => {
-        setToasts((prevToasts) => prevToasts.filter((toast) => toast.id !== id));
-    };
+    const value = useMemo(() => ({ toasts, addToast, removeToast }), [toasts, addToast, removeToast]);
 
     return (
-        <ToastContext.Provider value={{ toasts, addToast, removeToast }}>
+        <ToastContext.Provider value={value}>
             {children}
         </ToastContext.Provider>
     );
