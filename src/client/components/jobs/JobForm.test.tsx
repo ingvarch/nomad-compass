@@ -12,6 +12,22 @@ const pausedJob = {
   TaskGroups: [{ Name: 'db', Count: 1, Tasks: [{ Name: 'dump', Driver: 'docker', Config: { image: 'postgres:16' } }] }],
   Periodic: { Enabled: false, Specs: ['0 3 * * *'], SpecType: 'cron', ProhibitOverlap: true, TimeZone: 'UTC' },
 };
+const launchJob = {
+  ...pausedJob, ID: 'backup/periodic-1790611797', Name: 'backup/periodic-1790611797', ParentID: 'backup',
+  Version: 0, JobModifyIndex: 12, Periodic: null,
+};
+
+function renderEditForm(jobId: string) {
+  render(
+    <MemoryRouter>
+      <ToastProvider>
+        <AuthProvider>
+          <JobForm mode="edit" jobId={jobId} namespace="default" />
+        </AuthProvider>
+      </ToastProvider>
+    </MemoryRouter>
+  );
+}
 
 describe('JobForm', () => {
   test('the plan of a paused periodic job says allocations come with each launch', async () => {
@@ -24,18 +40,28 @@ describe('JobForm', () => {
       }
       return undefined;
     });
-    render(
-      <MemoryRouter>
-        <ToastProvider>
-          <AuthProvider>
-            <JobForm mode="edit" jobId="backup" namespace="default" />
-          </AuthProvider>
-        </ToastProvider>
-      </MemoryRouter>
-    );
+    renderEditForm('backup');
 
     fireEvent.click(await screen.findByRole('button', { name: 'Plan' }));
 
     expect(await screen.findByText('Nomad creates allocations at each launch.')).toBeTruthy();
+  });
+
+  test('refuses to edit a launch', async () => {
+    const calls = mockFetch(({ url }) => {
+      if (url.startsWith('/api/auth/validate')) return { body: { authenticated: true } };
+      if (url.startsWith('/api/nomad/v1/job/backup%2Fperiodic-1790611797?')) return { body: launchJob };
+      return undefined;
+    });
+    renderEditForm(launchJob.ID);
+
+    expect(
+      await screen.findByText(
+        '"backup/periodic-1790611797" was started by "backup" and cannot be edited. Edit "backup" instead.'
+      )
+    ).toBeTruthy();
+    expect(screen.getByRole('link', { name: 'Back to Job' })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Save Changes' })).toBeNull();
+    expect(calls.filter((c) => c.method === 'POST')).toEqual([]);
   });
 });

@@ -18,7 +18,9 @@ login the token lives in an `httpOnly` cookie, and JavaScript cannot read it
    checks, private registries and Traefik ingress are all configured there.
    The plan diff is shown before the job is submitted.
 4. **Edit and clone jobs**: edit a job through the same form, or clone it
-   into a new one.
+   into a new one. Dispatched jobs, like launches of periodic jobs, have no
+   Edit, Clone or Start: Nomad drops `ParentID` when a job is registered
+   again, so edit the parent job instead.
 5. **Revert**: the Versions tab lists every version of a job and reverts to
    any of them.
 

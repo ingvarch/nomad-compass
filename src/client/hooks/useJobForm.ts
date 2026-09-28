@@ -95,6 +95,15 @@ export function useJobForm({
     try {
       const client = createNomadClient();
       const jobData = await client.getJob(jobId, namespace);
+      // Nomad drops ParentID when a child job is registered again
+      if (jobData.ParentID) {
+        dispatch(
+          jobFormActions.setError(
+            `"${jobData.ID}" was started by "${jobData.ParentID}" and cannot be edited. Edit "${jobData.ParentID}" instead.`
+          )
+        );
+        return;
+      }
       dispatch(jobFormActions.setInitialJob(jobData));
 
       const formattedData = ensureEnvVars(convertJobToFormData(jobData));
