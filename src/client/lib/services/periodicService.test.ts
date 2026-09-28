@@ -7,6 +7,8 @@ import {
   launchAllocationCounts,
   setPeriodicEnabled,
   nextPeriodicLaunch,
+  nextLaunchRefreshDelay,
+  REFRESH_AFTER_LAUNCH_MS,
   scheduleState,
 } from './periodicService';
 import type { NomadJob, NomadJobListStub, NomadJobSummary } from '../../types/nomad';
@@ -109,6 +111,23 @@ describe('nextPeriodicLaunch', () => {
 
   test('is null for the zero time of Nomad 1.x', () => {
     expect(nextPeriodicLaunch({ Index: 1, NextPeriodicLaunch: '0001-01-01T00:00:00Z' })).toBeNull();
+  });
+});
+
+describe('nextLaunchRefreshDelay', () => {
+  const next = '2026-09-28T18:15:00Z';
+
+  test('waits until shortly after the next launch', () => {
+    expect(nextLaunchRefreshDelay(next, Date.parse('2026-09-28T18:14:00Z'))).toBe(60_000 + REFRESH_AFTER_LAUNCH_MS);
+  });
+
+  test('does not wait for a next launch that has passed', () => {
+    expect(nextLaunchRefreshDelay(next, Date.parse('2026-09-28T18:25:00Z'))).toBe(0);
+  });
+
+  test('caps the wait at the longest setTimeout delay', () => {
+    // A longer delay makes setTimeout fire at once
+    expect(nextLaunchRefreshDelay(next, Date.parse('2025-09-28T18:15:00Z'))).toBe(2 ** 31 - 1);
   });
 });
 

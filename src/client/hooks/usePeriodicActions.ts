@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { createNomadClient } from '../lib/api/nomad';
 import { useToast } from '../context/ToastContext';
 import {
@@ -7,18 +7,25 @@ import {
   isJobModifyIndexConflict,
   isPermissionError,
 } from '../lib/errors';
-import { nextPeriodicLaunch, scheduleState, setPeriodicEnabled } from '../lib/services/periodicService';
+import {
+  nextLaunchRefreshDelay,
+  nextPeriodicLaunch,
+  scheduleState,
+  setPeriodicEnabled,
+} from '../lib/services/periodicService';
 import type { NomadJob } from '../types/nomad';
 import { useFetch } from './useFetch';
 
 // Awaited, so the buttons stay busy until the page shows the new state
 interface PeriodicActionHandlers {
+  // Also called when a scheduled launch starts
   onLaunched: () => void | Promise<void>;
   onScheduleChanged: () => void | Promise<void>;
 }
 
 /**
  * Next launch, Run now and Pause/Resume of a periodic job. Pass null for other jobs.
+ * When the next launch starts, reads the one after it and calls onLaunched.
  */
 export function usePeriodicActions(job: NomadJob | null, { onLaunched, onScheduleChanged }: PeriodicActionHandlers) {
   const { addToast } = useToast();
@@ -35,6 +42,18 @@ export function usePeriodicActions(job: NomadJob | null, { onLaunched, onSchedul
     [job],
     { errorMessage: 'Failed to plan job' }
   );
+
+  // Keyed on the time: a plan that returns the same time again does not start another wait
+  const next = nextLaunch.data;
+  const refetchNextLaunch = nextLaunch.refetch;
+  useEffect(() => {
+    if (!next) return;
+    const timer = setTimeout(() => {
+      refetchNextLaunch();
+      onLaunched();
+    }, nextLaunchRefreshDelay(next));
+    return () => clearTimeout(timer);
+  }, [next, refetchNextLaunch, onLaunched]);
 
   const reportError = useCallback(
     (err: unknown, operation: string, fallback: string) => {

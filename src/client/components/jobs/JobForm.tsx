@@ -150,6 +150,7 @@ const JobFormContent: React.FC<JobFormProps> = ({
         isLoading={isPlanning}
         error={planError}
         isSubmitting={isSaving}
+        isPeriodic={!!formData.periodic}
       />
 
       <JobFormLayout

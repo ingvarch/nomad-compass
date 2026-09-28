@@ -5,6 +5,7 @@ import { AuthProvider } from '../context/AuthContext';
 import { ToastProvider } from '../context/ToastContext';
 import { ToastContainer } from '../components/ui/Toast';
 import { mockFetch, type FetchCall } from '../../test/mockFetch';
+import { nextLaunchRefreshedIn } from '../../test/periodic';
 import { formatDateLongZoned, formatIsoDateLong } from '../lib/utils/dateFormatter';
 import JobDetailPage from './JobDetailPage';
 
@@ -26,10 +27,12 @@ const service = {
   ID: 'web', Name: 'web', Namespace: 'default', Type: 'service', Status: 'running', Stop: false,
   SubmitTime: 1790611000000000000, Version: 0, JobModifyIndex: 5, ParentID: '', TaskGroups: [],
 };
+// Far ahead, so the page does not read the plan again during a test
+const nextLaunch = '2099-09-28T18:15:00+02:00';
 const parentRoutes = {
   '/api/nomad/v1/job/backup/allocations': [],
   '/api/nomad/v1/job/backup/versions': { Versions: [] },
-  '/api/nomad/v1/job/backup/plan': { NextPeriodicLaunch: '2026-09-28T18:15:00+02:00' },
+  '/api/nomad/v1/job/backup/plan': { NextPeriodicLaunch: nextLaunch },
   '/api/nomad/v1/jobs?': [launch],
   '/api/nomad/v1/job/backup?': parent,
 };
@@ -87,6 +90,12 @@ function mockParentJob(changedJobArrives?: Promise<void>) {
   });
 }
 
+// The schedule shows the next and the last launch: the page has read the plan and the launches
+async function waitForNextAndLastLaunch() {
+  await screen.findByText(formatIsoDateLong(nextLaunch));
+  await screen.findByRole('link', { name: formatDateLongZoned(launch.SubmitTime) });
+}
+
 // Buttons of an action come back enabled once the action is done
 function waitForEnabledButton(name: RegExp) {
   return waitFor(() => {
@@ -129,7 +138,7 @@ describe('JobDetailPage for a periodic job', () => {
 
     expect(await screen.findByText('Schedule')).toBeTruthy();
     expect(screen.getByText('*/5 * * * *')).toBeTruthy();
-    expect(await screen.findByText(formatIsoDateLong('2026-09-28T18:15:00+02:00'))).toBeTruthy();
+    expect(await screen.findByText(formatIsoDateLong(nextLaunch))).toBeTruthy();
     expect(screen.getByRole('button', { name: 'Run now' })).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Logs' })).toBeNull();
 
@@ -141,11 +150,30 @@ describe('JobDetailPage for a periodic job', () => {
     expect(await screen.findByText('Launches (1)')).toBeTruthy();
   });
 
+  test('when the next launch starts, shows the one after it and the new last launch', async () => {
+    const plans = [nextLaunchRefreshedIn(100), nextLaunch];
+    const launchLists = [[], [launch]];
+    let planCount = 0;
+    let listCount = 0;
+    mockFetch((call) => {
+      if (call.url.startsWith('/api/nomad/v1/job/backup/plan')) {
+        return { body: { NextPeriodicLaunch: plans[planCount++] ?? nextLaunch } };
+      }
+      if (call.url.startsWith('/api/nomad/v1/jobs?')) return { body: launchLists[listCount++] ?? [launch] };
+      return nomad(parentRoutes)(call);
+    });
+    renderPage('/jobs/backup?namespace=default');
+
+    expect(await screen.findByText('No launches yet')).toBeTruthy();
+    await waitForNextAndLastLaunch();
+  });
+
   test('opens the overview for a tab the periodic job does not have', async () => {
     mockFetch(nomad(parentRoutes));
     renderPage('/jobs/backup?namespace=default&tab=logs');
 
     expect(await screen.findByText('Schedule')).toBeTruthy();
+    await waitForNextAndLastLaunch();
   });
 
   test('a task group of a periodic job has no View Logs button', async () => {
@@ -155,6 +183,7 @@ describe('JobDetailPage for a periodic job', () => {
     fireEvent.click(await screen.findByText('Task Group: db'));
     expect(screen.getByText('dump')).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'View Logs' })).toBeNull();
+    await waitForNextAndLastLaunch();
   });
 
   test('a launch links to its periodic job and cannot be edited or cloned', async () => {

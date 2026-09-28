@@ -76,3 +76,16 @@ export function nextPeriodicLaunch(plan: NomadJobPlanResponse): string | null {
   const next = plan.NextPeriodicLaunch;
   return next && Date.parse(next) > 0 ? next : null;
 }
+
+// Nomad needs a moment to create the launch and move the next launch on
+export const REFRESH_AFTER_LAUNCH_MS = 2000;
+// setTimeout fires at once for longer delays
+const MAX_TIMEOUT_MS = 2 ** 31 - 1;
+
+/**
+ * Milliseconds until the next launch has started and the page can read the one after it.
+ */
+export function nextLaunchRefreshDelay(nextLaunch: string, now: number = Date.now()): number {
+  const delay = Date.parse(nextLaunch) - now + REFRESH_AFTER_LAUNCH_MS;
+  return Math.min(Math.max(delay, 0), MAX_TIMEOUT_MS);
+}

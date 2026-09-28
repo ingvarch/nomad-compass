@@ -4,6 +4,7 @@ import { renderHook, waitFor, act, screen } from '@testing-library/react';
 import { ToastProvider } from '../context/ToastContext';
 import { ToastContainer } from '../components/ui/Toast';
 import { mockFetch } from '../../test/mockFetch';
+import { nextLaunchRefreshedIn } from '../../test/periodic';
 import { getPermissionErrorMessage } from '../lib/errors';
 import { usePeriodicActions } from './usePeriodicActions';
 import type { NomadJob } from '../types/nomad';
@@ -13,6 +14,8 @@ const job = {
   SubmitTime: 0, Version: 2, JobModifyIndex: 11, ParentID: '',
   Periodic: { Enabled: true, Specs: ['*/5 * * * *'], SpecType: 'cron', ProhibitOverlap: true, TimeZone: 'UTC' },
 } as NomadJob;
+// Far ahead, so the hook does not read the plan again during a test
+const nextLaunch = '2099-09-28T18:15:00+02:00';
 
 function wrapper({ children }: { children: ReactNode }) {
   return (
@@ -25,19 +28,42 @@ function wrapper({ children }: { children: ReactNode }) {
 
 function renderActions(target: NomadJob = job) {
   const handlers = { onLaunched: mock(() => {}), onScheduleChanged: mock(() => {}) };
-  const { result } = renderHook(() => usePeriodicActions(target, handlers), { wrapper });
-  return { result, handlers };
+  const { result, unmount } = renderHook(() => usePeriodicActions(target, handlers), { wrapper });
+  return { result, handlers, unmount };
 }
 
 describe('usePeriodicActions', () => {
   test('reads the next launch from a plan', async () => {
     const calls = mockFetch(({ url }) =>
-      url.includes('/plan') ? { body: { NextPeriodicLaunch: '2026-09-28T18:15:00+02:00' } } : undefined
+      url.includes('/plan') ? { body: { NextPeriodicLaunch: nextLaunch } } : undefined
     );
     const { result } = renderActions();
 
-    await waitFor(() => expect(result.current.nextLaunch).toBe('2026-09-28T18:15:00+02:00'));
+    await waitFor(() => expect(result.current.nextLaunch).toBe(nextLaunch));
     expect(calls[0].url).toBe('/api/nomad/v1/job/backup/plan?namespace=default');
+  });
+
+  test('when the next launch starts, reads the one after it and reports the launch', async () => {
+    const plans = [nextLaunchRefreshedIn(50), nextLaunch];
+    const calls = mockFetch(() => ({ body: { NextPeriodicLaunch: plans[calls.length - 1] ?? nextLaunch } }));
+    const { result, handlers } = renderActions();
+
+    await waitFor(() => expect(result.current.nextLaunch).toBe(nextLaunch));
+    expect(calls).toHaveLength(2);
+    expect(handlers.onLaunched).toHaveBeenCalledTimes(1);
+  });
+
+  test('stops waiting for the next launch when unmounted', async () => {
+    // Due late enough to unmount first
+    const calls = mockFetch(() => ({ body: { NextPeriodicLaunch: nextLaunchRefreshedIn(300) } }));
+    const { result, handlers, unmount } = renderActions();
+
+    await waitFor(() => expect(result.current.nextLaunch).not.toBeNull());
+    unmount();
+    await act(() => new Promise((resolve) => setTimeout(resolve, 400)));
+
+    expect(calls).toHaveLength(1);
+    expect(handlers.onLaunched).not.toHaveBeenCalled();
   });
 
   test('ignores the zero time Nomad 1.x sends', async () => {
