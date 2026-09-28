@@ -3,7 +3,7 @@ import { Trash, Plus } from 'lucide-react';
 import { NomadEnvVar } from '../../../../types/nomad';
 import { useToggleState } from '../../../../hooks/useToggleState';
 import { VisibilityToggleButton } from '../../../ui/VisibilityToggleButton';
-import { inputBaseStyles, iconButtonDangerStyles } from '../../../../lib/styles';
+import { inputBaseStyles, iconButtonDangerStyles, buttonAddRowStyles } from '../../../../lib/styles';
 
 interface EnvVarsSectionProps {
   envVars: NomadEnvVar[];
@@ -72,7 +72,7 @@ const EnvVarsSection: React.FC<EnvVarsSectionProps> = ({
       <button
         type="button"
         onClick={onAddEnvVar}
-        className="flex items-center gap-1 px-3 py-1.5 text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-md transition-colors"
+        className={buttonAddRowStyles}
         disabled={isLoading}
       >
         <Plus size={16} />

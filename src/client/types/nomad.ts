@@ -90,6 +90,42 @@ export interface NomadTaskDriverConfig {
     [key: string]: unknown;  // Allow additional driver-specific options
 }
 
+// Periodic (cron) block of a batch or sysbatch job
+export interface NomadPeriodicConfig {
+    Enabled: boolean;
+    Spec?: string;              // Deprecated single cron expression
+    Specs?: string[];           // Cron expressions, Nomad 1.6.2+
+    SpecType: string;           // Always "cron"
+    ProhibitOverlap: boolean;
+    TimeZone?: string;
+}
+
+export interface NomadJobSummary {
+    JobID: string;
+    Summary: Record<string, {
+        Running: number;
+        Starting: number;
+        Failed: number;
+        Complete: number;
+        Lost: number;
+        Unknown: number;
+    }>;
+}
+
+// Job as returned by the jobs list (GET /v1/jobs). Periodic is a flag here, not the block.
+export interface NomadJobListStub {
+    ID: string;
+    ParentID: string;
+    Name: string;
+    Namespace: string;
+    Type: string;
+    Status: string;
+    Stop: boolean;
+    Periodic: boolean;
+    JobSummary?: NomadJobSummary;
+    SubmitTime: number;
+}
+
 export interface NomadJob {
     ID: string;
     Name: string;
@@ -98,17 +134,6 @@ export interface NomadJob {
     Stop: boolean;
     StatusDescription?: string;
     Namespace: string;
-    JobSummary?: {
-        JobID: string;
-        Summary: Record<string, {
-            Running: number;
-            Starting: number;
-            Failed: number;
-            Complete: number;
-            Lost: number;
-            Unknown: number;
-        }>;
-    };
     SubmitTime: number;
     Version: number;
     TaskGroups?: NomadTaskGroup[];
@@ -116,6 +141,9 @@ export interface NomadJob {
     Meta?: Record<string, string>;
     Constraints?: NomadConstraint[];
     Priority?: number;
+    ParentID?: string;
+    Periodic?: NomadPeriodicConfig | null;
+    JobModifyIndex?: number;
 }
 
 export interface NomadTaskGroup {
@@ -149,7 +177,7 @@ export interface NomadNetwork {
 }
 
 export interface NomadJobsResponse {
-    Jobs?: NomadJob[];
+    Jobs?: NomadJobListStub[];
 }
 
 export interface ApiError {
@@ -196,6 +224,8 @@ export interface TaskFormData {
     name: string;
     image: string;
     plugin: string;
+    command: string;
+    args: string[];
     resources: NomadResource;
     envVars: NomadEnvVar[];
     usePrivateRegistry: boolean;
@@ -239,12 +269,23 @@ export interface TaskGroupFormData {
     serviceConfig?: NomadServiceConfig;
 }
 
+export type JobType = 'service' | 'batch';
+
+export interface PeriodicFormData {
+    crons: string[];
+    timeZone: string;
+    prohibitOverlap: boolean;
+    enabled: boolean;           // Not shown in the form; kept so Edit does not resume a paused schedule
+}
+
 export interface NomadJobFormData {
     name: string;
     namespace: string;
+    type: JobType;
     taskGroups: TaskGroupFormData[];
     serviceProvider: 'nomad';
     datacenters: string[];
+    periodic: PeriodicFormData | null;
 }
 
 export interface NomadNamespaceCapabilities {
@@ -544,7 +585,7 @@ export interface NomadJobPlanResponse {
     Annotations?: NomadJobPlanAnnotations;
     FailedTGAllocs?: Record<string, NomadFailedTGAlloc>;
     Warnings?: string;
-    NextPeriodicLaunch?: string;
+    NextPeriodicLaunch?: string | null;
     CreatedEvals?: NomadEvaluation[];
 }
 
@@ -568,7 +609,6 @@ export interface NomadServiceRegistration {
 export interface NomadJobVersion extends NomadJob {
     CreateIndex?: number;
     ModifyIndex?: number;
-    JobModifyIndex?: number;
     Stable?: boolean;
 }
 
@@ -584,6 +624,7 @@ export interface NomadJobInput {
     Meta?: Record<string, string>;
     Constraints?: NomadConstraint[];
     Priority?: number;
+    Periodic?: NomadPeriodicConfig;
 }
 
 // Job submission wrapper (for create/update)

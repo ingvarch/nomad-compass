@@ -8,5 +8,7 @@ export { useFilteredData } from './useFilteredData';
 export { useJobForm } from './useJobForm';
 export { useJobPlan } from './useJobPlan';
 export { useLogStream } from './useLogStream';
+export { usePeriodicActions } from './usePeriodicActions';
+export { usePeriodicLaunches } from './usePeriodicLaunches';
 export { useTaskGroupHandlers } from './useTaskGroupHandlers';
 export { useToggleState } from './useToggleState';

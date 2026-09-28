@@ -12,6 +12,8 @@ import type {
   NomadTaskDriverConfig,
   NomadJob,
   NomadTaskGroup,
+  NomadPeriodicConfig,
+  PeriodicFormData,
 } from '../../types/nomad';
 import {
   generateTraefikTags,
@@ -20,6 +22,7 @@ import {
 } from './traefikTagsService';
 import { NANOSECONDS_TO_SECONDS, nanosToSeconds } from '../utils/dateFormatter';
 import { defaultTaskGroupData } from '../../context/jobFormDefaults';
+import { cronsOf } from './periodicService';
 
 // Re-export clone utilities for external use
 export { prepareCloneFormData } from './jobCloneService';
@@ -63,6 +66,7 @@ interface JobSpec {
     Meta?: Record<string, string>;
     Constraints?: NomadConstraint[];
     Priority?: number;
+    Periodic?: NomadPeriodicConfig;
   };
 }
 
@@ -126,8 +130,11 @@ function createTaskConfig(taskData: TaskFormData): TaskConfig {
     });
   }
 
+  const args = taskData.args.filter((arg) => arg !== '');
   const taskConfig: NomadTaskDriverConfig = {
     image: taskData.image,
+    ...(taskData.command.trim() ? { command: taskData.command.trim() } : {}),
+    ...(args.length > 0 ? { args } : {}),
   };
 
   if (taskData.usePrivateRegistry && taskData.dockerAuth) {
@@ -209,6 +216,33 @@ function createHealthCheckConfig(groupData: TaskGroupFormData): NomadServiceChec
 }
 
 /**
+ * Creates the periodic block from the schedule form data
+ */
+function createPeriodicConfig(periodic: PeriodicFormData): NomadPeriodicConfig {
+  return {
+    Enabled: periodic.enabled,
+    Specs: periodic.crons.map((cron) => cron.trim()).filter((cron) => cron !== ''),
+    SpecType: 'cron',
+    ProhibitOverlap: periodic.prohibitOverlap,
+    TimeZone: periodic.timeZone.trim() || 'UTC',
+  };
+}
+
+/**
+ * Converts a job's periodic block to schedule form data
+ */
+function convertPeriodicToFormData(periodic: NomadPeriodicConfig | null | undefined): PeriodicFormData | null {
+  if (!periodic) return null;
+  const crons = cronsOf(periodic);
+  return {
+    crons: crons.length > 0 ? crons : [''],
+    timeZone: periodic.TimeZone || 'UTC',
+    prohibitOverlap: periodic.ProhibitOverlap,
+    enabled: periodic.Enabled,
+  };
+}
+
+/**
  * Creates a Nomad job specification from form data
  */
 export function createJobSpec(formData: NomadJobFormData): JobSpec {
@@ -235,16 +269,20 @@ export function createJobSpec(formData: NomadJobFormData): JobSpec {
     return taskGroup;
   });
 
-  return {
-    Job: {
-      ID: formData.name,
-      Name: formData.name,
-      Namespace: formData.namespace,
-      Type: 'service',
-      Datacenters: formData.datacenters,
-      TaskGroups: taskGroups,
-    },
+  const job: JobSpec['Job'] = {
+    ID: formData.name,
+    Name: formData.name,
+    Namespace: formData.namespace,
+    Type: formData.type,
+    Datacenters: formData.datacenters,
+    TaskGroups: taskGroups,
   };
+
+  if (formData.periodic) {
+    job.Periodic = createPeriodicConfig(formData.periodic);
+  }
+
+  return { Job: job };
 }
 
 /**
@@ -256,6 +294,8 @@ export function updateJobSpec(originalJob: NomadJob | null, formData: NomadJobFo
   if (originalJob) {
     newJobSpec.Job.ID = originalJob.ID;
     newJobSpec.Job.Name = originalJob.Name;
+    // Nomad rejects a change of job type, so the original type always wins
+    newJobSpec.Job.Type = originalJob.Type;
 
     if (originalJob.Meta) {
       newJobSpec.Job.Meta = originalJob.Meta;
@@ -384,6 +424,8 @@ export function convertJobToFormData(job: NomadJob): NomadJobFormData {
         name: task.Name,
         image: config.image || '',
         plugin: task.Driver || 'podman',
+        command: config.command || '',
+        args: (config.args || []).map(String),
         resources: {
           CPU: task.Resources?.CPU || 100,
           MemoryMB: task.Resources?.MemoryMB || 256,
@@ -461,8 +503,10 @@ export function convertJobToFormData(job: NomadJob): NomadJobFormData {
   return {
     name: job.Name,
     namespace: job.Namespace || 'default',
+    type: job.Type === 'batch' ? 'batch' : 'service',
     taskGroups,
     serviceProvider: 'nomad',
     datacenters: job.Datacenters || ['dc1'],
+    periodic: convertPeriodicToFormData(job.Periodic),
   };
 }

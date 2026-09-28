@@ -21,6 +21,7 @@ interface FormInputFieldProps {
   isInvalid?: boolean;
   errorMessage?: string;
   options?: Array<{ value: string; label: string }>;
+  list?: string;
 }
 
 function FormInputField({
@@ -39,7 +40,8 @@ function FormInputField({
   helpText,
   isInvalid = false,
   errorMessage,
-  options = []
+  options = [],
+  list,
 }: FormInputFieldProps) {
   const baseInputClasses = isInvalid ? inputErrorStyles : inputStyles;
 
@@ -112,6 +114,7 @@ function FormInputField({
         required={required}
         min={min}
         max={max}
+        list={list}
       />
       {helpText && <p className="mt-1 text-xs text-gray-500 dark:text-monokai-muted">{helpText}</p>}
       {isInvalid && errorMessage && (

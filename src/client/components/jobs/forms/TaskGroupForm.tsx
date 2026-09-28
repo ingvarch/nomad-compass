@@ -27,6 +27,7 @@ const TaskGroupForm: React.FC<TaskGroupFormProps> = ({
   const { state, dispatch } = useJobFormContext();
   const { isLoading, isSaving } = state;
   const loading = isLoading || isSaving;
+  const isBatch = state.formData?.type === 'batch';
 
   const {
     group,
@@ -47,6 +48,9 @@ const TaskGroupForm: React.FC<TaskGroupFormProps> = ({
   } = useTaskGroupHandlers(groupIndex);
 
   if (!group) return null;
+
+  // Batch jobs show these sections only when the loaded job already has a service
+  const showServiceSections = !isBatch || group.enableService || group.enableHealthCheck;
 
   const handleAddTask = () => {
     const taskName = `${group.name || 'task'}-${group.tasks.length + 1}`;
@@ -128,31 +132,35 @@ const TaskGroupForm: React.FC<TaskGroupFormProps> = ({
         groupIndex={groupIndex}
       />
 
-      {/* Service Discovery & Ingress Configuration */}
-      <ServiceSection
-        enableService={group.enableService}
-        serviceConfig={group.serviceConfig}
-        ports={group.ports}
-        groupName={group.name || jobName}
-        onEnableServiceChange={onEnableServiceChange}
-        onServiceConfigChange={onServiceConfigChange}
-        onIngressChange={onIngressChange}
-        onTagChange={onTagChange}
-        onAddTag={onAddTag}
-        onRemoveTag={onRemoveTag}
-        isLoading={loading}
-        groupIndex={groupIndex}
-      />
+      {showServiceSections && (
+        <>
+          {/* Service Discovery & Ingress Configuration */}
+          <ServiceSection
+            enableService={group.enableService}
+            serviceConfig={group.serviceConfig}
+            ports={group.ports}
+            groupName={group.name || jobName}
+            onEnableServiceChange={onEnableServiceChange}
+            onServiceConfigChange={onServiceConfigChange}
+            onIngressChange={onIngressChange}
+            onTagChange={onTagChange}
+            onAddTag={onAddTag}
+            onRemoveTag={onRemoveTag}
+            isLoading={loading}
+            groupIndex={groupIndex}
+          />
 
-      {/* Health Check Configuration */}
-      <HealthCheckSection
-        enableHealthCheck={group.enableHealthCheck}
-        healthCheck={group.healthCheck}
-        onCheckboxChange={onCheckboxChange}
-        onHealthCheckChange={onHealthCheckChange}
-        isLoading={loading}
-        groupIndex={groupIndex}
-      />
+          {/* Health Check Configuration */}
+          <HealthCheckSection
+            enableHealthCheck={group.enableHealthCheck}
+            healthCheck={group.healthCheck}
+            onCheckboxChange={onCheckboxChange}
+            onHealthCheckChange={onHealthCheckChange}
+            isLoading={loading}
+            groupIndex={groupIndex}
+          />
+        </>
+      )}
     </ToggleableSection>
   );
 };

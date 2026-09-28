@@ -4,6 +4,7 @@ import { createNomadClient } from '../lib/api/nomad';
 import { getErrorMessage } from '../lib/errors';
 import type { NomadNode, NomadAllocation } from '../types/nomad';
 import { LoadingSpinner, ErrorAlert, PageHeader, RefreshButton, BackLink } from '../components/ui';
+import { jobPath } from '../lib/utils/jobPath';
 
 interface NodeWithAllocations extends NomadNode {
   allocations: NomadAllocation[];
@@ -384,7 +385,7 @@ function NodeCard({ node, viewMode, isExpanded, onToggleExpand }: NodeCardProps)
             {Array.from(allocsByJob.entries()).map(([jobId, allocs]) => (
               <div key={jobId} className="flex items-center justify-between text-xs">
                 <Link
-                  to={`/jobs/${jobId}?namespace=${allocs[0].Namespace}`}
+                  to={jobPath(jobId, allocs[0].Namespace)}
                   className="text-blue-600 dark:text-blue-400 hover:underline truncate max-w-[60%]"
                 >
                   {jobId}

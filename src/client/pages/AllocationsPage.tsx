@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { createNomadClient } from '../lib/api/nomad';
-import type { NomadAllocation, NomadJob } from '../types/nomad';
+import type { NomadAllocation, NomadJobListStub } from '../types/nomad';
 import { useFetch } from '../hooks/useFetch';
 import { useFilteredData } from '../hooks/useFilteredData';
 import {
@@ -18,6 +18,7 @@ import {
 import { getAllocationStatusColor, getStatusClasses } from '../lib/utils/statusColors';
 import { formatTimestamp } from '../lib/utils/dateFormatter';
 import { Terminal } from 'lucide-react';
+import { jobPath } from '../lib/utils/jobPath';
 
 function getFirstTask(alloc: NomadAllocation): string | null {
   if (alloc.TaskStates) {
@@ -31,7 +32,7 @@ type StatusFilter = 'all' | 'running' | 'pending' | 'complete' | 'failed';
 
 interface AllocationsData {
   allocations: NomadAllocation[];
-  jobs: Map<string, NomadJob>;
+  jobs: Map<string, NomadJobListStub>;
 }
 
 export default function AllocationsPage() {
@@ -53,7 +54,7 @@ export default function AllocationsPage() {
   );
 
   const allocations = useMemo(() => data?.allocations || [], [data]);
-  const jobs = useMemo(() => data?.jobs || new Map<string, NomadJob>(), [data]);
+  const jobs = useMemo(() => data?.jobs || new Map<string, NomadJobListStub>(), [data]);
 
   const { activeFilter, filteredItems, filterOptions, setFilter } = useFilteredData<NomadAllocation, StatusFilter>(
     allocations,
@@ -86,7 +87,7 @@ export default function AllocationsPage() {
         const job = jobs.get(alloc.JobID);
         return (
           <Link
-            to={`/jobs/${alloc.JobID}?namespace=${alloc.Namespace}`}
+            to={jobPath(alloc.JobID, alloc.Namespace)}
             className="text-blue-600 dark:text-blue-400 hover:underline"
           >
             {job?.Name || alloc.JobID}

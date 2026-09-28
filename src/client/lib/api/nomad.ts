@@ -1,6 +1,7 @@
 // src/lib/api/nomad.ts
 import {
   NomadJobsResponse,
+  NomadJobListStub,
   ApiError,
   NomadNamespace,
   NomadNode,
@@ -30,6 +31,7 @@ import {
 } from '../../types/acl';
 import { PermissionError } from '../errors';
 import { DEFAULT_NAMESPACE } from '../constants';
+import { periodicLaunchPrefix } from '../services/periodicService';
 
 /**
  * NomadClient - A client for interacting with Nomad API
@@ -53,6 +55,14 @@ export class NomadClient {
     const parts = value.split(`; ${name}=`);
     if (parts.length === 2) return parts.pop()?.split(';').shift() || null;
     return null;
+  }
+
+  /**
+   * Path of a job endpoint. Job IDs can contain "/", so the ID is encoded
+   * like the Nomad Go client does (url.PathEscape).
+   */
+  private jobEndpoint(id: string, suffix = ''): string {
+    return `/v1/job/${encodeURIComponent(id)}${suffix}`;
   }
 
   /**
@@ -177,7 +187,7 @@ export class NomadClient {
       namespace: namespace || '*'
     };
 
-    const response = await this.request<NomadJob[]>('/v1/jobs', {
+    const response = await this.request<NomadJobListStub[]>('/v1/jobs', {
       method: 'GET',
       params
     });
@@ -189,7 +199,7 @@ export class NomadClient {
    * Get job details by ID
    */
   async getJob(id: string, namespace: string = DEFAULT_NAMESPACE): Promise<NomadJob> {
-    return this.request<NomadJob>(`/v1/job/${id}`, {
+    return this.request<NomadJob>(this.jobEndpoint(id), {
       params: { namespace }
     });
   }
@@ -198,7 +208,7 @@ export class NomadClient {
    * Get job versions history
    */
   async getJobVersions(id: string, namespace: string = DEFAULT_NAMESPACE): Promise<{ Versions: NomadJobVersion[] }> {
-    return this.request<{ Versions: NomadJobVersion[] }>(`/v1/job/${id}/versions`, {
+    return this.request<{ Versions: NomadJobVersion[] }>(this.jobEndpoint(id, '/versions'), {
       params: { namespace }
     });
   }
@@ -207,7 +217,7 @@ export class NomadClient {
    * Get job evaluations
    */
   async getJobEvaluations(jobId: string, namespace: string = DEFAULT_NAMESPACE): Promise<NomadEvaluation[]> {
-    return this.request<NomadEvaluation[]>(`/v1/job/${jobId}/evaluations`, {
+    return this.request<NomadEvaluation[]>(this.jobEndpoint(jobId, '/evaluations'), {
       params: { namespace }
     });
   }
@@ -220,7 +230,7 @@ export class NomadClient {
     version: number,
     namespace: string = DEFAULT_NAMESPACE
   ): Promise<{ EvalID: string; EvalCreateIndex: number; JobModifyIndex: number }> {
-    return this.request(`/v1/job/${jobId}/revert`, {
+    return this.request(this.jobEndpoint(jobId, '/revert'), {
       method: 'POST',
       params: { namespace },
       body: JSON.stringify({
@@ -240,7 +250,7 @@ export class NomadClient {
     diff: boolean = true
   ): Promise<NomadJobPlanResponse> {
     const job = 'Job' in jobSpec ? jobSpec.Job : jobSpec;
-    return this.request<NomadJobPlanResponse>(`/v1/job/${jobId}/plan`, {
+    return this.request<NomadJobPlanResponse>(this.jobEndpoint(jobId, '/plan'), {
       method: 'POST',
       params: { namespace },
       body: JSON.stringify({
@@ -277,7 +287,7 @@ export class NomadClient {
    * Stop a job
    */
   async stopJob(id: string, namespace: string = DEFAULT_NAMESPACE): Promise<JobStopResponse> {
-    return this.request<JobStopResponse>(`/v1/job/${id}`, {
+    return this.request<JobStopResponse>(this.jobEndpoint(id), {
       method: 'DELETE',
       params: { namespace }
     });
@@ -287,7 +297,7 @@ export class NomadClient {
    * Delete a job (purge)
    */
   async deleteJob(id: string, namespace: string = DEFAULT_NAMESPACE): Promise<JobStopResponse> {
-    return this.request<JobStopResponse>(`/v1/job/${id}`, {
+    return this.request<JobStopResponse>(this.jobEndpoint(id), {
       method: 'DELETE',
       params: {
         namespace,
@@ -300,8 +310,30 @@ export class NomadClient {
    * Get job allocations
    */
   async getJobAllocations(jobId: string, namespace: string = DEFAULT_NAMESPACE): Promise<NomadAllocation[]> {
-    return this.request<NomadAllocation[]>(`/v1/job/${jobId}/allocations`, {
+    return this.request<NomadAllocation[]>(this.jobEndpoint(jobId, '/allocations'), {
       params: { namespace }
+    });
+  }
+
+  /**
+   * Launch a periodic job now (Nomad rejects this while the schedule is paused)
+   */
+  async forcePeriodicLaunch(
+    jobId: string,
+    namespace: string = DEFAULT_NAMESPACE
+  ): Promise<{ EvalID: string; EvalCreateIndex: number }> {
+    return this.request(this.jobEndpoint(jobId, '/periodic/force'), {
+      method: 'POST',
+      params: { namespace },
+    });
+  }
+
+  /**
+   * Get the launches (child jobs) of a periodic job
+   */
+  async getPeriodicLaunches(jobId: string, namespace: string = DEFAULT_NAMESPACE): Promise<NomadJobListStub[]> {
+    return this.request<NomadJobListStub[]>('/v1/jobs', {
+      params: { namespace, prefix: periodicLaunchPrefix(jobId) },
     });
   }
 

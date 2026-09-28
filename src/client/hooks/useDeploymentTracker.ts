@@ -2,7 +2,9 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { createNomadClient } from '../lib/api/nomad';
 import type { DeploymentState, DeploymentStep } from '../types/deployment';
+import type { NomadAllocation } from '../types/nomad';
 import { STEP_PROGRESS, DEPLOYMENT_STEPS } from '../lib/constants/deployment';
+import { jobPath } from '../lib/utils/jobPath';
 
 interface TaskEvent {
   Type: string;
@@ -19,6 +21,65 @@ interface TaskState {
 
 interface AllocationTaskStates {
   [taskName: string]: TaskState;
+}
+
+// What the tracker does next for an allocation
+export type AllocationOutcome =
+  | { kind: 'complete' }
+  | { kind: 'failed'; error: string }
+  | { kind: 'step'; step: 'pulling' | 'starting' }
+  | { kind: 'wait' };
+
+/**
+ * Decides the deployment outcome from an allocation's client status.
+ * @param now - Current time in ms, for the 3-second health rule
+ */
+export function allocationOutcome(
+  alloc: Pick<NomadAllocation, 'ClientStatus' | 'TaskStates'>,
+  now: number
+): AllocationOutcome {
+  const taskStates = (alloc.TaskStates || {}) as AllocationTaskStates;
+
+  // A batch job can finish between two polls
+  if (alloc.ClientStatus === 'complete') {
+    return { kind: 'complete' };
+  }
+
+  if (alloc.ClientStatus === 'failed') {
+    const failedTask = Object.entries(taskStates).find(
+      ([, ts]) => ts.State === 'dead' && ts.Failed
+    );
+
+    if (failedTask) {
+      const [taskName, taskState] = failedTask;
+      const lastEvent = taskState.Events?.[taskState.Events.length - 1];
+      const errorMsg = lastEvent?.DisplayMessage || lastEvent?.Message || 'Task failed';
+      return { kind: 'failed', error: `Task "${taskName}" failed: ${errorMsg}` };
+    }
+    return { kind: 'failed', error: 'Allocation failed' };
+  }
+
+  if (alloc.ClientStatus === 'pending') {
+    return { kind: 'step', step: 'pulling' };
+  }
+
+  if (alloc.ClientStatus === 'running') {
+    const allTasksRunning = Object.values(taskStates).every(
+      (ts) => ts.State === 'running'
+    );
+    if (!allTasksRunning) return { kind: 'step', step: 'pulling' };
+
+    // Check if healthy (tasks running for 3+ seconds)
+    const allTasksHealthy = Object.values(taskStates).every((ts) => {
+      const startedEvent = ts.Events?.find((e: TaskEvent) => e.Type === 'Started');
+      if (!startedEvent) return false;
+      const startedAt = new Date(startedEvent.Time / 1000000).getTime();
+      return now - startedAt > 3000;
+    });
+    return allTasksHealthy ? { kind: 'complete' } : { kind: 'step', step: 'starting' };
+  }
+
+  return { kind: 'wait' };
 }
 
 const POLLING_INTERVAL = 2000; // 2 seconds
@@ -100,7 +161,7 @@ export function useDeploymentTracker(options: UseDeploymentTrackerOptions = {}) 
     const data = dataRef.current;
     setTimeout(() => {
       if (data) {
-        navigate(`/jobs/${data.jobId}?namespace=${data.namespace}`);
+        navigate(jobPath(data.jobId, data.namespace));
       }
       options.onComplete?.();
     }, SUCCESS_REDIRECT_DELAY);
@@ -174,56 +235,15 @@ export function useDeploymentTracker(options: UseDeploymentTrackerOptions = {}) 
 
       // Phase 2: Check allocation status
       const alloc = await client.getAllocation(data.allocId);
+      const outcome = allocationOutcome(alloc, Date.now());
 
-      if (alloc.ClientStatus === 'failed') {
-        const taskStates = (alloc.TaskStates || {}) as AllocationTaskStates;
-        const failedTask = Object.entries(taskStates).find(
-          ([, ts]) => ts.State === 'dead' && ts.Failed
-        );
-
-        if (failedTask) {
-          const [taskName, taskState] = failedTask;
-          const lastEvent = taskState.Events?.[taskState.Events.length - 1];
-          const errorMsg = lastEvent?.DisplayMessage || lastEvent?.Message || 'Task failed';
-          handleError(`Task "${taskName}" failed: ${errorMsg}`);
-        } else {
-          handleError('Allocation failed');
-        }
-        return;
-      }
-
-      if (alloc.ClientStatus === 'pending') {
-        updateState({ step: 'pulling', progress: STEP_PROGRESS.pulling });
-        data.currentStep = 'pulling';
-        return;
-      }
-
-      if (alloc.ClientStatus === 'running') {
-        const taskStates = (alloc.TaskStates || {}) as AllocationTaskStates;
-        const allTasksRunning = Object.values(taskStates).every(
-          (ts) => ts.State === 'running'
-        );
-
-        if (allTasksRunning) {
-          // Check if healthy (tasks running for 3+ seconds)
-          const allTasksHealthy = Object.values(taskStates).every((ts) => {
-            const startedEvent = ts.Events?.find((e: TaskEvent) => e.Type === 'Started');
-            if (!startedEvent) return false;
-            const startedAt = new Date(startedEvent.Time / 1000000).getTime();
-            return Date.now() - startedAt > 3000;
-          });
-
-          if (allTasksHealthy) {
-            handleComplete();
-            return;
-          }
-
-          updateState({ step: 'starting', progress: STEP_PROGRESS.starting });
-          data.currentStep = 'starting';
-        } else {
-          updateState({ step: 'pulling', progress: STEP_PROGRESS.pulling });
-          data.currentStep = 'pulling';
-        }
+      if (outcome.kind === 'failed') {
+        handleError(outcome.error);
+      } else if (outcome.kind === 'complete') {
+        handleComplete();
+      } else if (outcome.kind === 'step') {
+        updateState({ step: outcome.step, progress: STEP_PROGRESS[outcome.step] });
+        data.currentStep = outcome.step;
       }
     } catch {
       // Don't fail on polling errors, continue polling
@@ -278,7 +298,7 @@ export function useDeploymentTracker(options: UseDeploymentTrackerOptions = {}) 
   const navigateToJob = useCallback(() => {
     const data = dataRef.current;
     if (data) {
-      navigate(`/jobs/${data.jobId}?namespace=${data.namespace}`);
+      navigate(jobPath(data.jobId, data.namespace));
     }
     stopTracking();
   }, [navigate, stopTracking]);

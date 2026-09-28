@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { createNomadClient } from '../lib/api/nomad';
 import { getErrorMessage } from '../lib/errors';
-import { NomadAllocation, NomadJob } from '../types/nomad';
+import { NomadAllocation, NomadJobListStub } from '../types/nomad';
 import {
   LoadingSpinner,
   ErrorAlert,
@@ -21,6 +21,7 @@ import {
   getStatusClasses,
 } from '../lib/utils/statusColors';
 import { formatTimestamp } from '../lib/utils/dateFormatter';
+import { jobPath } from '../lib/utils/jobPath';
 
 interface FailedAllocationInfo {
   allocation: NomadAllocation;
@@ -35,7 +36,7 @@ interface TaskGroupFailure {
 }
 
 interface HistoricalJobInfo {
-  job: NomadJob;
+  job: NomadJobListStub;
   failedCount: number;
   taskGroups: TaskGroupFailure[];
 }
@@ -156,7 +157,7 @@ export default function FailedAllocationsPage() {
       header: 'Job',
       render: ({ allocation, jobName }) => (
         <Link
-          to={`/jobs/${allocation.JobID}?namespace=${allocation.Namespace}`}
+          to={jobPath(allocation.JobID, allocation.Namespace)}
           className="text-blue-600 dark:text-blue-400 hover:underline"
         >
           {jobName}
@@ -330,7 +331,7 @@ export default function FailedAllocationsPage() {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3 flex-wrap">
                       <Link
-                        to={`/jobs/${job.ID}?namespace=${job.Namespace}`}
+                        to={jobPath(job.ID, job.Namespace)}
                         className="text-blue-600 dark:text-blue-400 hover:underline font-medium"
                       >
                         {job.Name}

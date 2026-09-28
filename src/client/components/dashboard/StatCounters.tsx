@@ -1,8 +1,9 @@
 import { Link } from 'react-router-dom';
-import { NomadJob, NomadNode, NomadNamespace } from '../../types/nomad';
+import { NomadJobListStub, NomadNode, NomadNamespace } from '../../types/nomad';
+import { countJobsByStatus } from '../../lib/services/jobCounts';
 
 interface StatCountersProps {
-  jobs: NomadJob[];
+  jobs: NomadJobListStub[];
   nodes: NomadNode[];
   namespaces: NomadNamespace[];
   activeFailedAllocations: number;
@@ -79,28 +80,6 @@ function CounterCard({ title, titleLink, icon, stats, loading }: CounterCardProp
   );
 }
 
-function calculateJobStats(jobs: NomadJob[]) {
-  let running = 0;
-  let pending = 0;
-  let dead = 0;
-
-  jobs.forEach((job) => {
-    switch (job.Status) {
-      case 'running':
-        running++;
-        break;
-      case 'pending':
-        pending++;
-        break;
-      case 'dead':
-        dead++;
-        break;
-    }
-  });
-
-  return { running, pending, dead };
-}
-
 function calculateNodeStats(nodes: NomadNode[]) {
   let ready = 0;
   let down = 0;
@@ -119,7 +98,7 @@ function calculateNodeStats(nodes: NomadNode[]) {
   return { ready, down, draining };
 }
 
-function calculateAllocationStats(jobs: NomadJob[]) {
+function calculateAllocationStats(jobs: NomadJobListStub[]) {
   let running = 0;
   let pending = 0;
   let failed = 0;
@@ -222,7 +201,7 @@ function AllocationCounterCard({ running, pending, activeFailed, historicalFaile
 }
 
 export function StatCounters({ jobs, nodes, namespaces, activeFailedAllocations, loading }: StatCountersProps) {
-  const jobStats = calculateJobStats(jobs);
+  const jobStats = countJobsByStatus(jobs);
   const nodeStats = calculateNodeStats(nodes);
   const allocStats = calculateAllocationStats(jobs);
 

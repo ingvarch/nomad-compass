@@ -58,6 +58,13 @@ export function useTaskHandlers(groupIndex: number, taskIndex: number) {
     [groupIndex, taskIndex, dispatch]
   );
 
+  const onArgsChange = useCallback(
+    (args: string[]) => {
+      dispatch(jobFormActions.updateTask(groupIndex, taskIndex, { args }));
+    },
+    [groupIndex, taskIndex, dispatch]
+  );
+
   const onRemoveTask = useCallback(() => {
     dispatch(jobFormActions.removeTask(groupIndex, taskIndex));
   }, [groupIndex, taskIndex, dispatch]);
@@ -69,6 +76,7 @@ export function useTaskHandlers(groupIndex: number, taskIndex: number) {
     onEnvVarChange,
     onAddEnvVar,
     onRemoveEnvVar,
+    onArgsChange,
     onRemoveTask,
   };
 }

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, type ReactNode } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../../context/AuthContext';
 import { createNomadClient } from '../../../lib/api/nomad';
@@ -8,20 +8,26 @@ import { buttonPrimaryStyles, buttonDangerStyles, buttonSecondaryStyles, buttonS
 import PermissionErrorModal from '../../ui/PermissionErrorModal';
 import { ConfirmationDialog } from '../../ui/ConfirmationDialog';
 import { Badge } from '../../ui';
+import { jobPath, jobClonePath } from '../../../lib/utils/jobPath';
+import { isPeriodicLaunch } from '../../../lib/services/periodicService';
 
 interface JobHeaderProps {
   jobName: string;
   jobId: string;
   namespace: string;
+  parentId?: string;
+  actions?: ReactNode;
 }
 
-const JobHeader: React.FC<JobHeaderProps> = ({ jobName, jobId, namespace }) => {
+const JobHeader: React.FC<JobHeaderProps> = ({ jobName, jobId, namespace, parentId, actions }) => {
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
   const { addToast } = useToast();
   const [isDeleting, setIsDeleting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [permissionError, setPermissionError] = useState<string | null>(null);
+  const isLaunch = isPeriodicLaunch({ ID: jobId, ParentID: parentId });
+  const isChild = !!parentId;
 
   const handleDelete = async () => {
     if (!isAuthenticated) {
@@ -76,27 +82,42 @@ const JobHeader: React.FC<JobHeaderProps> = ({ jobName, jobId, namespace }) => {
             </p>
             <Badge variant="blue">Namespace: {namespace}</Badge>
           </div>
+          {isLaunch && (
+            <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+              Launch of{' '}
+              <Link to={jobPath(parentId!, namespace)} className="text-blue-600 hover:text-blue-800 dark:text-blue-400">
+                {parentId}
+              </Link>
+            </p>
+          )}
         </div>
         <div className="flex space-x-2">
-          <Link
-            to={`/jobs/${jobId}/edit?namespace=${namespace}`}
-            className={`${buttonSuccessStyles} shadow-sm`}
-          >
-            <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-            </svg>
-            Edit
-          </Link>
+          {actions}
 
-          <Link
-            to={`/jobs/create?clone=${jobId}&namespace=${namespace}`}
-            className={`${buttonPrimaryStyles} shadow-sm`}
-          >
-            <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-            </svg>
-            Clone
-          </Link>
+          {/* Nomad drops ParentID when a child job is registered again: edit or clone the parent instead */}
+          {!isChild && (
+            <>
+              <Link
+                to={jobPath(jobId, namespace, 'edit')}
+                className={`${buttonSuccessStyles} shadow-sm`}
+              >
+                <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                </svg>
+                Edit
+              </Link>
+
+              <Link
+                to={jobClonePath(jobId, namespace)}
+                className={`${buttonPrimaryStyles} shadow-sm`}
+              >
+                <svg className="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                </svg>
+                Clone
+              </Link>
+            </>
+          )}
 
           <button
             onClick={() => setShowDeleteConfirm(true)}

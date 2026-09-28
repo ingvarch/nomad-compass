@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useCallback, useContext, useMemo, useState, ReactNode } from 'react';
 
 export type ToastType = 'success' | 'error' | 'info' | 'warning';
 
@@ -17,6 +17,9 @@ interface ToastContextType {
 
 const ToastContext = createContext<ToastContextType | undefined>(undefined);
 
+// Unique even within one millisecond; crypto.randomUUID works only on HTTPS or localhost
+let lastToastId = 0;
+
 export const useToast = () => {
     const context = useContext(ToastContext);
     if (!context) {
@@ -28,8 +31,13 @@ export const useToast = () => {
 export const ToastProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const [toasts, setToasts] = useState<Toast[]>([]);
 
-    const addToast = (message: string, type: ToastType, duration = 5000) => {
-        const id = Date.now().toString();
+    // Stable callbacks: consumers list addToast in effect deps
+    const removeToast = useCallback((id: string) => {
+        setToasts((prevToasts) => prevToasts.filter((toast) => toast.id !== id));
+    }, []);
+
+    const addToast = useCallback((message: string, type: ToastType, duration = 5000) => {
+        const id = String(++lastToastId);
         const newToast = { id, message, type, duration };
 
         setToasts((prevToasts) => [...prevToasts, newToast]);
@@ -41,14 +49,12 @@ export const ToastProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         }
 
         return id;
-    };
+    }, [removeToast]);
 
-    const removeToast = (id: string) => {
-        setToasts((prevToasts) => prevToasts.filter((toast) => toast.id !== id));
-    };
+    const value = useMemo(() => ({ toasts, addToast, removeToast }), [toasts, addToast, removeToast]);
 
     return (
-        <ToastContext.Provider value={{ toasts, addToast, removeToast }}>
+        <ToastContext.Provider value={value}>
             {children}
         </ToastContext.Provider>
     );

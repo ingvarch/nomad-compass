@@ -1,7 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import { createNomadClient } from '../lib/api/nomad';
-import { NomadJob, NomadNode, NomadNamespace, NomadAgentSelf, NomadAgentMembers, NomadAllocation } from '../types/nomad';
+import { NomadJobListStub, NomadNode, NomadNamespace, NomadAgentSelf, NomadAgentMembers, NomadAllocation } from '../types/nomad';
 import {
   ClusterHealth,
   StatCounters,
@@ -17,7 +17,7 @@ import { ErrorAlert, PageHeader } from '../components/ui';
 import { getErrorMessage } from '../lib/errors';
 
 interface DashboardData {
-  jobs: NomadJob[];
+  jobs: NomadJobListStub[];
   nodes: NomadNode[];
   namespaces: NomadNamespace[];
   agentSelf: NomadAgentSelf | null;

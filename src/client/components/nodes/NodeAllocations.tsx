@@ -8,6 +8,7 @@ import {
   tableBodyStyles,
   tableRowHoverStyles,
 } from '../../lib/styles';
+import { jobPath } from '../../lib/utils/jobPath';
 
 function getFirstTask(alloc: NomadAllocation): string | null {
   if (alloc.TaskStates) {
@@ -80,7 +81,7 @@ export function NodeAllocations({ allocations }: NodeAllocationsProps) {
                 </td>
                 <td className="px-4 py-3 whitespace-nowrap">
                   <Link
-                    to={`/jobs/${alloc.JobID}?namespace=${alloc.Namespace}`}
+                    to={jobPath(alloc.JobID, alloc.Namespace)}
                     className="text-sm text-blue-600 dark:text-blue-400 hover:underline"
                   >
                     {alloc.JobID}

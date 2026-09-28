@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { Modal, ErrorAlert } from '../ui';
 import { NomadJobPlanResponse, NomadJobDiff } from '../../types/nomad';
 import { processJobDiff, HclLine, HCL_KEYWORDS } from '../../lib/hclDiffRenderer';
+import { formatIsoDateLong } from '../../lib/utils/dateFormatter';
+import { nextPeriodicLaunch } from '../../lib/services/periodicService';
 
 interface JobPlanPreviewProps {
   isOpen: boolean;
@@ -11,6 +13,7 @@ interface JobPlanPreviewProps {
   isLoading: boolean;
   error: string | null;
   isSubmitting: boolean;
+  isPeriodic?: boolean;
 }
 
 // Syntax highlighting for HCL content
@@ -118,14 +121,18 @@ function JobPlanPreview({
   isLoading,
   error,
   isSubmitting,
+  isPeriodic = false,
 }: JobPlanPreviewProps) {
   const [activeSection, setActiveSection] = useState<'summary' | 'diff' | 'failures'>('summary');
 
   if (!isOpen) return null;
 
   const hasFailures = planResult?.FailedTGAllocs && Object.keys(planResult.FailedTGAllocs).length > 0;
+  // Registering a periodic job places nothing: Nomad places allocations at each launch
+  const blocksSubmit = hasFailures && !isPeriodic;
   const hasWarnings = !!planResult?.Warnings;
   const hasDiff = planResult?.Diff && planResult.Diff.Type !== 'None';
+  const nextLaunch = planResult && nextPeriodicLaunch(planResult);
 
   return (
     <Modal
@@ -155,10 +162,35 @@ function JobPlanPreview({
             </div>
           )}
 
+          {/* Next launch of a periodic job */}
+          {nextLaunch && (
+            <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 text-sm text-blue-800 dark:text-blue-200">
+              <span className="font-medium">Next launch:</span>{' '}
+              <span>{formatIsoDateLong(nextLaunch)}</span>
+            </div>
+          )}
+
           {/* Placement Failures */}
           {hasFailures && (
-            <div className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4">
-              <h4 className="font-medium text-red-800 dark:text-red-200 mb-2">Placement Failures</h4>
+            <div
+              className={
+                isPeriodic
+                  ? 'bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4'
+                  : 'bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-4'
+              }
+            >
+              <h4
+                className={`font-medium mb-2 ${
+                  isPeriodic ? 'text-yellow-800 dark:text-yellow-200' : 'text-red-800 dark:text-red-200'
+                }`}
+              >
+                Placement Failures
+              </h4>
+              {isPeriodic && (
+                <p className="text-sm text-yellow-700 dark:text-yellow-300 mb-2">
+                  Launches wait until a node can run them.
+                </p>
+              )}
               {Object.entries(planResult.FailedTGAllocs!).map(([tgName, failure]) => (
                 <div key={tgName} className="mb-2">
                   <span className="font-medium">{tgName}</span>: {failure.NodesEvaluated} nodes evaluated, {failure.NodesFiltered} filtered
@@ -206,7 +238,11 @@ function JobPlanPreview({
             {activeSection === 'summary' && (
               <div className="space-y-4">
                 {/* Annotations - Desired Updates */}
-                {planResult.Annotations?.DesiredTGUpdates && Object.keys(planResult.Annotations.DesiredTGUpdates).length > 0 ? (
+                {isPeriodic ? (
+                  <p className="text-sm text-gray-700 dark:text-gray-300">
+                    Nomad creates allocations at each launch.
+                  </p>
+                ) : planResult.Annotations?.DesiredTGUpdates && Object.keys(planResult.Annotations.DesiredTGUpdates).length > 0 ? (
                   <div>
                     <h4 className="font-medium text-gray-900 dark:text-white mb-3">
                       What will happen when you submit this job:
@@ -327,16 +363,16 @@ function JobPlanPreview({
             </button>
             <button
               onClick={onConfirm}
-              disabled={isSubmitting || hasFailures}
+              disabled={isSubmitting || blocksSubmit}
               className={`px-4 py-2 text-sm font-medium rounded-md text-white ${
-                hasFailures
+                blocksSubmit
                   ? 'bg-gray-400 cursor-not-allowed'
                   : isSubmitting
                     ? 'bg-blue-400 cursor-wait'
                     : 'bg-blue-600 hover:bg-blue-700'
               }`}
             >
-              {isSubmitting ? 'Submitting...' : hasFailures ? 'Cannot Submit (Placement Failed)' : 'Confirm & Submit'}
+              {isSubmitting ? 'Submitting...' : blocksSubmit ? 'Cannot Submit (Placement Failed)' : 'Confirm & Submit'}
             </button>
           </div>
         </div>

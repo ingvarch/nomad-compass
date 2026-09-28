@@ -3,12 +3,14 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { createNomadClient } from '../../lib/api/nomad';
 import { getErrorMessage } from '../../lib/errors';
-import { NomadJob, NomadNamespace } from '../../types/nomad';
+import { NomadJobListStub, NomadNamespace } from '../../types/nomad';
 import { LoadingSpinner, ErrorAlert, Badge } from '../ui';
 import DataTable, { type Column } from '../ui/DataTable';
 import { StatusBadge } from './detail/StatusBadge';
+import { jobPath } from '../../lib/utils/jobPath';
+import { listedJobs } from '../../lib/services/periodicService';
 
-const jobColumns: Column<NomadJob>[] = [
+export const jobColumns: Column<NomadJobListStub>[] = [
   {
     key: 'name',
     header: 'Name / ID',
@@ -17,7 +19,7 @@ const jobColumns: Column<NomadJob>[] = [
         <div className="ml-4">
           <div className="text-sm font-medium text-gray-900 dark:text-monokai-text">
             <Link
-              to={`/jobs/${job.ID}?namespace=${job.Namespace || 'default'}`}
+              to={jobPath(job.ID, job.Namespace || 'default')}
               className="text-blue-600 hover:text-blue-800 dark:text-monokai-blue dark:hover:text-monokai-blue"
             >
               {job.Name}
@@ -44,7 +46,14 @@ const jobColumns: Column<NomadJob>[] = [
     key: 'type',
     header: 'Type',
     render: (job) => (
-      <span className="text-sm text-gray-900 dark:text-monokai-text">{job.Type}</span>
+      <span className="text-sm text-gray-900 dark:text-monokai-text">
+        {job.Type}
+        {job.Periodic && (
+          <Badge variant="purple" className="ml-2">
+            periodic
+          </Badge>
+        )}
+      </span>
     ),
   },
   {
@@ -57,7 +66,7 @@ const jobColumns: Column<NomadJob>[] = [
 ];
 
 const JobList: React.FC = () => {
-  const [jobs, setJobs] = useState<NomadJob[]>([]);
+  const [jobs, setJobs] = useState<NomadJobListStub[]>([]);
   const [namespaces, setNamespaces] = useState<NomadNamespace[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -85,7 +94,7 @@ const JobList: React.FC = () => {
         setNamespaces(sortedNamespaces);
 
         const jobsResponse = await client.getJobs(selectedNamespace);
-        setJobs(jobsResponse.Jobs || []);
+        setJobs(listedJobs(jobsResponse.Jobs || []));
         setError(null);
       } catch (err) {
         setError(`Failed to load namespaces or jobs: ${getErrorMessage(err)}`);

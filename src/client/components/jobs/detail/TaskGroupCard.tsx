@@ -11,7 +11,7 @@ interface TaskGroupCardProps {
   expandedGroups: Record<string, boolean>;
   onToggle: () => void;
   onToggleTask: (taskName: string) => void;
-  onViewLogs: () => void;
+  onViewLogs?: () => void;
 }
 
 function TaskDetail({ task }: { task: NomadTask }) {
@@ -195,17 +195,19 @@ const TaskGroupCard: React.FC<TaskGroupCardProps> = ({
                             ({task.Driver})
                           </span>
                         </div>
-                        <div className="flex items-center space-x-2">
-                          <button
-                            className="px-3 py-1 text-xs font-medium rounded-full bg-blue-600 text-white hover:bg-blue-700"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              onViewLogs();
-                            }}
-                          >
-                            View Logs
-                          </button>
-                        </div>
+                        {onViewLogs && (
+                          <div className="flex items-center space-x-2">
+                            <button
+                              className="px-3 py-1 text-xs font-medium rounded-full bg-blue-600 text-white hover:bg-blue-700"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onViewLogs();
+                              }}
+                            >
+                              View Logs
+                            </button>
+                          </div>
+                        )}
                       </div>
 
                       {isTaskExpanded && <TaskDetail task={task} />}

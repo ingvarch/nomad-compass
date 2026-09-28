@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import type { ProblematicAllocation } from '../../lib/services/allocationAnalyzer';
 import { formatTimeAgo } from '../../lib/services/allocationAnalyzer';
 import { Badge } from '../ui';
+import { jobPath } from '../../lib/utils/jobPath';
 
 interface StabilityAlertsProps {
   problems: ProblematicAllocation[];
@@ -92,7 +93,7 @@ export function StabilityAlerts({ problems, loading }: StabilityAlertsProps) {
                       }`}
                     />
                     <Link
-                      to={`/jobs/${allocation.JobID}?namespace=${allocation.Namespace}`}
+                      to={jobPath(allocation.JobID, allocation.Namespace)}
                       className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline truncate"
                     >
                       {allocation.JobID}

@@ -4,6 +4,7 @@ import { createNomadClient } from '../lib/api/nomad';
 import { getErrorMessage } from '../lib/errors';
 import { PageHeader, BackLink, LoadingSpinner, ErrorAlert } from '../components/ui';
 import ExecTerminal from '../components/exec/ExecTerminal';
+import { jobPath } from '../lib/utils/jobPath';
 
 interface AllocationInfo {
   ID: string;
@@ -122,7 +123,7 @@ export default function ExecPage() {
             <div>
               <span className="text-gray-500 dark:text-gray-400">Job</span>
               <p className="font-medium text-blue-600 dark:text-blue-400 hover:underline cursor-pointer"
-                 onClick={() => navigate(`/jobs/${allocation.JobID}?namespace=${allocation.Namespace}`)}>
+                 onClick={() => navigate(jobPath(allocation.JobID, allocation.Namespace))}>
                 {allocation.JobID}
               </p>
             </div>
@@ -235,7 +236,7 @@ export default function ExecPage() {
       )}
 
       <BackLink
-        to={`/jobs/${allocation?.JobID}?namespace=${namespace}`}
+        to={jobPath(allocation?.JobID ?? '', namespace)}
         label="Back to Job"
       />
     </div>

@@ -92,10 +92,21 @@ export function useJobForm({
     }
 
     dispatch(jobFormActions.setLoading(true));
+    // A failed load must not show the previous job's parent link
+    dispatch(jobFormActions.setInitialJob(null));
     try {
       const client = createNomadClient();
       const jobData = await client.getJob(jobId, namespace);
       dispatch(jobFormActions.setInitialJob(jobData));
+      // Nomad drops ParentID when a child job is registered again
+      if (jobData.ParentID) {
+        dispatch(
+          jobFormActions.setError(
+            `"${jobData.ID}" was started by "${jobData.ParentID}" and cannot be edited. Edit "${jobData.ParentID}" instead.`
+          )
+        );
+        return;
+      }
 
       const formattedData = ensureEnvVars(convertJobToFormData(jobData));
       dispatch(jobFormActions.setFormData(formattedData));

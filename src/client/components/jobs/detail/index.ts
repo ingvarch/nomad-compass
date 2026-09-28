@@ -13,3 +13,6 @@ export { VersionsTab } from './VersionsTab';
 export { EvaluationsTab } from './EvaluationsTab';
 export { LogsTab } from './LogsTab';
 export { ExecTab } from './ExecTab';
+export { ScheduleCard } from './ScheduleCard';
+export { PeriodicActions } from './PeriodicActions';
+export { LaunchesTab } from './LaunchesTab';

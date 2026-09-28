@@ -1,6 +1,6 @@
 import { useSearchParams } from 'react-router-dom';
 
-export type JobTabType = 'overview' | 'versions' | 'evaluations' | 'logs' | 'exec';
+export type JobTabType = 'overview' | 'launches' | 'versions' | 'evaluations' | 'logs' | 'exec';
 
 interface Tab {
   id: JobTabType;
@@ -15,13 +15,26 @@ const TABS: Tab[] = [
   { id: 'exec', label: 'Exec' },
 ];
 
-interface JobDetailTabsProps {
-  namespace: string;
+// A periodic job has no allocations of its own: its runs are the launches
+const PERIODIC_TABS: Tab[] = [
+  { id: 'overview', label: 'Overview' },
+  { id: 'launches', label: 'Launches' },
+  { id: 'versions', label: 'Versions' },
+  { id: 'evaluations', label: 'Evaluations' },
+];
+
+function jobTabs(isPeriodic: boolean): Tab[] {
+  return isPeriodic ? PERIODIC_TABS : TABS;
 }
 
-export function JobDetailTabs({ namespace }: JobDetailTabsProps) {
+interface JobDetailTabsProps {
+  namespace: string;
+  isPeriodic?: boolean;
+}
+
+export function JobDetailTabs({ namespace, isPeriodic = false }: JobDetailTabsProps) {
   const [searchParams, setSearchParams] = useSearchParams();
-  const activeTab = (searchParams.get('tab') as JobTabType) || 'overview';
+  const activeTab = useActiveJobTab(isPeriodic);
 
   const handleTabChange = (tabId: JobTabType) => {
     const newParams = new URLSearchParams(searchParams);
@@ -40,7 +53,7 @@ export function JobDetailTabs({ namespace }: JobDetailTabsProps) {
   return (
     <div className="border-b border-gray-200 dark:border-gray-700">
       <nav className="flex -mb-px space-x-8">
-        {TABS.map((tab) => (
+        {jobTabs(isPeriodic).map((tab) => (
           <button
             key={tab.id}
             onClick={() => handleTabChange(tab.id)}
@@ -58,7 +71,11 @@ export function JobDetailTabs({ namespace }: JobDetailTabsProps) {
   );
 }
 
-export function useActiveJobTab(): JobTabType {
+/**
+ * Tab from the URL, or the overview when this job has no such tab
+ */
+export function useActiveJobTab(isPeriodic: boolean): JobTabType {
   const [searchParams] = useSearchParams();
-  return (searchParams.get('tab') as JobTabType) || 'overview';
+  const tab = searchParams.get('tab');
+  return jobTabs(isPeriodic).find(({ id }) => id === tab)?.id ?? 'overview';
 }

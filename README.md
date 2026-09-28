@@ -26,6 +26,8 @@ Formerly Nomad Compass.
   ingress tags.
 - Shows the plan diff before a job is submitted, and reverts a job to any
   earlier version.
+- Creates periodic (cron) batch jobs, runs them on demand, pauses their
+  schedule and lists their launches.
 - Streams task logs with stdout/stderr filtering.
 - Opens a terminal in a running task. The ACL token stays in an `httpOnly`
   cookie and never appears in a URL.

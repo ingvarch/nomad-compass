@@ -2,6 +2,7 @@ import { Link } from 'react-router-dom';
 import type { RecentEvent } from '../../lib/services/allocationAnalyzer';
 import { formatTimeAgo } from '../../lib/services/allocationAnalyzer';
 import { severityColors, getStatusClasses } from '../../lib/utils/statusColors';
+import { jobPath } from '../../lib/utils/jobPath';
 
 // Re-export RecentEvent type for other modules
 export type { RecentEvent };
@@ -55,7 +56,7 @@ export function RecentActivity({ events, loading }: RecentActivityProps) {
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2 text-xs">
                     <Link
-                      to={`/jobs/${event.jobId}?namespace=${event.namespace}`}
+                      to={jobPath(event.jobId, event.namespace)}
                       className="font-medium text-blue-600 dark:text-blue-400 hover:underline truncate"
                     >
                       {event.jobId}

@@ -15,6 +15,7 @@ import {
 import { extractRecentEvents, formatTimeAgo, type RecentEvent } from '../lib/services/allocationAnalyzer';
 import { severityColors, getStatusClasses } from '../lib/utils/statusColors';
 import { labelSmallStyles } from '../lib/styles';
+import { jobPath } from '../lib/utils/jobPath';
 
 type SeverityFilter = 'all' | 'info' | 'warning' | 'error';
 type TimeRangeFilter = 'all' | '1h' | '6h' | '24h' | '7d';
@@ -150,7 +151,7 @@ export default function ActivityPage() {
       header: 'Job',
       render: (event) => (
         <Link
-          to={`/jobs/${event.jobId}?namespace=${event.namespace}`}
+          to={jobPath(event.jobId, event.namespace)}
           className="text-sm font-medium text-blue-600 dark:text-blue-400 hover:underline"
         >
           {event.jobId}
