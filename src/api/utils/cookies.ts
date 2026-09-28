@@ -8,9 +8,12 @@ export const COOKIE_MAX_AGE = 7 * 24 * 60 * 60; // 7 days in seconds
 
 /**
  * Detect if the request is using HTTPS.
+ * Behind a TLS-terminating proxy, trusts the first X-Forwarded-Proto value.
+ * A spoofed header only makes the caller's own cookies Secure.
  */
 export function isSecureContext(c: Context): boolean {
-  return new URL(c.req.url).protocol === 'https:';
+  const forwardedProto = c.req.header('x-forwarded-proto')?.split(',')[0].trim();
+  return forwardedProto === 'https' || new URL(c.req.url).protocol === 'https:';
 }
 
 /**

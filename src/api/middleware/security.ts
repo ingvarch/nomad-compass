@@ -1,5 +1,6 @@
 import { createMiddleware } from 'hono/factory'
 import type { Env } from '../types'
+import { isSecureContext } from '../utils/cookies'
 
 /**
  * Security headers middleware
@@ -16,9 +17,7 @@ export const securityHeaders = createMiddleware<{ Bindings: Env }>(
 
     // Set Strict-Transport-Security when using HTTPS
     // Check X-Forwarded-Proto header for proxy setups, then fall back to URL scheme
-    const forwardedProto = c.req.header('x-forwarded-proto')
-    const isHttps = forwardedProto === 'https' || c.req.url.startsWith('https://')
-    if (isHttps) {
+    if (isSecureContext(c)) {
       c.res.headers.set(
         'Strict-Transport-Security',
         'max-age=63072000; includeSubDomains; preload'
