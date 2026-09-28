@@ -1,5 +1,5 @@
 {
-  "name": "nomad-compass",
+  "name": "ovoo",
   "version": "0.1.0",
   "private": true,
   "type": "module",
@@ -14,7 +14,7 @@
     "build:all": "bun run build && bun run build:bun",
     "preview": "bunx --bun vite preview",
     "deploy:cf": "bun run build && wrangler deploy",
-    "docker:build": "bun run build:all && docker build -t nomad-compass .",
+    "docker:build": "bun run build:all && docker build -t ovoo .",
     "lint": "bunx eslint src/",
     "typecheck": "bunx tsc --noEmit",
     "test": "bun test"

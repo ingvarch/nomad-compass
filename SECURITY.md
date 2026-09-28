@@ -8,7 +8,7 @@ it before you report.
 ## Reporting a vulnerability
 
 Do not open a public issue. Report it privately on the
-[Security tab](https://github.com/ingvarch/nomad-compass/security/advisories/new):
+[Security tab](https://github.com/ingvarch/ovoo/security/advisories/new):
 only the maintainer sees the report. Say what an attacker can do and how to
 reproduce it.
 

@@ -1,4 +1,4 @@
-# Contributing to Nomad Compass
+# Contributing to ovoo
 
 Bug reports, ideas and pull requests are welcome. A security problem is
 reported privately, not in an issue: see [SECURITY.md](SECURITY.md).

@@ -1,6 +1,6 @@
 ## What changes
 
-<!-- What the change does for someone using Nomad Compass, and why. Link the issue: Closes #123 -->
+<!-- What the change does for someone using ovoo, and why. Link the issue: Closes #123 -->
 
 ## Checklist
 

@@ -1,6 +1,6 @@
 # Deployment
 
-Nomad Compass supports two deployment targets from the same codebase:
+ovoo supports two deployment targets from the same codebase:
 
 | Target | Best for | Latency | Infrastructure |
 |--------|----------|---------|----------------|
@@ -37,7 +37,7 @@ bun run deploy:cf
 ```
 
 Your app will be available at
-`https://nomad-compass.<your-subdomain>.workers.dev`.
+`https://ovoo.<your-subdomain>.workers.dev`.
 
 A custom domain is an optional `wrangler.toml` addition:
 
@@ -64,17 +64,17 @@ Preview URLs are public; Cloudflare Access can require sign-in for them.
 For self-hosted, on-premise, or air-gapped environments.
 
 A release tag (`v*.*.*`) builds a multi-arch image (amd64, arm64) and pushes
-it to `ghcr.io/ingvarch/nomad-compass` as the version tag and as `latest`.
+it to `ghcr.io/ingvarch/ovoo` as the version tag and as `latest`.
 
 **Run the published image:**
 
 ```bash
 docker run -d \
-  --name nomad-compass \
+  --name ovoo \
   -p 3000:3000 \
   -e NOMAD_ADDR=http://your-nomad-server:4646 \
   -e TICKET_SECRET=your-generated-secret \
-  ghcr.io/ingvarch/nomad-compass:latest
+  ghcr.io/ingvarch/ovoo:latest
 ```
 
 **Build it yourself:**
@@ -82,15 +82,15 @@ docker run -d \
 ```bash
 bun run docker:build
 # or directly with Docker
-docker build -t nomad-compass .
+docker build -t ovoo .
 ```
 
 **Docker Compose:**
 
 ```yaml
 services:
-  nomad-compass:
-    image: ghcr.io/ingvarch/nomad-compass:latest
+  ovoo:
+    image: ghcr.io/ingvarch/ovoo:latest
     # or build from source: build: .
     ports:
       - "3000:3000"
@@ -102,21 +102,21 @@ services:
 
 ## Behind a reverse proxy
 
-Terminate TLS at the proxy. Nomad Compass reads `X-Forwarded-Proto` to mark
+Terminate TLS at the proxy. ovoo reads `X-Forwarded-Proto` to mark
 its cookies `Secure` and to send HSTS, and `X-Real-IP` or `X-Forwarded-For`
 for rate limits. Traefik sets these headers by default.
 
 ```yaml
 services:
-  nomad-compass:
-    image: ghcr.io/ingvarch/nomad-compass:latest
+  ovoo:
+    image: ghcr.io/ingvarch/ovoo:latest
     environment:
       - NOMAD_ADDR=http://nomad:4646
       - TICKET_SECRET=your-generated-secret
     labels:
       - "traefik.enable=true"
-      - "traefik.http.routers.nomad-compass.rule=Host(`nomad.example.com`)"
-      - "traefik.http.services.nomad-compass.loadbalancer.server.port=3000"
+      - "traefik.http.routers.ovoo.rule=Host(`nomad.example.com`)"
+      - "traefik.http.services.ovoo.loadbalancer.server.port=3000"
 ```
 
 The guides in [traefik/](traefik/) set up Traefik as ingress for Nomad jobs,
