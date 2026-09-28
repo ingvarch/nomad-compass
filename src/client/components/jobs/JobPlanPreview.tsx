@@ -3,6 +3,7 @@ import { Modal, ErrorAlert } from '../ui';
 import { NomadJobPlanResponse, NomadJobDiff } from '../../types/nomad';
 import { processJobDiff, HclLine, HCL_KEYWORDS } from '../../lib/hclDiffRenderer';
 import { formatIsoDateLong } from '../../lib/utils/dateFormatter';
+import { nextPeriodicLaunch } from '../../lib/services/periodicService';
 
 interface JobPlanPreviewProps {
   isOpen: boolean;
@@ -127,6 +128,7 @@ function JobPlanPreview({
   const hasFailures = planResult?.FailedTGAllocs && Object.keys(planResult.FailedTGAllocs).length > 0;
   const hasWarnings = !!planResult?.Warnings;
   const hasDiff = planResult?.Diff && planResult.Diff.Type !== 'None';
+  const nextLaunch = planResult && nextPeriodicLaunch(planResult);
 
   return (
     <Modal
@@ -157,10 +159,10 @@ function JobPlanPreview({
           )}
 
           {/* Next launch of a periodic job */}
-          {planResult.NextPeriodicLaunch && (
+          {nextLaunch && (
             <div className="bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4 text-sm text-blue-800 dark:text-blue-200">
               <span className="font-medium">Next launch:</span>{' '}
-              <span>{formatIsoDateLong(planResult.NextPeriodicLaunch)}</span>
+              <span>{formatIsoDateLong(nextLaunch)}</span>
             </div>
           )}
 

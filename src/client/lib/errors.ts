@@ -49,6 +49,13 @@ export function isApiError(error: unknown): error is ApiError {
 }
 
 /**
+ * True when Nomad rejected a job registration because the job changed since it was read
+ */
+export function isJobModifyIndexConflict(error: unknown): boolean {
+  return isApiError(error) && error.message.includes('conflicting job modify index');
+}
+
+/**
  * Permission error messages by operation
  */
 const permissionMessages: Record<string, string> = {
@@ -60,6 +67,9 @@ const permissionMessages: Record<string, string> = {
   'stop-job': 'You do not have permission to stop jobs',
   'start-job': 'You do not have permission to start jobs',
   'delete-job': 'You do not have permission to delete jobs',
+  'run-periodic-job':
+    'You do not have permission to launch periodic jobs. It needs submit-job, dispatch-job or force-periodic-job.',
+  'pause-periodic-job': 'You do not have permission to pause or resume this schedule. It needs submit-job.',
 };
 
 /**

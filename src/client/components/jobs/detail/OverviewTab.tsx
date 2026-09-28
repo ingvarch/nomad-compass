@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
 import { JobSummary, NetworkAccessCard, TaskGroupCard, TaskEventsTable } from './index';
 import ExpandIcon from '../../ui/ExpandIcon';
 import type { NomadAllocation, NomadServiceRegistration, NomadJob, NomadTaskGroup } from '../../../types/nomad';
@@ -11,7 +11,8 @@ interface OverviewTabProps {
   expandedGroups: Record<string, boolean>;
   onToggleGroup: (groupName: string) => void;
   onToggleTask: (groupName: string, taskName: string) => void;
-  onViewLogs: (groupName: string) => void;
+  onViewLogs?: (groupName: string) => void;
+  schedule?: ReactNode;
 }
 
 export function OverviewTab({
@@ -23,6 +24,7 @@ export function OverviewTab({
   onToggleGroup,
   onToggleTask,
   onViewLogs,
+  schedule,
 }: OverviewTabProps) {
   const [showTaskEvents, setShowTaskEvents] = useState(false);
 
@@ -34,6 +36,8 @@ export function OverviewTab({
   return (
     <div className="space-y-6">
       <JobSummary job={job} allocations={allocations} createTime={createTime} />
+
+      {schedule}
 
       <NetworkAccessCard job={job} serviceRegistrations={serviceRegistrations} />
 
@@ -48,7 +52,7 @@ export function OverviewTab({
               expandedGroups={expandedGroups}
               onToggle={() => onToggleGroup(taskGroup.Name)}
               onToggleTask={(taskName: string) => onToggleTask(taskGroup.Name, taskName)}
-              onViewLogs={() => onViewLogs(taskGroup.Name)}
+              onViewLogs={onViewLogs && (() => onViewLogs(taskGroup.Name))}
             />
           ))}
         </div>

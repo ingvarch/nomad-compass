@@ -15,8 +15,14 @@ import {
   EvaluationsTab,
   LogsTab,
   ExecTab,
+  ScheduleCard,
+  PeriodicActions,
+  LaunchesTab,
 } from '../components/jobs/detail';
 import JobActions from '../components/jobs/JobActions';
+import PermissionErrorModal from '../components/ui/PermissionErrorModal';
+import { usePeriodicActions, usePeriodicLaunches } from '../hooks';
+import { scheduleState } from '../lib/services/periodicService';
 import type { NomadAllocation, NomadServiceRegistration, NomadJob, NomadTaskGroup } from '../types/nomad';
 
 export default function JobDetailPage() {
@@ -25,7 +31,6 @@ export default function JobDetailPage() {
   const navigate = useNavigate();
   const { isAuthenticated } = useAuth();
   const { addToast } = useToast();
-  const activeTab = useActiveJobTab();
   const [job, setJob] = useState<NomadJob | null>(null);
   const [allocations, setAllocations] = useState<NomadAllocation[]>([]);
   const [serviceRegistrations, setServiceRegistrations] = useState<NomadServiceRegistration[]>([]);
@@ -117,6 +122,14 @@ export default function JobDetailPage() {
     fetchJobDetail();
   }, [fetchJobDetail]);
 
+  const isPeriodic = !!job?.Periodic;
+  const activeTab = useActiveJobTab(isPeriodic);
+  const launches = usePeriodicLaunches(jobId, namespace, isPeriodic);
+  const periodic = usePeriodicActions(isPeriodic ? job : null, {
+    onLaunched: launches.refetch,
+    onScheduleChanged: fetchJobDetail,
+  });
+
   const toggleGroupDetails = (groupName: string) => {
     setExpandedGroups({
       ...expandedGroups,
@@ -184,15 +197,35 @@ export default function JobDetailPage() {
     );
   }
 
+  const periodicState = scheduleState(job);
+
   return (
     <div className="space-y-6">
+      <PermissionErrorModal
+        isOpen={!!periodic.permissionError}
+        onClose={periodic.clearPermissionError}
+        message={periodic.permissionError || ''}
+      />
+
       <JobHeader
         jobName={job.Name || job.ID}
         jobId={job.ID}
         namespace={job.Namespace || DEFAULT_NAMESPACE}
+        parentId={job.ParentID}
+        actions={
+          job.Periodic && (
+            <PeriodicActions
+              state={periodicState}
+              isEnabled={job.Periodic.Enabled}
+              isBusy={periodic.isBusy}
+              onRunNow={periodic.runNow}
+              onTogglePause={periodic.togglePause}
+            />
+          )
+        }
       />
 
-      <JobDetailTabs namespace={namespace} />
+      <JobDetailTabs namespace={namespace} isPeriodic={isPeriodic} />
 
       {/* Tab Content */}
       {activeTab === 'overview' && (
@@ -204,7 +237,30 @@ export default function JobDetailPage() {
           expandedGroups={expandedGroups}
           onToggleGroup={toggleGroupDetails}
           onToggleTask={toggleTaskDetails}
-          onViewLogs={handleViewLogs}
+          // A periodic job has no logs of its own: they are on its launches
+          onViewLogs={isPeriodic ? undefined : handleViewLogs}
+          schedule={
+            job.Periodic && (
+              <ScheduleCard
+                periodic={job.Periodic}
+                state={periodicState}
+                nextLaunch={periodic.nextLaunch}
+                nextLaunchError={periodic.nextLaunchError}
+                lastLaunch={launches.data?.[0]}
+                launchesLoading={launches.loading}
+                launchesError={launches.error}
+              />
+            )
+          }
+        />
+      )}
+
+      {activeTab === 'launches' && (
+        <LaunchesTab
+          launches={launches.data || []}
+          loading={launches.loading}
+          error={launches.error}
+          onRefresh={launches.refetch}
         />
       )}
 

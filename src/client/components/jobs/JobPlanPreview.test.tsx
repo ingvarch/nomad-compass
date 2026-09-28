@@ -28,4 +28,9 @@ describe('JobPlanPreview', () => {
     renderPreview({ Index: 1, NextPeriodicLaunch: null });
     expect(screen.queryByText('Next launch:')).toBeNull();
   });
+
+  test('has no next launch for the zero time of Nomad 1.x', () => {
+    renderPreview({ Index: 1, NextPeriodicLaunch: '0001-01-01T00:00:00Z' });
+    expect(screen.queryByText('Next launch:')).toBeNull();
+  });
 });

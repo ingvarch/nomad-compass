@@ -32,3 +32,20 @@ describe('NomadClient job endpoints', () => {
     ]);
   });
 });
+
+describe('NomadClient periodic jobs', () => {
+  test('forces a launch', async () => {
+    const calls = mockFetch(() => ({ body: { EvalID: 'e1', EvalCreateIndex: 1 } }));
+    const result = await new NomadClient().forcePeriodicLaunch('backup', 'default');
+
+    expect(calls[0]).toMatchObject({ method: 'POST', url: '/api/nomad/v1/job/backup/periodic/force?namespace=default' });
+    expect(result.EvalID).toBe('e1');
+  });
+
+  test('lists launches by ID prefix', async () => {
+    const calls = mockFetch(() => ({ body: [] }));
+    await new NomadClient().getPeriodicLaunches('backup', 'default');
+
+    expect(calls[0].url).toBe('/api/nomad/v1/jobs?namespace=default&prefix=backup%2Fperiodic-');
+  });
+});

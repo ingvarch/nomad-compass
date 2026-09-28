@@ -68,6 +68,16 @@ export function formatDateLong(nanos: number): string {
 }
 
 /**
+ * Format a nanosecond timestamp like formatDateLong, plus the local zone name.
+ * @param nanos - Timestamp in nanoseconds
+ * @returns Formatted date string (e.g., "28 Sep 2026 at 18:15:00 CEST") or 'Unknown' if invalid
+ */
+export function formatDateLongZoned(nanos: number): string {
+  if (!nanos) return 'Unknown';
+  return longZonedDateFormatter.format(new Date(nanos / NANOSECONDS_TO_MS));
+}
+
+/**
  * Format an ISO 8601 date (e.g. Nomad's NextPeriodicLaunch) like formatDateLong, plus the local zone name.
  * @param iso - Date string such as "2026-09-28T18:15:00+02:00"
  * @returns Formatted date string (e.g., "28 Sep 2026 at 18:15:00 CEST") or 'Unknown' if invalid

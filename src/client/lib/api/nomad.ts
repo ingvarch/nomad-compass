@@ -31,6 +31,7 @@ import {
 } from '../../types/acl';
 import { PermissionError } from '../errors';
 import { DEFAULT_NAMESPACE } from '../constants';
+import { periodicLaunchPrefix } from '../services/periodicService';
 
 /**
  * NomadClient - A client for interacting with Nomad API
@@ -311,6 +312,28 @@ export class NomadClient {
   async getJobAllocations(jobId: string, namespace: string = DEFAULT_NAMESPACE): Promise<NomadAllocation[]> {
     return this.request<NomadAllocation[]>(this.jobEndpoint(jobId, '/allocations'), {
       params: { namespace }
+    });
+  }
+
+  /**
+   * Launch a periodic job now (Nomad rejects this while the schedule is paused)
+   */
+  async forcePeriodicLaunch(
+    jobId: string,
+    namespace: string = DEFAULT_NAMESPACE
+  ): Promise<{ EvalID: string; EvalCreateIndex: number }> {
+    return this.request(this.jobEndpoint(jobId, '/periodic/force'), {
+      method: 'POST',
+      params: { namespace },
+    });
+  }
+
+  /**
+   * Get the launches (child jobs) of a periodic job
+   */
+  async getPeriodicLaunches(jobId: string, namespace: string = DEFAULT_NAMESPACE): Promise<NomadJobListStub[]> {
+    return this.request<NomadJobListStub[]>('/v1/jobs', {
+      params: { namespace, prefix: periodicLaunchPrefix(jobId) },
     });
   }
 

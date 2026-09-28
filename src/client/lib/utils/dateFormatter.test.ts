@@ -1,5 +1,5 @@
 import { describe, test, expect } from 'bun:test';
-import { formatIsoDateLong, formatDateLong } from './dateFormatter';
+import { formatIsoDateLong, formatDateLong, formatDateLongZoned } from './dateFormatter';
 
 describe('formatIsoDateLong', () => {
   test('formats like formatDateLong and adds the local short zone name', () => {
@@ -13,5 +13,16 @@ describe('formatIsoDateLong', () => {
 
   test('returns Unknown for an invalid date', () => {
     expect(formatIsoDateLong('not a date')).toBe('Unknown');
+  });
+});
+
+describe('formatDateLongZoned', () => {
+  test('formats a nanosecond timestamp like formatIsoDateLong', () => {
+    const nanos = Date.parse('2026-09-28T16:15:00Z') * 1_000_000;
+    expect(formatDateLongZoned(nanos)).toBe(formatIsoDateLong('2026-09-28T16:15:00Z'));
+  });
+
+  test('returns Unknown without a timestamp', () => {
+    expect(formatDateLongZoned(0)).toBe('Unknown');
   });
 });
