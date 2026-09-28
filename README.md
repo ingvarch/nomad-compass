@@ -1,302 +1,62 @@
+<div align="center">
+
 # Nomad Compass
 
-A modern, lightweight web UI for managing HashiCorp Nomad clusters. Built with Hono + React 19 + Vite, deployable to Cloudflare Workers or Docker.
+**A web UI for HashiCorp Nomad.**
+Hono API plus React frontend, deployable to Cloudflare Workers or Docker.
 
-## Features
+[![release](https://img.shields.io/github/v/release/ingvarch/nomad-compass)](https://github.com/ingvarch/nomad-compass/releases/latest)
+[![license](https://img.shields.io/github/license/ingvarch/nomad-compass)](LICENSE)
 
-- **Job Management**: Create, edit, monitor, and delete jobs
-- **Container Configuration**: Configure Docker/Podman containers with ease
-- **Environment Variables**: Manage environment variables with sorting
-- **Network Configuration**: Configure service networking and port mappings
-- **Service Health Checks**: Set up and monitor service health checks
-- **Log Viewing**: Real-time log streaming with stdout/stderr filtering
-- **Remote Exec**: Secure terminal access to running containers via WebSocket
-- **Multi-Namespace Support**: Work with multiple Nomad namespaces
-- **Dark Mode**: Full dark mode support
+</div>
 
-## Security
+## What it does
 
-Nomad Compass is designed with security in mind:
+- Creates, edits, monitors and deletes jobs across namespaces.
+- Configures Docker/Podman containers: resources, environment variables,
+  networking, port mappings and service health checks.
+- Streams task logs with stdout/stderr filtering.
+- Opens a terminal in a running container over a secure WebSocket relay —
+  the ACL token never leaves the `httpOnly` cookie.
+- Switches namespaces, follows allocations, tasks, nodes and servers.
+- Works in a full dark mode.
 
-### Authentication
+## Quick start
 
-- **httpOnly Cookies**: Nomad ACL tokens are stored in httpOnly cookies, preventing XSS attacks from accessing tokens via JavaScript
-- **SameSite=Strict**: Cookies are configured with SameSite=Strict to prevent CSRF attacks
-- **Secure Flag**: In production, cookies are only sent over HTTPS
+You need [Bun](https://bun.sh/) 1.0+, a running Nomad cluster and an ACL
+token:
 
-### WebSocket Security (Remote Exec)
-
-The Remote Exec feature uses short-lived signed tickets:
-
-1. **No Token in URL**: The actual Nomad token never appears in WebSocket URLs
-2. **HMAC-Signed Tickets**: Short-lived tickets (30 seconds) are cryptographically signed
-3. **CSRF Protection**: Ticket requests require valid CSRF tokens
-4. **Stateless Validation**: No server-side storage needed - tickets are self-validating
-
-```
-Browser                          Server                         Nomad
-   │                                │                              │
-   │─── POST /api/auth/ws-ticket ──>│                              │
-   │    (+ CSRF header)             │                              │
-   │<── { ticket: "signed..." } ────│                              │
-   │                                │                              │
-   │─── WebSocket + ticket ────────>│                              │
-   │                                │── validate ticket            │
-   │                                │── get token from cookie      │
-   │                                │── connect with X-Nomad-Token>│
-   │<═══════════ relay ════════════>│<═════════════════════════════│
-```
-
-### Ticket Secret
-
-`TICKET_SECRET` is required everywhere, including local development. Without it the Docker server does not start, and on Cloudflare Workers remote exec fails:
-
-```bash
-# Generate a secure secret
-openssl rand -hex 32
-
-# Set in your environment
-export TICKET_SECRET="your-generated-secret"
-```
-
-## Tech Stack
-
-- **Runtime**: [Bun](https://bun.sh/) - Fast JavaScript runtime, package manager, and bundler
-- **API**: [Hono](https://hono.dev/) - Lightweight, ultrafast web framework
-- **Frontend**: React 19 + React Router 7 + Tailwind CSS
-- **Build**: Vite (frontend) + Bun bundler (backend)
-- **Deploy**: Cloudflare Workers or Docker (Bun)
-
-## Getting Started
-
-### Prerequisites
-
-- [Bun](https://bun.sh/) 1.0+
-- A running Nomad cluster
-- Nomad ACL token
-
-### Installation
-
-1. Clone the repository:
-
-```bash
+```sh
 git clone https://github.com/ingvarch/nomad-compass.git
 cd nomad-compass
-```
-
-2. Install dependencies:
-
-```bash
 bun install
-```
-
-3. Start the development server:
-
-```bash
 bun run dev
 ```
 
-4. Open [http://localhost:5173](http://localhost:5173) in your browser.
+Open [http://localhost:5173](http://localhost:5173), enter the Nomad address
+and the token when asked. For the ticket secret and the Bun backend mode,
+see [Configuration](docs/configuration.md).
 
-## Usage
+## Documentation
 
-### Authentication
-
-On first access, you'll be prompted to enter your Nomad server address and ACL token.
-
-### Managing Jobs
-
-1. **View Jobs**: The jobs page shows all jobs across namespaces or within a selected namespace
-2. **Job Details**: Click on a job to view details, configurations, and task groups
-3. **Create Jobs**: Use the "Create Job" button to launch the job creation form
-4. **Edit Jobs**: Modify job configurations through the edit interface
-5. **Manage Tasks**: Configure resources, environment variables, and networking per task
-
-### Viewing Logs
-
-Job detail pages include a logs section that allows:
-
-- Selecting specific allocations and tasks
-- Switching between stdout and stderr
-- Auto-refreshing logs
-- Manual refresh
-
-## Deployment
-
-Nomad Compass supports two deployment targets from the same codebase:
-
-| Target | Best For | Latency | Infrastructure |
-|--------|----------|---------|----------------|
-| Cloudflare Workers | Global access, edge performance | Low (edge) | Serverless |
-| Docker | Self-hosted, on-premise, air-gapped | Depends on location | Container |
-
-### Cloudflare Workers
-
-Recommended for global edge performance. Your app runs on Cloudflare's network close to users.
-
-**Prerequisites:**
-- Cloudflare account
-- Wrangler CLI (`bun add -g wrangler`)
-
-**Setup:**
-
-```bash
-# Login to Cloudflare
-wrangler login
-
-# Set Nomad server address as a secret
-wrangler secret put NOMAD_ADDR
-# Enter: https://your-nomad-server.example.com
-
-# Set the ticket secret
-wrangler secret put TICKET_SECRET
-# Enter the output of: openssl rand -hex 32
-
-# Deploy
-bun run deploy:cf
-```
-
-Your app will be available at `https://nomad-compass.<your-subdomain>.workers.dev`
-
-**Custom domain (optional):**
-
-Add to `wrangler.toml`:
-```toml
-routes = [
-  { pattern = "nomad.example.com", custom_domain = true }
-]
-```
-
-### Docker
-
-For self-hosted, on-premise, or air-gapped environments.
-
-**Build and run:**
-
-```bash
-# Build the image
-bun run docker:build
-# or directly with Docker
-docker build -t nomad-compass .
-
-# Run
-docker run -d \
-  --name nomad-compass \
-  -p 3000:3000 \
-  -e NOMAD_ADDR=http://your-nomad-server:4646 \
-  -e TICKET_SECRET=your-generated-secret \
-  nomad-compass
-```
-
-**Docker Compose:**
-
-```yaml
-services:
-  nomad-compass:
-    build: .
-    # or use pre-built: image: ghcr.io/ingvarch/nomad-compass:latest
-    ports:
-      - "3000:3000"
-    environment:
-      - NOMAD_ADDR=http://nomad:4646
-      - TICKET_SECRET=your-generated-secret
-    restart: unless-stopped
-```
-
-**With reverse proxy (Traefik example):**
-
-```yaml
-services:
-  nomad-compass:
-    build: .
-    environment:
-      - NOMAD_ADDR=http://nomad:4646
-      - TICKET_SECRET=your-generated-secret
-    labels:
-      - "traefik.enable=true"
-      - "traefik.http.routers.nomad-compass.rule=Host(`nomad.example.com`)"
-      - "traefik.http.services.nomad-compass.loadbalancer.server.port=3000"
-```
-
-### Environment Variables
-
-| Variable | Description | Default | Used In |
-|----------|-------------|---------|---------|
-| `NOMAD_ADDR` | Nomad server address | `http://localhost:4646` | Both |
-| `PORT` | Server port | `3000` | Docker only |
-| `TICKET_SECRET` | HMAC secret for WebSocket auth tickets (`openssl rand -hex 32`) | None, required | Both |
-
-## Development
-
-Two development modes are available, matching the two deployment targets:
-
-### Cloudflare Workers Development
-
-Uses Wrangler to emulate the Cloudflare Workers environment locally.
-
-```bash
-bun run dev          # Vite (frontend) + Wrangler (API)
-```
-
-Configure your Nomad server and ticket secret in `.dev.vars`:
-
-```bash
-cp .dev.vars.example .dev.vars
-# then set TICKET_SECRET to the output of: openssl rand -hex 32
-```
-
-### Bun Development
-
-Uses the Bun backend directly, useful for Docker deployment testing.
-
-```bash
-bun run dev:bun      # Vite (frontend) + Bun API server
-```
-
-Set your Nomad server and ticket secret via environment variables:
-
-```bash
-NOMAD_ADDR=http://localhost:4646 TICKET_SECRET=$(openssl rand -hex 32) bun run dev:bun
-```
-
-### Other Commands
-
-```bash
-bun run dev:vite     # Vite only (no backend)
-bun run dev:worker   # Wrangler only (no frontend dev)
-bun run dev:api      # Bun API only
-
-bun run build        # Build frontend
-bun run build:bun    # Build Bun server
-bun run build:all    # Build both
-
-bun run lint         # Run ESLint
-bun run typecheck    # Run TypeScript type checking
-```
-
-### Project Structure
-
-```
-src/
-├── api/              # Hono API layer
-│   ├── app.ts        # App factory
-│   ├── routes/       # API routes
-│   └── middleware/   # Auth middleware
-├── client/           # React SPA
-│   ├── pages/        # Page components
-│   ├── components/   # Reusable components
-│   ├── hooks/        # Custom hooks
-│   ├── lib/          # Utilities and API client
-│   └── context/      # React contexts
-├── entry.cloudflare.ts  # Cloudflare Workers entry
-├── entry.bun.ts         # Bun production entry
-└── entry.bun.dev.ts     # Bun dev entry (API only)
-```
+- [Usage](docs/usage.md): authentication, jobs, logs, remote exec,
+  namespaces.
+- [Configuration](docs/configuration.md): environment variables, the ticket
+  secret, local `.dev.vars` and Wrangler secrets.
+- [Deployment](docs/deployment.md): Cloudflare Workers versus Docker,
+  Compose, reverse proxy and release images.
+- [Development](docs/development.md): dev modes, commands, project structure
+  and tech stack.
+- [Security](docs/security.md): cookies, signed WebSocket tickets and the
+  relay diagram.
+- [Traefik guides](docs/traefik/): reverse-proxy setup with Nomad Compass.
 
 ## Contributing
 
-Contributions are welcome! Please feel free to submit a Pull Request.
+How to build Nomad Compass, run the checks and send a change is in
+[CONTRIBUTING.md](CONTRIBUTING.md). Security problems are reported privately,
+see [SECURITY.md](SECURITY.md).
 
 ## License
 
-MIT
+MIT, see [LICENSE](LICENSE).
