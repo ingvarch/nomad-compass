@@ -27,6 +27,7 @@ const JobHeader: React.FC<JobHeaderProps> = ({ jobName, jobId, namespace, parent
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [permissionError, setPermissionError] = useState<string | null>(null);
   const isLaunch = isPeriodicLaunch({ ID: jobId, ParentID: parentId });
+  const isChild = !!parentId;
 
   const handleDelete = async () => {
     if (!isAuthenticated) {
@@ -93,8 +94,8 @@ const JobHeader: React.FC<JobHeaderProps> = ({ jobName, jobId, namespace, parent
         <div className="flex space-x-2">
           {actions}
 
-          {/* A launch is a snapshot of its periodic job: edit or clone the parent instead */}
-          {!isLaunch && (
+          {/* Nomad drops ParentID when a child job is registered again: edit or clone the parent instead */}
+          {!isChild && (
             <>
               <Link
                 to={jobPath(jobId, namespace, 'edit')}

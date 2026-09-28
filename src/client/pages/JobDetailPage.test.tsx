@@ -330,6 +330,16 @@ describe('JobDetailPage for a child job', () => {
     expect(screen.getAllByRole('button', { name: 'Delete' })).toHaveLength(2);
   });
 
+  test('a dispatched job cannot be edited or cloned and is not a launch', async () => {
+    mockFetch(nomad(jobRoutes(dispatchedJob)));
+    renderPage(`/jobs/${encodeURIComponent(dispatchedJob.ID)}?namespace=default`);
+
+    expect(await screen.findByText(`Job ID: ${dispatchedJob.ID}`)).toBeTruthy();
+    expect(screen.queryByRole('link', { name: 'Edit' })).toBeNull();
+    expect(screen.queryByRole('link', { name: 'Clone' })).toBeNull();
+    expect(screen.queryByText(/Launch of/)).toBeNull();
+  });
+
   test('a running launch can be stopped', async () => {
     mockFetch(nomad(jobRoutes({ ...launchJob, Status: 'running' })));
     renderPage('/jobs/backup%2Fperiodic-1790611797?namespace=default');
@@ -357,14 +367,19 @@ describe('JobDetailPage for a missing job', () => {
 
 describe('JobDetailPage for a service job', () => {
   test('opens the overview for the Launches tab', async () => {
-    mockFetch(nomad({
-      '/api/nomad/v1/job/web/allocations': [],
-      '/api/nomad/v1/job/web/versions': { Versions: [] },
-      '/api/nomad/v1/job/web?': service,
-    }));
+    mockFetch(nomad(jobRoutes(service)));
     renderPage('/jobs/web?namespace=default&tab=launches');
 
     expect(await screen.findByText('Job Summary')).toBeTruthy();
     expect(screen.queryByText(/^Launches \(/)).toBeNull();
+  });
+
+  test('can be edited and cloned', async () => {
+    mockFetch(nomad(jobRoutes(service)));
+    renderPage('/jobs/web?namespace=default');
+
+    expect(await screen.findByRole('link', { name: 'Edit' })).toBeTruthy();
+    expect(screen.getByRole('link', { name: 'Clone' })).toBeTruthy();
+    expect(screen.queryByText(/Launch of/)).toBeNull();
   });
 });
