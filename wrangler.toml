@@ -14,3 +14,7 @@ not_found_handling = "single-page-application"
 # Variables are loaded from .dev.vars (local) or set via `wrangler secret` (production)
 # See .dev.vars.example for required variables
 
+# Workers Builds deploys non-production branches with `wrangler preview`.
+# Previews reuse the settings above; their secrets live in the Preview base config.
+[previews]
+
