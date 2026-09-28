@@ -11,22 +11,20 @@ export type { ExecParams, ExecMessage } from '../../shared/types/exec';
 export interface BuildExecUrlOptions {
   /** Whether to convert http(s) to ws(s). Default: true for Bun, false for Cloudflare */
   convertToWebSocket?: boolean;
-  /** Where to place the token. 'query' for Bun (WS can't set headers), 'none' for Cloudflare (uses fetch headers) */
-  tokenPlacement?: 'query' | 'none';
 }
 
 /**
  * Build the Nomad exec URL.
  * Unified function for both Bun and Cloudflare Workers.
+ * Never includes the token: callers send it in the X-Nomad-Token header.
  */
 export function buildNomadExecUrl(
   nomadAddr: string,
   params: ExecParams,
-  token?: string,
   options: BuildExecUrlOptions = {}
 ): string {
   const { allocId, task, command, tty } = params;
-  const { convertToWebSocket = true, tokenPlacement = 'query' } = options;
+  const { convertToWebSocket = true } = options;
 
   // Optionally convert http(s) to ws(s)
   const addr = convertToWebSocket ? nomadAddr.replace(/^http/, 'ws') : nomadAddr;
@@ -35,11 +33,6 @@ export function buildNomadExecUrl(
   url.searchParams.set('task', task);
   url.searchParams.set('command', JSON.stringify(command));
   url.searchParams.set('tty', String(tty));
-
-  // Add token as query param if specified (browsers/Workers can't set headers for WS)
-  if (token && tokenPlacement === 'query') {
-    url.searchParams.set('X-Nomad-Token', token);
-  }
 
   return url.toString();
 }

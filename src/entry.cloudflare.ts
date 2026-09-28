@@ -37,9 +37,8 @@ async function handleExecWebSocket(
   }
 
   // Build Nomad exec URL (without token - it goes in header via fetch)
-  const nomadUrl = buildNomadExecUrl(env.NOMAD_ADDR, params, undefined, {
+  const nomadUrl = buildNomadExecUrl(env.NOMAD_ADDR, params, {
     convertToWebSocket: false, // Keep https:// - fetch with Upgrade header handles it
-    tokenPlacement: 'none',    // Token goes in X-Nomad-Token header
   })
 
   // Connect to Nomad using fetch with Upgrade header (allows custom headers!)

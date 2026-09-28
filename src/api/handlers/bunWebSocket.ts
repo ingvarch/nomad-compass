@@ -27,6 +27,13 @@ interface BunServer {
   upgrade: (req: Request, options?: { data?: unknown }) => boolean;
 }
 
+// Tech debt: the shared tsconfig loads lib.dom, which hides Bun's WebSocket(url, { headers }) overload.
+// Remove once server code gets its own tsconfig without DOM.
+const BunWebSocketClient = WebSocket as unknown as new (
+  url: string,
+  options: Bun.WebSocketOptions
+) => WebSocket;
+
 export function createBunWebSocketHandlers(config: BunWebSocketConfig) {
   const { nomadAddr, ticketSecret } = config;
   const wsConnections = new Map<WebSocket, WebSocket>();
@@ -72,8 +79,8 @@ export function createBunWebSocketHandlers(config: BunWebSocketConfig) {
       }
 
       try {
-        const nomadUrl = buildNomadExecUrl(addr!, params, token);
-        const nomadWs = new WebSocket(nomadUrl);
+        const nomadUrl = buildNomadExecUrl(addr!, params);
+        const nomadWs = new BunWebSocketClient(nomadUrl, { headers: { 'X-Nomad-Token': token } });
         wsConnections.set(ws, nomadWs);
 
         nomadWs.onmessage = (event) => {
