@@ -22,5 +22,5 @@
 
 ### If the change adds configuration
 
-- [ ] The variable is in the README table, `.dev.vars.example` and `docker-compose.yml`
+- [ ] The variable is in the table in `docs/configuration.md`, `.dev.vars.example` and `docker-compose.yml`
 - [ ] A secret is set with `wrangler secret put` in the Workers deploy steps

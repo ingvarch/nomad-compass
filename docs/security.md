@@ -1,26 +1,51 @@
 # Security
 
-Nomad Compass is designed with security in mind.
-
 ## Authentication
 
-- **httpOnly cookies**: Nomad ACL tokens are stored in `httpOnly` cookies,
-  preventing XSS attacks from accessing tokens via JavaScript.
-- **SameSite=Strict**: cookies are configured with `SameSite=Strict` to
-  prevent CSRF attacks.
-- **Secure flag**: in production, cookies are only sent over HTTPS.
+- You paste the Nomad ACL token into the login form once. The server checks
+  it against Nomad and stores it in an `httpOnly` cookie. After that,
+  JavaScript cannot read it.
+- The cookie is `SameSite=Strict` and lives 7 days.
+- The cookie is marked `Secure` when the request is HTTPS, or when a proxy in
+  front sends `X-Forwarded-Proto: https`.
 
-## WebSocket security (remote exec)
+## Requests to Nomad
 
-The remote exec feature uses short-lived signed tickets:
+- **CSRF**: state-changing requests (`POST`, `PUT`, `PATCH`, `DELETE`) to
+  `/api/nomad/*` and the exec ticket request must send the `X-CSRF-Token`
+  header that matches the `csrf-token` cookie.
+- **Path allowlist**: the proxy forwards only known Nomad API paths
+  (`VALID_NOMAD_PATHS` in `src/api/routes/nomad.ts`) and rejects path
+  traversal, so it cannot be used to reach other hosts or endpoints.
+- **Rate limits**: login allows 10 attempts per 15 minutes, logout 10 per
+  minute, the Nomad API 100 requests per minute, per client IP and path. The
+  counters live in memory, so on Workers each isolate counts on its own. The
+  client IP comes from `CF-Connecting-IP`, `X-Real-IP` or `X-Forwarded-For`:
+  run the Docker image behind a proxy that sets them.
 
-1. **No token in URL**: the actual Nomad token never appears in WebSocket
-   URLs.
-2. **HMAC-signed tickets**: short-lived tickets (30 seconds) are
-   cryptographically signed.
-3. **CSRF protection**: ticket requests require valid CSRF tokens.
-4. **Stateless validation**: no server-side storage needed — tickets are
-   self-validating.
+## Response headers
+
+Every response carries a Content Security Policy (`frame-ancestors 'none'`),
+`X-Frame-Options: DENY`, `X-Content-Type-Options: nosniff`,
+`Referrer-Policy: same-origin` and a restrictive `Permissions-Policy`. Over
+HTTPS it also sends HSTS for two years with `preload`.
+
+## Remote exec
+
+A shell in the browser needs a WebSocket, and a browser cannot set headers on
+one. Instead of putting the token in the URL, remote exec uses signed tickets:
+
+1. The browser asks for a ticket with `POST /api/auth/ws-ticket` and the CSRF
+   header.
+2. The server signs a ticket with HMAC-SHA256. It is valid for 30 seconds and
+   nothing is stored on the server.
+3. The browser opens the WebSocket with only the ticket in the URL.
+4. The server checks the signature, the expiry and the session cookie, then
+   connects to Nomad with the token in the `X-Nomad-Token` header, on both
+   targets.
+
+A ticket can be reused within its 30 seconds, but only together with the
+session cookie. The token itself never appears in a URL.
 
 ```
 Browser                          Server                         Nomad
@@ -38,7 +63,4 @@ Browser                          Server                         Nomad
 
 ## Reporting a vulnerability
 
-Do not open a public issue. Report it privately on the
-[Security tab](https://github.com/ingvarch/nomad-compass/security/advisories/new):
-only the maintainer sees the report. Say what an attacker can do and how to
-reproduce it.
+See [SECURITY.md](../SECURITY.md).
