@@ -11,7 +11,8 @@ import { ConfirmationDialog } from '../ui/ConfirmationDialog';
 interface JobActionsProps {
     jobId: string;
     jobStatus?: string;
-    onStatusChange?: () => void;
+    // Awaited, so the buttons stay busy until the page shows the new status
+    onStatusChange?: () => void | Promise<void>;
 }
 
 type ActionType = 'start' | 'stop' | 'delete' | null;
@@ -76,13 +77,13 @@ const JobActions: React.FC<JobActionsProps> = ({ jobId, jobStatus, onStatusChang
                     jobSpec.Namespace = currentNamespace;
                     await client.createJob({ Job: jobSpec });
                     addToast('Job started successfully', 'success');
-                    onStatusChange?.();
+                    await onStatusChange?.();
                     break;
                 }
                 case 'stop': {
                     await client.stopJob(jobId, currentNamespace);
                     addToast('Job stopped successfully', 'success');
-                    onStatusChange?.();
+                    await onStatusChange?.();
                     break;
                 }
                 case 'delete': {

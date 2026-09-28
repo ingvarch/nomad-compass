@@ -36,6 +36,7 @@ export default function JobDetailPage() {
   const [serviceRegistrations, setServiceRegistrations] = useState<NomadServiceRegistration[]>([]);
   const [createTime, setCreateTime] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
   const [selectedGroupForLogs, setSelectedGroupForLogs] = useState<string | null>(null);
@@ -43,14 +44,15 @@ export default function JobDetailPage() {
   const jobId = id as string;
   const namespace = searchParams.get('namespace') || DEFAULT_NAMESPACE;
 
-  const fetchJobDetail = useCallback(async () => {
+  // A first load shows a spinner and collapses all groups; a refresh keeps the page as it is
+  const loadJob = useCallback(async (isFirstLoad: boolean) => {
     if (!isAuthenticated) {
       setError('Authentication required');
       setIsLoading(false);
       return;
     }
 
-    setIsLoading(true);
+    if (isFirstLoad) setIsLoading(true);
     try {
       const client = createNomadClient();
       // Fetch job, allocations, and versions in parallel
@@ -70,7 +72,7 @@ export default function JobDetailPage() {
         setCreateTime(oldestVersion?.SubmitTime || null);
       }
 
-      if (jobDetail.TaskGroups && jobDetail.TaskGroups.length > 0) {
+      if (isFirstLoad && jobDetail.TaskGroups && jobDetail.TaskGroups.length > 0) {
         const initialExpandedState: Record<string, boolean> = {};
         jobDetail.TaskGroups.forEach((group: NomadTaskGroup) => {
           initialExpandedState[group.Name] = false;
@@ -111,23 +113,39 @@ export default function JobDetailPage() {
 
       setError(null);
     } catch (err) {
-      setError(`Failed to load job details: ${getErrorMessage(err)}`);
-      addToast('Failed to load job details', 'error');
+      const message = `Failed to load job details: ${getErrorMessage(err)}`;
+      if (isFirstLoad) {
+        setError(message);
+        addToast('Failed to load job details', 'error');
+      } else {
+        // A failed refresh keeps the page and only reports the error
+        addToast(message, 'error');
+      }
     } finally {
       setIsLoading(false);
     }
   }, [isAuthenticated, jobId, namespace, addToast]);
 
   useEffect(() => {
-    fetchJobDetail();
-  }, [fetchJobDetail]);
+    loadJob(true);
+  }, [loadJob]);
+
+  // Header actions stay busy until the page shows the refreshed job
+  const refreshJob = useCallback(async () => {
+    setIsRefreshing(true);
+    try {
+      await loadJob(false);
+    } finally {
+      setIsRefreshing(false);
+    }
+  }, [loadJob]);
 
   const isPeriodic = !!job?.Periodic;
   const activeTab = useActiveJobTab(isPeriodic);
   const launches = usePeriodicLaunches(jobId, namespace, isPeriodic);
   const periodic = usePeriodicActions(isPeriodic ? job : null, {
     onLaunched: launches.refetch,
-    onScheduleChanged: fetchJobDetail,
+    onScheduleChanged: refreshJob,
   });
 
   const toggleGroupDetails = (groupName: string) => {
@@ -143,10 +161,6 @@ export default function JobDetailPage() {
       ...expandedGroups,
       [key]: !expandedGroups[key],
     });
-  };
-
-  const handleStatusChange = () => {
-    fetchJobDetail();
   };
 
   const handleViewLogs = (groupName: string) => {
@@ -217,7 +231,7 @@ export default function JobDetailPage() {
             <PeriodicActions
               state={periodicState}
               isEnabled={job.Periodic.Enabled}
-              isBusy={periodic.isBusy}
+              isBusy={periodic.isBusy || isRefreshing}
               onRunNow={periodic.runNow}
               onTogglePause={periodic.togglePause}
             />
@@ -264,12 +278,13 @@ export default function JobDetailPage() {
         />
       )}
 
+      {/* Remount on every job change: actions add versions and evaluations */}
       {activeTab === 'versions' && (
-        <VersionsTab jobId={jobId} namespace={namespace} />
+        <VersionsTab key={job.JobModifyIndex} jobId={jobId} namespace={namespace} />
       )}
 
       {activeTab === 'evaluations' && (
-        <EvaluationsTab jobId={jobId} namespace={namespace} />
+        <EvaluationsTab key={job.JobModifyIndex} jobId={jobId} namespace={namespace} />
       )}
 
       {activeTab === 'logs' && (
@@ -286,7 +301,7 @@ export default function JobDetailPage() {
           <JobActions
             jobId={job.ID}
             jobStatus={job.Status}
-            onStatusChange={handleStatusChange}
+            onStatusChange={refreshJob}
           />
         </div>
         <button

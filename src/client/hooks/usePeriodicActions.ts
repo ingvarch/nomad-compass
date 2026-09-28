@@ -11,9 +11,10 @@ import { nextPeriodicLaunch, scheduleState, setPeriodicEnabled } from '../lib/se
 import type { NomadJob } from '../types/nomad';
 import { useFetch } from './useFetch';
 
+// Awaited, so the buttons stay busy until the page shows the new state
 interface PeriodicActionHandlers {
-  onLaunched: () => void;
-  onScheduleChanged: () => void;
+  onLaunched: () => void | Promise<void>;
+  onScheduleChanged: () => void | Promise<void>;
 }
 
 /**
@@ -52,7 +53,7 @@ export function usePeriodicActions(job: NomadJob | null, { onLaunched, onSchedul
     try {
       const { EvalID } = await createNomadClient().forcePeriodicLaunch(job.ID, job.Namespace);
       addToast(`Launch started, evaluation ${EvalID.slice(0, 8)}`, 'success');
-      onLaunched();
+      await onLaunched();
     } catch (err) {
       reportError(err, 'run-periodic-job', 'Failed to launch job');
     } finally {
@@ -69,7 +70,7 @@ export function usePeriodicActions(job: NomadJob | null, { onLaunched, onSchedul
       const current = await client.getJob(job.ID, job.Namespace);
       await client.updateJob(setPeriodicEnabled(current, enable));
       addToast(enable ? 'Schedule resumed' : 'Schedule paused', 'success');
-      onScheduleChanged();
+      await onScheduleChanged();
     } catch (err) {
       if (isJobModifyIndexConflict(err)) {
         addToast('Job changed, reload the page', 'error');

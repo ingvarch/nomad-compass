@@ -1,8 +1,9 @@
 import { describe, test, expect } from 'bun:test';
-import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act, within } from '@testing-library/react';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from '../context/AuthContext';
 import { ToastProvider } from '../context/ToastContext';
+import { ToastContainer } from '../components/ui/Toast';
 import { mockFetch, type FetchCall } from '../../test/mockFetch';
 import { formatIsoDateLong } from '../lib/utils/dateFormatter';
 import JobDetailPage from './JobDetailPage';
@@ -47,6 +48,52 @@ function wait(ms: number) {
   return act(() => new Promise((resolve) => setTimeout(resolve, ms)));
 }
 
+type Job = typeof parent;
+
+// Serves the parent like Nomad: registering or stopping it makes a new version that reads return.
+// Reads of the changed job wait for `changedJobArrives`, so a test can check the page in between.
+function mockParentJob(changedJobArrives?: Promise<void>) {
+  const versions: Job[] = [parent];
+  const latest = () => versions[versions.length - 1];
+  const change = (job: Job) =>
+    versions.push({ ...job, Version: latest().Version + 1, JobModifyIndex: latest().JobModifyIndex + 1 });
+
+  return mockFetch(async (call) => {
+    const isJob = call.url.startsWith('/api/nomad/v1/job/backup?');
+    if (call.method === 'POST' && call.url === '/api/nomad/v1/jobs') change((call.body as { Job: Job }).Job);
+    if (isJob && call.method === 'DELETE') {
+      change({ ...latest(), Stop: true, Status: 'dead' });
+      return {};
+    }
+    if (isJob) {
+      if (versions.length > 1) await changedJobArrives;
+      return { body: latest() };
+    }
+    if (call.url.startsWith('/api/nomad/v1/job/backup/versions')) return { body: { Versions: versions } };
+    return nomad(parentRoutes)(call);
+  });
+}
+
+// Buttons of an action come back enabled once the action is done
+function waitForEnabledButton(name: RegExp) {
+  return waitFor(() => {
+    const button = screen.getByRole('button', { name }) as HTMLButtonElement;
+    expect(button.disabled).toBe(false);
+    return button;
+  });
+}
+
+function isDisabled(name: string) {
+  return (screen.getByRole('button', { name }) as HTMLButtonElement).disabled;
+}
+
+// Clicks Stop and confirms it in the dialog
+async function stopJob() {
+  fireEvent.click(await screen.findByRole('button', { name: 'Stop' }));
+  const dialog = screen.getByText(/Are you sure you want to stop this job/).parentElement!;
+  fireEvent.click(within(dialog).getByRole('button', { name: 'Stop' }));
+}
+
 function renderPage(route: string) {
   render(
     <MemoryRouter initialEntries={[route]}>
@@ -56,6 +103,7 @@ function renderPage(route: string) {
             <Route path="/jobs/:id" element={<JobDetailPage />} />
           </Routes>
         </AuthProvider>
+        <ToastContainer />
       </ToastProvider>
     </MemoryRouter>
   );
@@ -124,6 +172,97 @@ describe('JobDetailPage for a periodic job', () => {
     await wait(50);
 
     expect(jobGets(calls, 'backup')).toBe(loads);
+  });
+
+  test('pause refreshes the schedule in place', async () => {
+    const pausedJob = Promise.withResolvers<void>();
+    mockParentJob(pausedJob.promise);
+    renderPage('/jobs/backup?namespace=default');
+
+    const heading = await screen.findByText('Schedule');
+    fireEvent.click(screen.getByRole('button', { name: 'Pause' }));
+    await screen.findByText('Schedule paused');
+    // A spinner while the paused job is on its way would unmount the card, heading included
+    expect(heading.isConnected).toBe(true);
+
+    pausedJob.resolve();
+    expect(await screen.findByText('Paused')).toBeTruthy();
+    expect(heading.isConnected).toBe(true);
+  });
+
+  test('pause keeps the button busy until the paused job arrives', async () => {
+    const pausedJob = Promise.withResolvers<void>();
+    mockParentJob(pausedJob.promise);
+    renderPage('/jobs/backup?namespace=default');
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Pause' }));
+    await screen.findByText('Schedule paused');
+    // A second click now would pause the job again
+    expect(isDisabled('Pause')).toBe(true);
+
+    pausedJob.resolve();
+    const toggle = await waitForEnabledButton(/^(Pause|Resume)$/);
+    expect(toggle.textContent).toBe('Resume');
+    expect(screen.getByText('Paused')).toBeTruthy();
+  });
+
+  test('stop keeps all job actions busy until the stopped job arrives', async () => {
+    const stoppedJob = Promise.withResolvers<void>();
+    mockParentJob(stoppedJob.promise);
+    renderPage('/jobs/backup?namespace=default');
+
+    await stopJob();
+    await screen.findByText('Job stopped successfully');
+    // Nomad has stopped the job, the stopped job is still on its way
+    expect(screen.getByRole('button', { name: 'Working...' })).toBeTruthy();
+    expect(isDisabled('Run now')).toBe(true);
+    expect(isDisabled('Pause')).toBe(true);
+
+    stoppedJob.resolve();
+    const action = await waitForEnabledButton(/^(Stop|Start)$/);
+    expect(action.textContent).toBe('Start');
+    expect(screen.getByText('Stopped')).toBeTruthy();
+    expect(isDisabled('Run now')).toBe(true);
+    expect(isDisabled('Pause')).toBe(true);
+  });
+
+  test('pause reloads the versions tab', async () => {
+    mockParentJob();
+    renderPage('/jobs/backup?namespace=default&tab=versions');
+
+    expect(await screen.findByText('Version History (1)')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Pause' }));
+
+    expect(await screen.findByText('Version History (2)')).toBeTruthy();
+  });
+
+  test('a failed refresh keeps the page and shows the error in a toast', async () => {
+    let paused = false;
+    mockFetch((call) => {
+      if (call.method === 'POST' && call.url === '/api/nomad/v1/jobs') paused = true;
+      if (paused && call.url.startsWith('/api/nomad/v1/job/backup?')) {
+        return { status: 500, body: { message: 'No cluster leader' } };
+      }
+      return nomad(parentRoutes)(call);
+    });
+    renderPage('/jobs/backup?namespace=default');
+
+    const heading = await screen.findByText('Schedule');
+    fireEvent.click(screen.getByRole('button', { name: 'Pause' }));
+
+    expect(await screen.findByText('Failed to load job details: No cluster leader')).toBeTruthy();
+    expect(heading.isConnected).toBe(true);
+  });
+
+  test('pause keeps an expanded task group open', async () => {
+    mockParentJob();
+    renderPage('/jobs/backup?namespace=default');
+
+    fireEvent.click(await screen.findByText('Task Group: db'));
+    fireEvent.click(screen.getByRole('button', { name: 'Pause' }));
+
+    expect(await screen.findByText('Paused')).toBeTruthy();
+    expect(screen.getByText('dump')).toBeTruthy();
   });
 });
 

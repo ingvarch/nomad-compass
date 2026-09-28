@@ -11,11 +11,13 @@ interface MockReply {
 
 /**
  * Replaces global fetch until the end of the test (src/test/setup.ts restores it).
- * `respond` returns the reply for a call; no reply means 200 with `{}`.
+ * `respond` returns the reply for a call, or a promise of it to hold the reply back; no reply means 200 with `{}`.
  * A string body is sent as text/plain, anything else as JSON.
  * Records string URLs and JSON string bodies only.
  */
-export function mockFetch(respond: (call: FetchCall) => MockReply | undefined = () => undefined): FetchCall[] {
+export function mockFetch(
+  respond: (call: FetchCall) => MockReply | undefined | Promise<MockReply | undefined> = () => undefined
+): FetchCall[] {
   const calls: FetchCall[] = [];
 
   globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
@@ -26,7 +28,7 @@ export function mockFetch(respond: (call: FetchCall) => MockReply | undefined = 
     };
     calls.push(call);
 
-    const reply = respond(call) ?? {};
+    const reply = (await respond(call)) ?? {};
     const isText = typeof reply.body === 'string';
     return new Response(isText ? (reply.body as string) : JSON.stringify(reply.body ?? {}), {
       status: reply.status ?? 200,
