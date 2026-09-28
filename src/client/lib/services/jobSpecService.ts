@@ -126,8 +126,11 @@ function createTaskConfig(taskData: TaskFormData): TaskConfig {
     });
   }
 
+  const args = taskData.args.filter((arg) => arg !== '');
   const taskConfig: NomadTaskDriverConfig = {
     image: taskData.image,
+    ...(taskData.command.trim() ? { command: taskData.command.trim() } : {}),
+    ...(args.length > 0 ? { args } : {}),
   };
 
   if (taskData.usePrivateRegistry && taskData.dockerAuth) {
@@ -384,6 +387,8 @@ export function convertJobToFormData(job: NomadJob): NomadJobFormData {
         name: task.Name,
         image: config.image || '',
         plugin: task.Driver || 'podman',
+        command: config.command || '',
+        args: (config.args || []).map(String),
         resources: {
           CPU: task.Resources?.CPU || 100,
           MemoryMB: task.Resources?.MemoryMB || 256,

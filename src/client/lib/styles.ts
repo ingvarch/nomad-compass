@@ -56,6 +56,10 @@ export const buttonDangerSmallStyles = `${buttonBase} px-3 py-1.5 text-xs text-w
 export const iconButtonPrimaryStyles = `${buttonBase} p-2 text-xs text-white bg-blue-600 hover:bg-blue-700 focus:ring-blue-500 dark:focus:ring-offset-gray-800`;
 export const iconButtonDangerStyles = `${buttonBase} p-2 text-xs text-white bg-red-600 hover:bg-red-700 focus:ring-red-500 dark:focus:ring-offset-gray-800`;
 
+// Text button that adds a row to an editable list (env vars, arguments, cron expressions)
+export const buttonAddRowStyles =
+  'flex items-center gap-1 px-3 py-1.5 text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed';
+
 // Monokai theme input styles (for job/namespace forms with monokai dark theme)
 export const inputMonokaiBaseStyles =
   'border border-gray-300 dark:border-monokai-muted rounded-md bg-white dark:bg-monokai-surface text-gray-900 dark:text-monokai-text focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-monokai-blue';

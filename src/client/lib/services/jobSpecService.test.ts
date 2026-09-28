@@ -1,11 +1,13 @@
 import { describe, test, expect } from 'bun:test';
 import { createJobSpec, updateJobSpec, convertJobToFormData, prepareCloneFormData } from './jobSpecService';
-import type { NomadJobFormData, NomadJob, TaskFormData } from '../../types/nomad';
+import type { NomadJobFormData, NomadJob, TaskFormData, NomadTaskDriverConfig } from '../../types/nomad';
 
 const defaultTask: TaskFormData = {
     name: 'test-group',
     image: 'nginx:latest',
     plugin: 'docker',
+    command: '',
+    args: [],
     resources: { CPU: 100, MemoryMB: 256, DiskMB: 500 },
     envVars: [],
     usePrivateRegistry: false,
@@ -877,5 +879,72 @@ describe('prepareCloneFormData', () => {
 
         expect(result.namespace).toBe('production');
         expect(result.datacenters).toEqual(['dc1', 'dc2']);
+    });
+});
+
+describe('task command and args', () => {
+    function createTaskSpec(command: string, args: string[]) {
+        const formData = createMinimalFormData({
+            taskGroups: [{
+                ...createMinimalFormData().taskGroups[0],
+                tasks: [{ ...defaultTask, command, args }],
+            }],
+        });
+        return createJobSpec(formData).Job.TaskGroups[0].Tasks[0];
+    }
+
+    function readTask(config: NomadTaskDriverConfig) {
+        const job: Partial<NomadJob> = {
+            ID: 'backup',
+            Name: 'backup',
+            Namespace: 'default',
+            TaskGroups: [{
+                Name: 'backup',
+                Count: 1,
+                Tasks: [{
+                    Name: 'backup',
+                    Driver: 'docker',
+                    Config: config,
+                    Resources: { CPU: 100, MemoryMB: 256, DiskMB: 500 },
+                }],
+            }],
+        };
+        return convertJobToFormData(job as NomadJob).taskGroups[0].tasks[0];
+    }
+
+    test('writes command and args to the task config, dropping only empty rows', () => {
+        const task = createTaskSpec('/bin/sh', ['-c', '', ' ', 'pg_dump app']);
+
+        expect(task.Config.command).toBe('/bin/sh');
+        expect(task.Config.args).toEqual(['-c', ' ', 'pg_dump app']);
+    });
+
+    test('omits an empty command and empty args', () => {
+        const task = createJobSpec(createMinimalFormData()).Job.TaskGroups[0].Tasks[0];
+
+        expect(task.Config.command).toBeUndefined();
+        expect(task.Config.args).toBeUndefined();
+    });
+
+    test('trims the command', () => {
+        expect(createTaskSpec('  /bin/sh ', []).Config.command).toBe('/bin/sh');
+    });
+
+    test('omits a whitespace-only command', () => {
+        expect(createTaskSpec('   ', []).Config.command).toBeUndefined();
+    });
+
+    test('reads command and args from a job', () => {
+        const task = readTask({ image: 'postgres:17', command: '/bin/sh', args: ['-c', 'pg_dump app'] });
+
+        expect(task.command).toBe('/bin/sh');
+        expect(task.args).toEqual(['-c', 'pg_dump app']);
+    });
+
+    test('reads numeric args from a job as strings', () => {
+        // HCL keeps bare numbers, so Nomad returns args = ["-f", 1]
+        const task = readTask({ image: 'busybox', args: ['-f', 1] as unknown as string[] });
+
+        expect(task.args).toEqual(['-f', '1']);
     });
 });

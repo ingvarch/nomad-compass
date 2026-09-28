@@ -25,6 +25,8 @@ export const defaultTaskData: TaskFormData = {
   name: '',
   image: '',
   plugin: 'podman',
+  command: '',
+  args: [],
   resources: {
     CPU: 100,
     MemoryMB: 256,

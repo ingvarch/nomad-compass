@@ -3,6 +3,7 @@ import { useJobFormContext } from '../../../context/JobFormContext';
 import { useTaskHandlers } from '../../../hooks/useTaskHandlers';
 import FormInputField from '../../ui/forms/FormInputField';
 import ToggleableSection from '../../ui/forms/ToggleableSection';
+import StringListEditor from '../../ui/forms/StringListEditor';
 import PrivateRegistryForm from './parts/PrivateRegistryForm';
 import ResourcesForm from './parts/ResourcesForm';
 import EnvVarsSection from './parts/EnvVarsSection';
@@ -34,6 +35,7 @@ const TaskForm: React.FC<TaskFormProps> = ({
     onEnvVarChange,
     onAddEnvVar,
     onRemoveEnvVar,
+    onArgsChange,
     onRemoveTask,
   } = useTaskHandlers(groupIndex, taskIndex);
 
@@ -110,6 +112,28 @@ const TaskForm: React.FC<TaskFormProps> = ({
           { value: 'podman', label: 'Podman' },
           { value: 'docker', label: 'Docker' },
         ]}
+      />
+
+      {/* Command and arguments */}
+      <FormInputField
+        id={`group-${groupIndex}-task-${taskIndex}-command`}
+        name="command"
+        label="Command"
+        type="text"
+        value={task.command}
+        onChange={onInputChange}
+        placeholder="/bin/sh"
+        disabled={loading}
+        helpText="Replaces the image CMD; the image ENTRYPOINT still runs. Put arguments in the list below. Leave empty to use the image default."
+      />
+      <StringListEditor
+        label="Arguments"
+        values={task.args}
+        onChange={onArgsChange}
+        addLabel="Add Argument"
+        placeholder="-c"
+        helpText="One argument per row, without shell quoting. Nomad replaces ${...} references such as ${NOMAD_ALLOC_DIR}."
+        disabled={loading}
       />
 
       {/* Resources */}

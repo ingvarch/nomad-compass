@@ -196,6 +196,8 @@ export interface TaskFormData {
     name: string;
     image: string;
     plugin: string;
+    command: string;
+    args: string[];
     resources: NomadResource;
     envVars: NomadEnvVar[];
     usePrivateRegistry: boolean;
