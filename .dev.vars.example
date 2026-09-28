@@ -2,3 +2,6 @@
 # Copy this file to .dev.vars and fill in your values
 
 NOMAD_ADDR=http://localhost:4646
+
+# Required for remote exec. Generate with: openssl rand -hex 32
+TICKET_SECRET=

@@ -5,4 +5,5 @@ services:
       - "3000:3000"
     environment:
       - NOMAD_ADDR=${NOMAD_ADDR:-http://localhost:4646}
+      - TICKET_SECRET=${TICKET_SECRET:?set TICKET_SECRET, e.g. openssl rand -hex 32}
     restart: unless-stopped
