@@ -456,6 +456,16 @@ describe('JobDetailPage for a parameterized job', () => {
     expect(await screen.findByText(`Job ID: ${dispatchedJob.ID}`)).toBeTruthy();
     expect(screen.queryByRole('button', { name: 'Dispatch' })).toBeNull();
   });
+
+  test('a dispatched job links back to its parameterized job', async () => {
+    mockFetch(nomad(jobRoutes(dispatchedJob)));
+    renderPage(`/jobs/${encodeURIComponent(dispatchedJob.ID)}?namespace=default`);
+
+    const parentLink = await screen.findByRole('link', { name: 'export' });
+    expect(parentLink.getAttribute('href')).toBe('/jobs/export?namespace=default');
+    expect(parentLink.parentElement!.textContent).toBe('Dispatched from export');
+    expect(screen.queryByText(/Launch of/)).toBeNull();
+  });
 });
 
 describe('JobDetailPage deployment', () => {

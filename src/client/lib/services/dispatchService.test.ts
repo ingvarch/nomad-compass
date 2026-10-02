@@ -4,6 +4,7 @@ import {
   dispatchMetaFields,
   dispatchRequest,
   hasDispatchErrors,
+  isDispatchedJob,
   isParameterized,
   validateDispatch,
 } from './dispatchService';
@@ -28,6 +29,19 @@ describe('isParameterized', () => {
   // A dispatched job is a copy of its parent and keeps the block
   test('is false for a dispatched job', () => {
     expect(isParameterized({ ParameterizedJob: config, Dispatched: true })).toBe(false);
+  });
+});
+
+describe('isDispatchedJob', () => {
+  test('is true for a child job that a dispatch created', () => {
+    expect(isDispatchedJob({ ID: 'export/dispatch-1790611797-8a1b2c3d', ParentID: 'export' })).toBe(true);
+    // With an ID prefix template
+    expect(isDispatchedJob({ ID: 'export/dispatch-nightly-1790611797-8a1b2c3d', ParentID: 'export' })).toBe(true);
+  });
+
+  test('is false for a periodic launch and for a job without a parent', () => {
+    expect(isDispatchedJob({ ID: 'backup/periodic-1790611797', ParentID: 'backup' })).toBe(false);
+    expect(isDispatchedJob({ ID: 'export', ParentID: '' })).toBe(false);
   });
 });
 

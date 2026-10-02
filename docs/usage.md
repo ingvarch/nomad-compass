@@ -121,7 +121,8 @@ child job with the ID `<job>/dispatch-<time>-<id>`.
 3. **Result**: after the dispatch the form shows the ID of the new job and
    **Open Job** goes to its page. Dispatching needs the `dispatch-job`
    capability. Nomad rejects a dispatch of a stopped job, so the button is
-   disabled until the job is started. A dispatched job has no Dispatch button.
+   disabled until the job is started. A dispatched job links back to its job
+   and has no Dispatch button.
 
 ## Viewing logs
 
