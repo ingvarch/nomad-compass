@@ -81,14 +81,14 @@ export const MobileHeader: React.FC = () => {
 
   return (
     <header
-      className="fixed top-0 left-0 right-0 z-30 bg-white/85 dark:bg-monokai-bg/85 backdrop-blur-xl border-b border-gray-200/80 dark:border-monokai-surface/80 pt-safe pl-safe pr-safe sm:hidden"
+      className="fixed top-0 left-0 right-0 z-30 bg-white dark:bg-monokai-bg border-b border-gray-200 dark:border-monokai-surface pl-safe pr-safe sm:hidden"
       style={{
-        paddingTop: 'env(safe-area-inset-top, 0px)',
+        paddingTop: 'calc(env(safe-area-inset-top, 0px) + 6px)',
         paddingLeft: 'env(safe-area-inset-left, 0px)',
         paddingRight: 'env(safe-area-inset-right, 0px)',
       }}
     >
-      <div className="flex items-center justify-between h-11 px-3.5">
+      <div className="flex items-center justify-between h-12 px-4 pb-0.5">
         {/* Left: Back button or Logo */}
         <div className="flex items-center min-w-[70px]">
           {backTo ? (

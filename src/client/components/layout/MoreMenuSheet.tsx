@@ -93,6 +93,7 @@ export const MoreMenuSheet: React.FC<MoreMenuSheetProps> = ({
   // Gesture state for swipe-down dismissal
   const [dragOffset, setDragOffset] = useState(0);
   const [isDragging, setIsDragging] = useState(false);
+  const [hasEntered, setHasEntered] = useState(false);
   const dragStartY = useRef(0);
   const dragStartTime = useRef(0);
   const currentDragOffset = useRef(0);
@@ -100,6 +101,14 @@ export const MoreMenuSheet: React.FC<MoreMenuSheetProps> = ({
 
   const contentStartY = useRef(0);
   const isContentDragging = useRef(false);
+
+  // Reset enter animation state on open
+  useEffect(() => {
+    if (isOpen) {
+      setHasEntered(false);
+      setDragOffset(0);
+    }
+  }, [isOpen]);
 
   // Close on Escape key
   useEffect(() => {
@@ -252,7 +261,9 @@ export const MoreMenuSheet: React.FC<MoreMenuSheetProps> = ({
     >
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-black/50 backdrop-blur-xs transition-opacity duration-200"
+        className={`fixed inset-0 bg-black/50 backdrop-blur-xs transition-opacity duration-200 ${
+          !hasEntered ? 'animate-backdrop-fade-in' : ''
+        }`}
         style={{
           opacity: dragOffset > 0 ? Math.max(0, 1 - dragOffset / 350) : 1,
         }}
@@ -263,7 +274,9 @@ export const MoreMenuSheet: React.FC<MoreMenuSheetProps> = ({
       {/* Sheet Container */}
       <div
         ref={sheetRef}
-        className="relative z-10 w-full max-h-[85vh] bg-white/95 dark:bg-monokai-bg/95 backdrop-blur-xl rounded-t-[28px] shadow-2xl border-t border-gray-200/80 dark:border-monokai-surface/80 flex flex-col overflow-hidden pb-safe pl-safe pr-safe animate-in slide-in-from-bottom duration-300"
+        className={`relative z-10 w-full max-h-[85vh] bg-white dark:bg-monokai-bg rounded-t-[28px] shadow-2xl border-t border-gray-200/80 dark:border-monokai-surface/80 flex flex-col overflow-hidden pb-safe pl-safe pr-safe ${
+          !hasEntered && !isDragging ? 'animate-sheet-slide-up' : ''
+        }`}
         style={{
           transform: `translate3d(0, ${Math.max(0, dragOffset)}px, 0)`,
           transition: isDragging ? 'none' : 'transform 0.28s cubic-bezier(0.32, 0.72, 0, 1)',
@@ -271,6 +284,7 @@ export const MoreMenuSheet: React.FC<MoreMenuSheetProps> = ({
           paddingLeft: 'env(safe-area-inset-left, 0px)',
           paddingRight: 'env(safe-area-inset-right, 0px)',
         }}
+        onAnimationEnd={() => setHasEntered(true)}
       >
         {/* Apple HIG Drag Handle / Grabber */}
         <div
