@@ -110,6 +110,7 @@ export interface NomadParameterizedJobConfig {
 export interface NomadJobDispatchRequest {
     Meta: Record<string, string>;
     Payload?: string;           // Base64
+    Priority?: number;          // Priority of the job when left out
 }
 
 export interface NomadJobDispatchResponse {

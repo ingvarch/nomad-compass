@@ -371,16 +371,21 @@ export class NomadClient {
   }
 
   /**
-   * Dispatch a parameterized job (Nomad rejects this while the job is stopped)
+   * Dispatch a parameterized job (Nomad rejects this while the job is stopped).
+   * For a token it has seen, Nomad returns the job it dispatched then instead of a new one.
    */
   async dispatchJob(
     jobId: string,
     request: NomadJobDispatchRequest,
-    namespace: string = DEFAULT_NAMESPACE
+    namespace: string = DEFAULT_NAMESPACE,
+    idempotencyToken?: string
   ): Promise<NomadJobDispatchResponse> {
+    const params: Record<string, string> = { namespace };
+    if (idempotencyToken) params.idempotency_token = idempotencyToken;
+
     return this.request<NomadJobDispatchResponse>(this.jobEndpoint(jobId, '/dispatch'), {
       method: 'POST',
-      params: { namespace },
+      params,
       body: JSON.stringify(request),
     });
   }

@@ -25,25 +25,26 @@ const reply: NomadJobDispatchResponse = {
 function exportJob(parameterized: Partial<NomadParameterizedJobConfig> = {}): ParameterizedNomadJob {
   return {
     ID: 'export', Name: 'export', Namespace: 'prod', Type: 'batch', Status: 'running', Stop: false,
-    SubmitTime: 1790611000000000000, Version: 0,
+    SubmitTime: 1790611000000000000, Version: 0, Priority: 50,
     Meta: { compress: 'gzip' },
     ParameterizedJob: { Payload: 'optional', MetaRequired: ['database'], MetaOptional: ['compress'], ...parameterized },
   };
 }
 
-// Renders the modal and records the dispatch requests
+// Renders the modal and records the dispatch requests and idempotency tokens
 function renderModal(
   job: ParameterizedNomadJob,
   dispatch: () => Promise<NomadJobDispatchResponse> = async () => reply
 ) {
-  const result = { requests: [] as NomadJobDispatchRequest[], closed: 0 };
+  const result = { requests: [] as NomadJobDispatchRequest[], tokens: [] as (string | undefined)[], closed: 0 };
   render(
     <MemoryRouter>
       <DispatchJobModal
         job={job}
         onClose={() => { result.closed++; }}
-        onDispatch={(request) => {
+        onDispatch={(request, idempotencyToken) => {
           result.requests.push(request);
+          result.tokens.push(idempotencyToken);
           return dispatch();
         }}
       />
@@ -213,5 +214,70 @@ describe('DispatchJobModal', () => {
 
     expect(await screen.findByText(getPermissionErrorMessage('dispatch-job'))).toBeTruthy();
     expect(getPermissionErrorMessage('dispatch-job')).toContain('dispatch-job');
+  });
+});
+
+describe('DispatchJobModal advanced options', () => {
+  function openAdvanced() {
+    fireEvent.click(screen.getByRole('button', { name: 'Advanced' }));
+  }
+
+  test('are hidden until opened', () => {
+    renderModal(exportJob());
+
+    const toggle = screen.getByRole('button', { name: 'Advanced' });
+    expect(toggle.getAttribute('aria-expanded')).toBe('false');
+    expect(screen.queryByLabelText(/^Priority/)).toBeNull();
+
+    openAdvanced();
+
+    expect(toggle.getAttribute('aria-expanded')).toBe('true');
+    // An empty priority keeps the priority of the job
+    expect((screen.getByLabelText('Priority (optional)') as HTMLInputElement).placeholder).toBe('50');
+    expect(screen.getByLabelText('Idempotency token (optional)')).toBeTruthy();
+  });
+
+  test('dispatch with a priority and an idempotency token', async () => {
+    const result = renderModal(exportJob({ MetaRequired: null }));
+
+    openAdvanced();
+    type(/^Priority/, '80');
+    type(/^Idempotency token/, ' nightly-2026-10-02 ');
+    submit();
+
+    await waitFor(() => expect(result.requests).toEqual([{ Meta: {}, Priority: 80 }]));
+    expect(result.tokens).toEqual(['nightly-2026-10-02']);
+  });
+
+  test('send no token when the field is empty', async () => {
+    const result = renderModal(exportJob({ MetaRequired: null }));
+
+    submit();
+
+    await waitFor(() => expect(result.tokens).toEqual([undefined]));
+  });
+
+  test('reject a priority that is not a whole number of 1 or more', () => {
+    const result = renderModal(exportJob({ MetaRequired: null }));
+
+    openAdvanced();
+    type(/^Priority/, '0');
+    submit();
+
+    expect(screen.getByText('Priority must be a whole number of 1 or more')).toBeTruthy();
+    expect(result.requests).toEqual([]);
+  });
+
+  // Nomad answers a known token with the job it dispatched for it, without a new evaluation
+  test('say so when the token was used before', async () => {
+    renderModal(exportJob({ MetaRequired: null }), async () => ({ ...reply, EvalID: '', EvalCreateIndex: 0 }));
+
+    openAdvanced();
+    type(/^Idempotency token/, 'nightly-2026-10-02');
+    submit();
+
+    expect(await screen.findByText('Already dispatched with this token')).toBeTruthy();
+    expect(screen.getByText(reply.DispatchedJobID)).toBeTruthy();
+    expect(screen.getByRole('link', { name: 'Open Job' })).toBeTruthy();
   });
 });

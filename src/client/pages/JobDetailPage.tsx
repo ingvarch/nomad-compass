@@ -281,8 +281,8 @@ export default function JobDetailPage() {
     await refreshJob();
   };
 
-  const handleDispatch = async (request: NomadJobDispatchRequest) => {
-    const result = await createNomadClient().dispatchJob(jobId, request, namespace);
+  const handleDispatch = async (request: NomadJobDispatchRequest, idempotencyToken?: string) => {
+    const result = await createNomadClient().dispatchJob(jobId, request, namespace, idempotencyToken);
     // The dialog shows the new job at once; the list follows in the background
     childJobs.refetch();
     return result;
