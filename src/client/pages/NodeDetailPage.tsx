@@ -204,12 +204,12 @@ export default function NodeDetailPage() {
       {/* Tabs */}
       <div className="bg-white dark:bg-gray-800 shadow rounded-lg overflow-hidden">
         <div className="border-b border-gray-200 dark:border-gray-700">
-          <nav className="flex -mb-px">
+          <nav className="flex -mb-px overflow-x-auto no-scrollbar scroll-smooth">
             {(['overview', 'allocations', 'events'] as TabType[]).map((tab) => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
-                className={`px-6 py-3 text-sm font-medium capitalize ${
+                className={`px-4 sm:px-6 py-3 text-sm font-medium capitalize flex-shrink-0 whitespace-nowrap active:opacity-80 transition-colors ${
                   activeTab === tab
                     ? 'border-b-2 border-blue-500 text-blue-600 dark:text-blue-400'
                     : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-300'
