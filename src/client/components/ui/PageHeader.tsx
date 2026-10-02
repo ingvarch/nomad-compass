@@ -5,6 +5,7 @@ interface PageHeaderProps {
   description?: string | ReactNode;
   actions?: ReactNode;
   className?: string;
+  actionsClassName?: string;
 }
 
 export const PageHeader: React.FC<PageHeaderProps> = ({
@@ -12,6 +13,7 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
   description,
   actions,
   className = '',
+  actionsClassName = '',
 }) => {
   return (
     <div className={`flex flex-col sm:flex-row sm:justify-between sm:items-start gap-3 sm:gap-4 ${className}`}>
@@ -25,7 +27,11 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
           </p>
         )}
       </div>
-      {actions && <div className="flex items-center gap-2 flex-wrap">{actions}</div>}
+      {actions && (
+        <div className={`flex items-center gap-2 flex-wrap ${actionsClassName}`.trim()}>
+          {actions}
+        </div>
+      )}
     </div>
   );
 };

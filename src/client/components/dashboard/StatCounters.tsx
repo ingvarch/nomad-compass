@@ -1,3 +1,4 @@
+import React from 'react';
 import { Link } from 'react-router-dom';
 import { NomadJobListStub, NomadNode, NomadNamespace } from '../../types/nomad';
 import { countJobsByStatus } from '../../lib/services/jobCounts';
@@ -10,67 +11,100 @@ interface StatCountersProps {
   loading?: boolean;
 }
 
+interface StatItem {
+  label: string;
+  value: number;
+  color: string;
+  link?: string;
+  detail?: string;
+}
+
 interface CounterCardProps {
   title: string;
   titleLink?: string;
   icon: React.ReactNode;
-  stats: { label: string; value: number; color: string; link?: string }[];
+  stats: StatItem[];
+  total?: number;
   loading?: boolean;
 }
 
-function CounterCard({ title, titleLink, icon, stats, loading }: CounterCardProps) {
+function CounterCard({ title, titleLink, icon, stats, total: explicitTotal, loading }: CounterCardProps) {
   if (loading) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 animate-pulse">
-        <div className="flex items-center gap-3 mb-3">
-          <div className="w-8 h-8 bg-gray-200 dark:bg-gray-700 rounded" />
-          <div className="h-5 bg-gray-200 dark:bg-gray-700 rounded w-20" />
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xs border border-gray-100 dark:border-gray-700/50 p-3.5 sm:p-4 animate-pulse">
+        <div className="flex items-center gap-2 mb-2">
+          <div className="w-5 h-5 bg-gray-200 dark:bg-gray-700 rounded" />
+          <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-16" />
         </div>
-        <div className="space-y-2">
-          <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-full" />
-          <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4" />
+        <div className="h-7 bg-gray-200 dark:bg-gray-700 rounded w-10 my-2" />
+        <div className="pt-2 border-t border-gray-100 dark:border-gray-700/60 space-y-1.5">
+          <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-full" />
+          <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-3/4" />
         </div>
       </div>
     );
   }
 
-  const total = stats.reduce((sum, s) => sum + s.value, 0);
+  const total = explicitTotal !== undefined ? explicitTotal : stats.reduce((sum, s) => sum + s.value, 0);
 
   return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
-      <div className="flex items-center gap-3 pb-3 mb-3 border-b border-gray-100 dark:border-gray-700">
-        <div className="text-gray-500 dark:text-gray-400">{icon}</div>
-        {titleLink ? (
-          <Link
-            to={titleLink}
-            className="inline-flex items-center gap-1 text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors group"
-          >
-            {title}
-            <svg
-              className="w-4 h-4 text-gray-400 dark:text-gray-500 group-hover:text-blue-500 dark:group-hover:text-blue-400 transition-colors"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-            </svg>
-          </Link>
-        ) : (
-          <h3 className="text-sm font-medium text-gray-500 dark:text-gray-400">{title}</h3>
-        )}
-        <span className="ml-auto text-2xl font-bold text-gray-900 dark:text-white">{total}</span>
-      </div>
-      <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
-        {stats.map((stat) => (
-          <div key={stat.label} className="flex items-center gap-1.5">
-            <span className={`w-2 h-2 rounded-full ${stat.color}`} />
-            {stat.link ? (
-              <Link to={stat.link} className="hover:underline text-gray-600 dark:text-gray-300">
-                {stat.value} {stat.label}
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xs border border-gray-100 dark:border-gray-700/50 p-3.5 sm:p-4 flex flex-col justify-between">
+      <div>
+        {/* Card Header: Icon + Title with navigation chevron */}
+        <div className="flex items-center justify-between gap-1.5 min-w-0">
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="text-gray-500 dark:text-gray-400 shrink-0">{icon}</div>
+            {titleLink ? (
+              <Link
+                to={titleLink}
+                className="inline-flex items-center gap-1 text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-200 hover:text-blue-600 dark:hover:text-blue-400 transition-colors group truncate"
+              >
+                <span className="truncate">{title}</span>
+                <svg
+                  className="w-3.5 h-3.5 shrink-0 text-gray-400 dark:text-gray-500 group-hover:text-blue-500 dark:group-hover:text-blue-400 transition-colors"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
               </Link>
             ) : (
-              <span className="text-gray-600 dark:text-gray-300">
-                {stat.value} {stat.label}
+              <h3 className="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-200 truncate">{title}</h3>
+            )}
+          </div>
+        </div>
+
+        {/* Large Prominent Counter */}
+        <div className="mt-1.5 mb-2.5">
+          <span className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white tracking-tight">
+            {total}
+          </span>
+        </div>
+      </div>
+
+      {/* Sub-stats breakdown */}
+      <div className="pt-2 border-t border-gray-100 dark:border-gray-700/60 flex flex-col sm:flex-row sm:flex-wrap gap-x-3 gap-y-1 text-xs sm:text-sm">
+        {stats.map((stat) => (
+          <div key={stat.label} className="flex items-center gap-1.5 min-w-0">
+            <span className={`w-2 h-2 rounded-full shrink-0 ${stat.color}`} />
+            {stat.link ? (
+              <Link to={stat.link} className="hover:underline text-gray-600 dark:text-gray-300 truncate">
+                <span>{stat.value} {stat.label}</span>
+                {stat.detail && (
+                  <span className="text-gray-400 dark:text-gray-500 ml-1 font-normal">
+                    {stat.detail}
+                  </span>
+                )}
+              </Link>
+            ) : (
+              <span className="text-gray-600 dark:text-gray-300 truncate">
+                <span>{stat.value} {stat.label}</span>
+                {stat.detail && (
+                  <span className="text-gray-400 dark:text-gray-500 ml-1 font-normal">
+                    {stat.detail}
+                  </span>
+                )}
               </span>
             )}
           </div>
@@ -116,90 +150,6 @@ function calculateAllocationStats(jobs: NomadJobListStub[]) {
   return { running, pending, failed };
 }
 
-interface AllocationCounterCardProps {
-  running: number;
-  pending: number;
-  activeFailed: number;
-  historicalFailed: number;
-  loading?: boolean;
-}
-
-function AllocationCounterCard({ running, pending, activeFailed, historicalFailed, loading }: AllocationCounterCardProps) {
-  if (loading) {
-    return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 animate-pulse">
-        <div className="flex items-center gap-3 mb-3">
-          <div className="w-8 h-8 bg-gray-200 dark:bg-gray-700 rounded" />
-          <div className="h-5 bg-gray-200 dark:bg-gray-700 rounded w-20" />
-        </div>
-        <div className="space-y-2">
-          <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-full" />
-          <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-3/4" />
-        </div>
-      </div>
-    );
-  }
-
-  const total = running + pending + activeFailed;
-
-  return (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4">
-      <div className="flex items-center gap-3 pb-3 mb-3 border-b border-gray-100 dark:border-gray-700">
-        <div className="text-gray-500 dark:text-gray-400">
-          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z"
-            />
-          </svg>
-        </div>
-        <Link
-          to="/allocations"
-          className="inline-flex items-center gap-1 text-sm font-medium text-gray-600 dark:text-gray-300 hover:text-blue-600 dark:hover:text-blue-400 transition-colors group"
-        >
-          Allocations
-          <svg
-            className="w-4 h-4 text-gray-400 dark:text-gray-500 group-hover:text-blue-500 dark:group-hover:text-blue-400 transition-colors"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-          </svg>
-        </Link>
-        <span className="ml-auto text-2xl font-bold text-gray-900 dark:text-white">{total}</span>
-      </div>
-      <div className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
-        <div className="flex items-center gap-1.5">
-          <span className="w-2 h-2 rounded-full bg-green-500" />
-          <Link to="/allocations?status=running" className="hover:underline text-gray-600 dark:text-gray-300">
-            {running} Running
-          </Link>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <span className="w-2 h-2 rounded-full bg-yellow-500" />
-          <Link to="/allocations?status=pending" className="hover:underline text-gray-600 dark:text-gray-300">
-            {pending} Pending
-          </Link>
-        </div>
-        <div className="flex items-center gap-1.5">
-          <span className="w-2 h-2 rounded-full bg-red-500" />
-          <Link to="/allocations?status=failed" className="hover:underline text-gray-600 dark:text-gray-300">
-            {activeFailed} Failed
-            {historicalFailed > 0 && (
-              <span className="text-gray-400 dark:text-gray-500 ml-1">
-                ({historicalFailed})
-              </span>
-            )}
-          </Link>
-        </div>
-      </div>
-    </div>
-  );
-}
-
 export function StatCounters({ jobs, nodes, namespaces, activeFailedAllocations, loading }: StatCountersProps) {
   const jobStats = countJobsByStatus(jobs);
   const nodeStats = calculateNodeStats(nodes);
@@ -207,15 +157,16 @@ export function StatCounters({ jobs, nodes, namespaces, activeFailedAllocations,
 
   // Historical failures from JobSummary (for info only)
   const historicalFailed = allocStats.failed;
+  const allocationsTotal = allocStats.running + allocStats.pending + activeFailedAllocations;
 
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
       <CounterCard
         title="Jobs"
         titleLink="/jobs"
         loading={loading}
         icon={
-          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -236,7 +187,7 @@ export function StatCounters({ jobs, nodes, namespaces, activeFailedAllocations,
         titleLink="/nodes"
         loading={loading}
         icon={
-          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -252,12 +203,32 @@ export function StatCounters({ jobs, nodes, namespaces, activeFailedAllocations,
         ]}
       />
 
-      <AllocationCounterCard
+      <CounterCard
+        title="Allocations"
+        titleLink="/allocations"
         loading={loading}
-        running={allocStats.running}
-        pending={allocStats.pending}
-        activeFailed={activeFailedAllocations}
-        historicalFailed={historicalFailed}
+        total={allocationsTotal}
+        icon={
+          <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z"
+            />
+          </svg>
+        }
+        stats={[
+          { label: 'Running', value: allocStats.running, color: 'bg-green-500', link: '/allocations?status=running' },
+          { label: 'Pending', value: allocStats.pending, color: 'bg-yellow-500', link: '/allocations?status=pending' },
+          {
+            label: 'Failed',
+            value: activeFailedAllocations,
+            color: 'bg-red-500',
+            link: '/allocations?status=failed',
+            detail: historicalFailed > 0 ? `(${historicalFailed})` : undefined,
+          },
+        ]}
       />
 
       <CounterCard
@@ -265,7 +236,7 @@ export function StatCounters({ jobs, nodes, namespaces, activeFailedAllocations,
         titleLink="/namespaces"
         loading={loading}
         icon={
-          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg className="w-4 h-4 sm:w-5 sm:h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path
               strokeLinecap="round"
               strokeLinejoin="round"
