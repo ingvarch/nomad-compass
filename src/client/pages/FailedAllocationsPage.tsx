@@ -288,13 +288,46 @@ export default function FailedAllocationsPage() {
             </p>
           </div>
         ) : (
-          <div className="[&>div]:rounded-t-none [&>div]:shadow-none [&>div]:border-t-0">
             <DataTable
               items={activeFailures}
               columns={activeFailuresColumns}
               keyExtractor={(item) => item.allocation.ID}
+              mobileCardRenderer={({ allocation, jobName, failedTasks }) => (
+                <div className="p-4 space-y-2">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <Link
+                          to={jobPath(allocation.JobID, allocation.Namespace)}
+                          className="font-semibold text-blue-600 dark:text-blue-400 hover:underline text-sm truncate"
+                        >
+                          {jobName}
+                        </Link>
+                        <span className="text-xs font-mono text-gray-400 dark:text-gray-500">
+                          ({allocation.ID.slice(0, 8)})
+                        </span>
+                      </div>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                        Group: {allocation.TaskGroup}
+                      </p>
+                    </div>
+
+                    <span className="px-2 py-0.5 text-xs font-medium rounded-full bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400">
+                      {allocation.ClientStatus}
+                    </span>
+                  </div>
+
+                  <div className="bg-red-50 dark:bg-red-900/20 p-2.5 rounded-lg border border-red-100 dark:border-red-900/40 text-xs text-red-700 dark:text-red-300 break-words">
+                    {failedTasks.length > 0 ? `Failed: ${failedTasks.join(', ')}` : (allocation.ClientDescription || 'Unknown error')}
+                  </div>
+
+                  <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 pt-1">
+                    <span>Node: {allocation.NodeName || allocation.NodeID?.slice(0, 8) || '-'}</span>
+                    <span>{formatTimestamp(allocation.ModifyTime)}</span>
+                  </div>
+                </div>
+              )}
             />
-          </div>
         )}
       </div>
 

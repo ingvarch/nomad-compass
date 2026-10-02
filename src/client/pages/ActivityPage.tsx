@@ -346,6 +346,41 @@ export default function ActivityPage() {
         columns={columns}
         keyExtractor={(event, idx) => `${event.allocId}-${event.timestamp}-${idx}`}
         emptyState={{ message: 'No events match the current filters.' }}
+        mobileCardRenderer={(event) => (
+          <div className="p-4 space-y-2">
+            <div className="flex items-start justify-between gap-2">
+              <div className="flex items-center gap-2 min-w-0">
+                <span
+                  className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${severityColors[event.severity].dot}`}
+                  title={event.severity}
+                />
+                <Link
+                  to={jobPath(event.jobId, event.namespace)}
+                  className="text-sm font-semibold text-blue-600 dark:text-blue-400 hover:underline truncate"
+                >
+                  {event.jobId}
+                </Link>
+                {event.taskName && (
+                  <span className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                    / {event.taskName}
+                  </span>
+                )}
+              </div>
+              <span className="text-xs text-gray-400 dark:text-gray-500 whitespace-nowrap flex-shrink-0">
+                {formatTimeAgo(event.timestamp)}
+              </span>
+            </div>
+
+            <div className="flex items-start gap-2 flex-wrap">
+              <span className={`px-2 py-0.5 text-[11px] font-medium rounded-full ${getStatusClasses(severityColors[event.severity])}`}>
+                {event.type}
+              </span>
+              <span className="text-xs text-gray-700 dark:text-gray-300 break-words flex-1">
+                {event.message}
+              </span>
+            </div>
+          </div>
+        )}
       />
 
       <BackLink to="/dashboard" />

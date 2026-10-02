@@ -155,6 +155,34 @@ const JobList: React.FC = () => {
         emptyState={{
           message: `No jobs found${selectedNamespace !== '*' ? ` in ${selectedNamespace} namespace` : ''}`,
         }}
+        mobileCardRenderer={(job) => (
+          <Link
+            to={jobPath(job.ID, job.Namespace || 'default')}
+            className="block p-4 hover:bg-gray-50 dark:hover:bg-monokai-surface/60 active:bg-gray-100 dark:active:bg-monokai-surface transition-colors"
+          >
+            <div className="flex items-start justify-between gap-2">
+              <div className="min-w-0 flex-1">
+                <h3 className="text-base font-semibold text-gray-900 dark:text-monokai-text truncate">
+                  {job.Name}
+                </h3>
+                <p className="text-xs text-gray-500 dark:text-monokai-muted font-mono truncate mt-0.5">
+                  {job.ID}
+                </p>
+              </div>
+              <StatusBadge status={job.Status} isStopped={job.Stop} />
+            </div>
+
+            <div className="flex items-center gap-2 mt-2.5 flex-wrap">
+              <Badge variant="blue">{job.Namespace || 'default'}</Badge>
+              <span className="text-xs px-2 py-0.5 rounded bg-gray-100 dark:bg-monokai-surface text-gray-700 dark:text-monokai-muted capitalize font-medium">
+                {job.Type}
+              </span>
+              {job.Periodic && (
+                <Badge variant="purple">periodic</Badge>
+              )}
+            </div>
+          </Link>
+        )}
       />
     </div>
   );

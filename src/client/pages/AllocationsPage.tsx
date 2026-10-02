@@ -192,6 +192,62 @@ export default function AllocationsPage() {
         columns={columns}
         keyExtractor={(alloc) => alloc.ID}
         emptyState={{ message: 'No allocations found.' }}
+        mobileCardRenderer={(alloc) => {
+          const job = jobs.get(alloc.JobID);
+          const statusColors = getAllocationStatusColor(alloc.ClientStatus);
+          const firstTask = getFirstTask(alloc);
+
+          return (
+            <div className="p-4 space-y-2.5">
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-1.5 flex-wrap">
+                    <span className="font-semibold text-gray-900 dark:text-gray-100 text-sm">
+                      {alloc.TaskGroup}
+                    </span>
+                    <span className="text-xs font-mono text-gray-400 dark:text-gray-500">
+                      ({alloc.ID.slice(0, 8)})
+                    </span>
+                  </div>
+                  <div className="mt-0.5">
+                    <Link
+                      to={jobPath(alloc.JobID, alloc.Namespace)}
+                      className="text-xs text-blue-600 dark:text-blue-400 hover:underline font-medium"
+                    >
+                      {job?.Name || alloc.JobID}
+                    </Link>
+                  </div>
+                </div>
+
+                <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${getStatusClasses(statusColors)}`}>
+                  {alloc.ClientStatus}
+                </span>
+              </div>
+
+              <div className="flex items-center justify-between pt-1 border-t border-gray-100 dark:border-gray-800 text-xs text-gray-500 dark:text-gray-400">
+                <div className="flex items-center gap-2">
+                  <Badge variant="blue">{alloc.Namespace}</Badge>
+                  <span>{alloc.NodeName || alloc.NodeID?.slice(0, 8) || '-'}</span>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <span>{formatTimestamp(alloc.CreateTime)}</span>
+                  {alloc.ClientStatus === 'running' && firstTask && (
+                    <Link
+                      to={`/exec/${alloc.ID}/${firstTask}?namespace=${alloc.Namespace}`}
+                      className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-monokai-surface hover:bg-blue-100 rounded transition-colors"
+                      title="Open terminal"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <Terminal className="w-3.5 h-3.5" />
+                      Exec
+                    </Link>
+                  )}
+                </div>
+              </div>
+            </div>
+          );
+        }}
       />
 
       <BackLink to="/dashboard" />
