@@ -1,22 +1,31 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import { createNomadClient } from '../lib/api/nomad';
 import { getErrorMessage } from '../lib/errors';
 import { NomadNodeDetail, NomadAllocation } from '../types/nomad';
-import { LoadingSpinner, ErrorAlert, RefreshButton, Badge } from '../components/ui';
+import { LoadingSpinner, ErrorAlert, RefreshButton, Badge, Button, ConfirmationDialog } from '../components/ui';
 import { NodeAttributes } from '../components/nodes/NodeAttributes';
 import { NodeAllocations } from '../components/nodes/NodeAllocations';
+import { NodeDrainModal, type NodeDrainConfirmOptions } from '../components/nodes/NodeDrainModal';
 import { getNodeStatusColor, getNodeEligibilityColor } from '../lib/utils/statusColors';
+import { useToast } from '../context/ToastContext';
 
 type TabType = 'overview' | 'allocations' | 'events';
 
 export default function NodeDetailPage() {
   const { nodeId } = useParams<{ nodeId: string }>();
+  const navigate = useNavigate();
+  const { addToast } = useToast();
   const [node, setNode] = useState<NomadNodeDetail | null>(null);
   const [allocations, setAllocations] = useState<NomadAllocation[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [activeTab, setActiveTab] = useState<TabType>('overview');
+
+  const [isDrainModalOpen, setIsDrainModalOpen] = useState(false);
+  const [isCancelDrainDialogOpen, setIsCancelDrainDialogOpen] = useState(false);
+  const [isPurgeDialogOpen, setIsPurgeDialogOpen] = useState(false);
+  const [actionLoading, setActionLoading] = useState(false);
 
   const fetchNodeData = useCallback(async () => {
     if (!nodeId) return;
@@ -41,6 +50,73 @@ export default function NodeDetailPage() {
   useEffect(() => {
     fetchNodeData();
   }, [fetchNodeData]);
+
+  const handleDrainConfirm = async (options: NodeDrainConfirmOptions) => {
+    if (!node) return;
+    try {
+      setActionLoading(true);
+      const client = createNomadClient();
+      await client.drainNode(node.ID, {
+        Deadline: options.deadline,
+        IgnoreSystemJobs: options.ignoreSystemJobs,
+      });
+      addToast(`Drain initiated on node "${node.Name}"`, 'success');
+      setIsDrainModalOpen(false);
+      await fetchNodeData();
+    } catch (err) {
+      addToast(getErrorMessage(err, 'Failed to drain node'), 'error');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleCancelDrainConfirm = async () => {
+    if (!node) return;
+    try {
+      setActionLoading(true);
+      const client = createNomadClient();
+      await client.drainNode(node.ID, null, true);
+      addToast(`Drain canceled on node "${node.Name}"`, 'success');
+      setIsCancelDrainDialogOpen(false);
+      await fetchNodeData();
+    } catch (err) {
+      addToast(getErrorMessage(err, 'Failed to cancel drain'), 'error');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handleToggleEligibility = async () => {
+    if (!node) return;
+    const newEligibility = node.SchedulingEligibility === 'eligible' ? 'ineligible' : 'eligible';
+    try {
+      setActionLoading(true);
+      const client = createNomadClient();
+      await client.toggleNodeEligibility(node.ID, newEligibility);
+      addToast(`Node "${node.Name}" marked as ${newEligibility}`, 'success');
+      await fetchNodeData();
+    } catch (err) {
+      addToast(getErrorMessage(err, `Failed to mark node as ${newEligibility}`), 'error');
+    } finally {
+      setActionLoading(false);
+    }
+  };
+
+  const handlePurgeConfirm = async () => {
+    if (!node) return;
+    try {
+      setActionLoading(true);
+      const client = createNomadClient();
+      await client.purgeNode(node.ID);
+      addToast(`Node "${node.Name}" purged successfully`, 'success');
+      setIsPurgeDialogOpen(false);
+      navigate('/nodes');
+    } catch (err) {
+      addToast(getErrorMessage(err, 'Failed to purge node'), 'error');
+    } finally {
+      setActionLoading(false);
+    }
+  };
 
   if (loading) {
     return (
@@ -76,8 +152,8 @@ export default function NodeDetailPage() {
       <div className="flex flex-col gap-4">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
-            <div className="flex items-center gap-3">
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+            <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+              <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
                 {node.Name}
               </h1>
               <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${statusColors.bg} ${statusColors.text}`}>
@@ -97,7 +173,49 @@ export default function NodeDetailPage() {
               {node.ID}
             </p>
           </div>
-          <RefreshButton onClick={fetchNodeData} />
+          <div className="flex items-center gap-2 flex-wrap">
+            {node.Drain ? (
+              <Button
+                variant="secondary"
+                size="sm"
+                onClick={() => setIsCancelDrainDialogOpen(true)}
+                disabled={actionLoading}
+              >
+                Cancel Drain
+              </Button>
+            ) : (
+              <Button
+                variant="danger"
+                size="sm"
+                onClick={() => setIsDrainModalOpen(true)}
+                disabled={actionLoading}
+              >
+                Drain Node
+              </Button>
+            )}
+
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={handleToggleEligibility}
+              disabled={actionLoading}
+            >
+              {node.SchedulingEligibility === 'eligible' ? 'Make Ineligible' : 'Make Eligible'}
+            </Button>
+
+            {node.Status === 'down' && (
+              <Button
+                variant="danger"
+                size="sm"
+                onClick={() => setIsPurgeDialogOpen(true)}
+                disabled={actionLoading}
+              >
+                Purge Node
+              </Button>
+            )}
+
+            <RefreshButton onClick={fetchNodeData} />
+          </div>
         </div>
       </div>
 
@@ -257,6 +375,45 @@ export default function NodeDetailPage() {
           )}
         </div>
       </div>
+
+      {/* Drain Modal */}
+      {isDrainModalOpen && (
+        <NodeDrainModal
+          isOpen={isDrainModalOpen}
+          node={{
+            ID: node.ID,
+            Name: node.Name,
+            allocationsCount: runningAllocs,
+          }}
+          onClose={() => setIsDrainModalOpen(false)}
+          onConfirm={handleDrainConfirm}
+          isLoading={actionLoading}
+        />
+      )}
+
+      {/* Cancel Drain Confirmation */}
+      <ConfirmationDialog
+        isOpen={isCancelDrainDialogOpen}
+        onClose={() => setIsCancelDrainDialogOpen(false)}
+        onConfirm={handleCancelDrainConfirm}
+        title="Stop Drain"
+        mode="confirm"
+        confirmLabel="Stop Drain"
+        isLoading={actionLoading}
+        message={`Are you sure you want to stop draining on node "${node.Name}"? This will halt allocation migration and mark the node eligible for task placement.`}
+      />
+
+      {/* Purge Node Confirmation */}
+      <ConfirmationDialog
+        isOpen={isPurgeDialogOpen}
+        onClose={() => setIsPurgeDialogOpen(false)}
+        onConfirm={handlePurgeConfirm}
+        title="Purge Node"
+        mode="delete"
+        confirmLabel="Purge Node"
+        isLoading={actionLoading}
+        message={`Are you sure you want to permanently purge dead node "${node.Name}" (${node.ID}) from the cluster state?`}
+      />
     </div>
   );
 }

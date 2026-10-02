@@ -155,11 +155,14 @@ The Nodes page (`/nodes`) and node detail pages provide node administration:
 - **Node information**: lists hostname, IP address, datacenter, Nomad version,
   OS, kernel release, and active task drivers (Docker, exec, etc.).
 - **Drain mode**: gracefully drain allocations from a node prior to reboots or
-  upgrades. Set a drain deadline (force eviction after timeout) and choose
-  whether to preserve system jobs.
+  upgrades via the **Drain Node** action. Choose a deadline preset (`No deadline`,
+  `15m`, `1h`, `4h`, or custom duration) and toggle whether to preserve system jobs.
+  Active drains can be stopped anytime with **Cancel Drain**.
 - **Scheduling eligibility**: toggle a node between `eligible` and `ineligible`
-  to prevent new tasks from being scheduled on it without disturbing existing
-  workloads.
+  via **Make Ineligible** / **Make Eligible** to prevent new tasks from being scheduled
+  on it without disturbing existing workloads.
+- **Node purge**: permanently remove dead, decommissioned nodes from cluster state with
+  the **Purge Node** action.
 - **Resource breakdown**: inspect allocated vs. total CPU, memory, and disk
   capacity for individual nodes.
 

@@ -334,8 +334,38 @@ export interface NomadNodeDetail extends NomadNode {
     Drivers?: Record<string, NomadDriverInfo>;
     HostVolumes?: Record<string, NomadHostVolumeInfo>;
     Events?: NomadNodeEvent[];
+    DrainStrategy?: NomadDrainStrategy | null;
     CreateIndex?: number;
     ModifyIndex?: number;
+}
+
+export interface NomadDrainSpec {
+    Deadline?: number; // nanoseconds (0 means no deadline)
+    IgnoreSystemJobs?: boolean;
+}
+
+export interface NomadDrainStrategy {
+    DrainSpec: NomadDrainSpec | null;
+    ForceDeadline?: string;
+    StartedAt?: string;
+    UpdatedAt?: string;
+}
+
+export interface NomadDrainRequest {
+    NodeID: string;
+    DrainSpec: NomadDrainSpec | null;
+    MarkEligible?: boolean;
+}
+
+export interface NomadEligibilityRequest {
+    NodeID: string;
+    Eligibility: 'eligible' | 'ineligible';
+}
+
+export interface NomadNodeActionResponse {
+    EvalID?: string;
+    EvalCreateIndex?: number;
+    NodeModifyIndex: number;
 }
 
 export interface NomadDriverInfo {
