@@ -97,3 +97,26 @@ describe('NomadClient node pools endpoints', () => {
     ]);
   });
 });
+
+describe('NomadClient deployments & canary endpoints', () => {
+  test('gets job deployment, promotes canary, pauses and fails deployment', async () => {
+    const calls = mockFetch(() => ({ body: {} }));
+    const client = new NomadClient();
+
+    await client.getJobDeployment('my-app', 'prod');
+    await client.getDeployments('prod');
+    await client.getDeployment('dep-123');
+    await client.promoteDeployment('dep-123', { all: true });
+    await client.pauseDeployment('dep-123', true);
+    await client.failDeployment('dep-123');
+
+    expect(calls.map((c) => ({ method: c.method || 'GET', url: c.url }))).toEqual([
+      { method: 'GET', url: '/api/nomad/v1/job/my-app/deployment?namespace=prod' },
+      { method: 'GET', url: '/api/nomad/v1/deployments?namespace=prod' },
+      { method: 'GET', url: '/api/nomad/v1/deployment/dep-123' },
+      { method: 'POST', url: '/api/nomad/v1/deployment/promote/dep-123' },
+      { method: 'POST', url: '/api/nomad/v1/deployment/pause/dep-123' },
+      { method: 'POST', url: '/api/nomad/v1/deployment/fail/dep-123' },
+    ]);
+  });
+});

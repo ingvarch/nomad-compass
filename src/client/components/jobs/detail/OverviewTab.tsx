@@ -13,6 +13,7 @@ interface OverviewTabProps {
   onToggleTask: (groupName: string, taskName: string) => void;
   onViewLogs?: (groupName: string) => void;
   schedule?: ReactNode;
+  deploymentCard?: ReactNode;
 }
 
 export function OverviewTab({
@@ -25,6 +26,7 @@ export function OverviewTab({
   onToggleTask,
   onViewLogs,
   schedule,
+  deploymentCard,
 }: OverviewTabProps) {
   const [showTaskEvents, setShowTaskEvents] = useState(false);
 
@@ -35,6 +37,8 @@ export function OverviewTab({
 
   return (
     <div className="space-y-6">
+      {deploymentCard}
+
       <JobSummary job={job} allocations={allocations} createTime={createTime} />
 
       {schedule}

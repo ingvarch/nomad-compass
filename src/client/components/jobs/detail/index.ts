@@ -16,3 +16,4 @@ export { ExecTab } from './ExecTab';
 export { ScheduleCard } from './ScheduleCard';
 export { PeriodicActions } from './PeriodicActions';
 export { LaunchesTab } from './LaunchesTab';
+export { DeploymentCard } from './DeploymentCard';
