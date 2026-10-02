@@ -399,6 +399,62 @@ describe('JobDetailPage for a service job', () => {
     expect(await screen.findByRole('link', { name: 'Edit' })).toBeTruthy();
     expect(screen.getByRole('link', { name: 'Clone' })).toBeTruthy();
     expect(screen.queryByText(/Launch of/)).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Dispatch' })).toBeNull();
+  });
+});
+
+describe('JobDetailPage for a parameterized job', () => {
+  const exportJob = {
+    ...service, ID: 'export', Name: 'export', Type: 'batch',
+    ParameterizedJob: { Payload: 'optional', MetaRequired: ['database'], MetaOptional: null },
+  };
+  const dispatchedJob = {
+    ...exportJob, ID: 'export/dispatch-1790611797-8a1b2c3d', Name: 'export/dispatch-1790611797-8a1b2c3d',
+    ParentID: 'export', Dispatched: true,
+  };
+  const dispatchReply = {
+    DispatchedJobID: dispatchedJob.ID, EvalID: 'eval-1', EvalCreateIndex: 7, JobCreateIndex: 6, Index: 7,
+  };
+
+  // The dialog renders after the page, so its button is the last one
+  function dispatchButtons() {
+    return screen.getAllByRole('button', { name: 'Dispatch' });
+  }
+
+  test('dispatches the job and links to the dispatched job', async () => {
+    const calls = mockFetch(nomad({
+      ...jobRoutes(exportJob),
+      '/api/nomad/v1/job/export/dispatch': dispatchReply,
+    }));
+    renderPage('/jobs/export?namespace=default');
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Dispatch' }));
+    fireEvent.change(screen.getByLabelText('database'), { target: { value: 'orders' } });
+    fireEvent.click(dispatchButtons().at(-1)!);
+
+    const link = await screen.findByRole('link', { name: 'Open Job' });
+    expect(link.getAttribute('href')).toBe('/jobs/export%2Fdispatch-1790611797-8a1b2c3d?namespace=default');
+    expect(calls.filter((c) => c.method === 'POST')).toEqual([
+      { method: 'POST', url: '/api/nomad/v1/job/export/dispatch?namespace=default', body: { Meta: { database: 'orders' } } },
+    ]);
+  });
+
+  // Nomad rejects a dispatch of a stopped job
+  test('a stopped job cannot be dispatched', async () => {
+    mockFetch(nomad(jobRoutes({ ...exportJob, Stop: true, Status: 'dead' })));
+    renderPage('/jobs/export?namespace=default');
+
+    const button = (await screen.findByRole('button', { name: 'Dispatch' })) as HTMLButtonElement;
+    expect(button.disabled).toBe(true);
+    expect(button.title).toBe('Start the job to dispatch it');
+  });
+
+  test('a dispatched job cannot be dispatched again', async () => {
+    mockFetch(nomad(jobRoutes(dispatchedJob)));
+    renderPage(`/jobs/${encodeURIComponent(dispatchedJob.ID)}?namespace=default`);
+
+    expect(await screen.findByText(`Job ID: ${dispatchedJob.ID}`)).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Dispatch' })).toBeNull();
   });
 });
 

@@ -5,7 +5,8 @@ import { DEFAULT_NAMESPACE } from '../lib/constants';
 import { createNomadClient } from '../lib/api/nomad';
 import { getErrorMessage } from '../lib/errors';
 import { useToast } from '../context/ToastContext';
-import { LoadingSpinner, ErrorAlert } from '../components/ui';
+import { Send } from 'lucide-react';
+import { LoadingSpinner, ErrorAlert, Button } from '../components/ui';
 import {
   JobHeader,
   JobDetailTabs,
@@ -21,12 +22,20 @@ import {
   LaunchesTab,
   DeploymentCard,
   ScaleTaskGroupModal,
+  DispatchJobModal,
 } from '../components/jobs/detail';
 import JobActions from '../components/jobs/JobActions';
 import PermissionErrorModal from '../components/ui/PermissionErrorModal';
 import { usePeriodicActions, usePeriodicLaunches } from '../hooks';
 import { scheduleState } from '../lib/services/periodicService';
-import type { NomadAllocation, NomadServiceRegistration, NomadJob, NomadTaskGroup } from '../types/nomad';
+import { isParameterized } from '../lib/services/dispatchService';
+import type {
+  NomadAllocation,
+  NomadServiceRegistration,
+  NomadJob,
+  NomadJobDispatchRequest,
+  NomadTaskGroup,
+} from '../types/nomad';
 import type { NomadDeployment } from '../types/deployment';
 
 export default function JobDetailPage() {
@@ -40,6 +49,7 @@ export default function JobDetailPage() {
   const [deployment, setDeployment] = useState<NomadDeployment | null>(null);
   const [isDeploymentBusy, setIsDeploymentBusy] = useState(false);
   const [scalingGroup, setScalingGroup] = useState<NomadTaskGroup | null>(null);
+  const [isDispatchOpen, setIsDispatchOpen] = useState(false);
   const [serviceRegistrations, setServiceRegistrations] = useState<NomadServiceRegistration[]>([]);
   const [createTime, setCreateTime] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -267,6 +277,9 @@ export default function JobDetailPage() {
     await refreshJob();
   };
 
+  const handleDispatch = (request: NomadJobDispatchRequest) =>
+    createNomadClient().dispatchJob(jobId, request, namespace);
+
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -323,15 +336,30 @@ export default function JobDetailPage() {
         namespace={job.Namespace || DEFAULT_NAMESPACE}
         parentId={job.ParentID}
         actions={
-          job.Periodic && (
-            <PeriodicActions
-              state={periodicState}
-              isEnabled={job.Periodic.Enabled}
-              isBusy={periodic.isBusy || isRefreshing}
-              onRunNow={periodic.runNow}
-              onTogglePause={periodic.togglePause}
-            />
-          )
+          <>
+            {job.Periodic && (
+              <PeriodicActions
+                state={periodicState}
+                isEnabled={job.Periodic.Enabled}
+                isBusy={periodic.isBusy || isRefreshing}
+                onRunNow={periodic.runNow}
+                onTogglePause={periodic.togglePause}
+              />
+            )}
+            {/* Nomad rejects a dispatch of a stopped job */}
+            {isParameterized(job) && (
+              <Button
+                variant="secondary"
+                className="shadow-sm"
+                onClick={() => setIsDispatchOpen(true)}
+                disabled={job.Stop}
+                title={job.Stop ? 'Start the job to dispatch it' : undefined}
+              >
+                <Send className="w-4 h-4 mr-1.5" />
+                Dispatch
+              </Button>
+            )}
+          </>
         }
       />
 
@@ -432,6 +460,15 @@ export default function JobDetailPage() {
           onClose={() => setScalingGroup(null)}
           taskGroup={scalingGroup}
           onScale={handleScaleGroup}
+        />
+      )}
+
+      {/* Dispatch Job Modal */}
+      {isDispatchOpen && isParameterized(job) && (
+        <DispatchJobModal
+          job={job}
+          onClose={() => setIsDispatchOpen(false)}
+          onDispatch={handleDispatch}
         />
       )}
     </div>

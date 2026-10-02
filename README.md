@@ -30,6 +30,8 @@ Formerly Nomad Compass.
 - Scales task groups dynamically (+/- stepper, presets, zero-scale warning, and optional reason) without resubmitting full job specs.
 - Creates periodic (cron) batch jobs, runs them on demand, pauses their
   schedule and lists their launches.
+- Dispatches parameterized jobs with their meta keys and a text or file
+  payload.
 - Streams task logs with stdout/stderr filtering.
 - Opens a terminal in a running task. The ACL token stays in an `httpOnly`
   cookie and never appears in a URL.
