@@ -21,7 +21,7 @@ const navTabs: NavTab[] = [
     label: 'Dashboard',
     path: '/dashboard',
     icon: LayoutDashboard,
-    isActive: (pathname) => pathname === '/' || pathname === '/dashboard',
+    isActive: (pathname) => pathname === '/' || pathname === '/dashboard' || pathname.startsWith('/allocations'),
   },
   {
     id: 'jobs',
@@ -42,7 +42,7 @@ const navTabs: NavTab[] = [
     label: 'Activity',
     path: '/activity',
     icon: Activity,
-    isActive: (pathname) => pathname.startsWith('/activity') || pathname.startsWith('/allocations'),
+    isActive: (pathname) => pathname.startsWith('/activity'),
   },
 ];
 

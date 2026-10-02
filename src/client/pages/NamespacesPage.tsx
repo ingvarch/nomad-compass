@@ -9,7 +9,6 @@ import {
   ErrorAlert,
   PageHeader,
   RefreshButton,
-  BackLink,
   DataTable,
   Badge,
   type Column,
@@ -286,8 +285,6 @@ export default function NamespacesPage() {
           </div>
         )}
       />
-
-      <BackLink to="/dashboard" />
 
       {/* Create Modal */}
       <Modal

@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useSearchParams, useNavigate } from 'react-router-dom';
 import { createNomadClient } from '../lib/api/nomad';
 import { getErrorMessage } from '../lib/errors';
-import { PageHeader, BackLink, LoadingSpinner, ErrorAlert } from '../components/ui';
+import { PageHeader, LoadingSpinner, ErrorAlert } from '../components/ui';
 import ExecTerminal from '../components/exec/ExecTerminal';
 import { jobPath } from '../lib/utils/jobPath';
 
@@ -94,7 +94,6 @@ export default function ExecPage() {
       <div className="space-y-6">
         <PageHeader title="Remote Exec" description="Error loading allocation" />
         <ErrorAlert message={error} />
-        <BackLink to="/allocations" label="Back to Allocations" />
       </div>
     );
   }
@@ -104,7 +103,6 @@ export default function ExecPage() {
       <div className="space-y-6">
         <PageHeader title="Remote Exec" description="Missing parameters" />
         <ErrorAlert message="Allocation ID and task name are required" />
-        <BackLink to="/allocations" label="Back to Allocations" />
       </div>
     );
   }
@@ -234,11 +232,6 @@ export default function ExecPage() {
           />
         </div>
       )}
-
-      <BackLink
-        to={jobPath(allocation?.JobID ?? '', namespace)}
-        label="Back to Job"
-      />
     </div>
   );
 }

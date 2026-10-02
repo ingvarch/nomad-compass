@@ -32,4 +32,43 @@ describe('MobileHeader', () => {
     expect(screen.getByRole('button', { name: /go back/i })).toBeTruthy();
     expect(screen.getByText('Job Details')).toBeTruthy();
   });
+
+  test('renders back button instead of logo on /allocations', () => {
+    render(
+      <MemoryRouter initialEntries={['/allocations']}>
+        <ThemeProvider>
+          <MobileHeader />
+        </ThemeProvider>
+      </MemoryRouter>
+    );
+
+    expect(screen.getByRole('button', { name: /go back/i })).toBeTruthy();
+    expect(screen.getByText('Allocations')).toBeTruthy();
+    expect(screen.queryByText('ovoo')).toBeNull();
+  });
+
+  test('renders back button instead of logo on /acl and /nodes', () => {
+    const { unmount } = render(
+      <MemoryRouter initialEntries={['/acl']}>
+        <ThemeProvider>
+          <MobileHeader />
+        </ThemeProvider>
+      </MemoryRouter>
+    );
+
+    expect(screen.getByRole('button', { name: /go back/i })).toBeTruthy();
+    expect(screen.queryByText('ovoo')).toBeNull();
+    unmount();
+
+    render(
+      <MemoryRouter initialEntries={['/nodes']}>
+        <ThemeProvider>
+          <MobileHeader />
+        </ThemeProvider>
+      </MemoryRouter>
+    );
+
+    expect(screen.getByRole('button', { name: /go back/i })).toBeTruthy();
+    expect(screen.queryByText('ovoo')).toBeNull();
+  });
 });

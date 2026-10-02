@@ -12,7 +12,7 @@ export const RefreshButton: React.FC<RefreshButtonProps> = ({
   onClick,
   className = '',
   cooldownMs = 2000,
-  iconOnly = false,
+  iconOnly = true,
 }) => {
   const [isOnCooldown, setIsOnCooldown] = useState(false);
 

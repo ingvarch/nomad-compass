@@ -31,7 +31,7 @@ function getRouteMeta(pathname: string): RouteMeta {
     return { title: 'Topology' };
   }
   if (pathname === '/nodes') {
-    return { title: 'Nodes' };
+    return { title: 'Nodes', backTo: '/dashboard' };
   }
   if (pathname.startsWith('/nodes/')) {
     return { title: 'Node Details', backTo: '/nodes' };
@@ -52,16 +52,16 @@ function getRouteMeta(pathname: string): RouteMeta {
     return { title: 'Activity' };
   }
   if (pathname === '/allocations') {
-    return { title: 'Allocations' };
+    return { title: 'Allocations', backTo: '/dashboard' };
   }
   if (pathname === '/allocations/failed') {
     return { title: 'Failed Allocs', backTo: '/allocations' };
   }
   if (pathname === '/acl') {
-    return { title: 'ACL' };
+    return { title: 'ACL', backTo: '/dashboard' };
   }
   if (pathname.startsWith('/exec/')) {
-    return { title: 'Remote Exec', backTo: '/jobs' };
+    return { title: 'Remote Exec', backTo: '/allocations' };
   }
   return { title: 'ovoo' };
 }

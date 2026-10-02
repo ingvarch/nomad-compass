@@ -34,6 +34,31 @@ describe('BottomNav', () => {
     expect(jobsLink?.className).toContain('text-blue-600');
   });
 
+  test('does not highlight Activity tab on /allocations, highlights Dashboard instead', () => {
+    render(
+      <MemoryRouter initialEntries={['/allocations']}>
+        <BottomNav onOpenMore={() => {}} />
+      </MemoryRouter>
+    );
+
+    const activityLink = screen.getByText('Activity').closest('a');
+    expect(activityLink?.className).not.toContain('text-blue-600');
+
+    const dashboardLink = screen.getByText('Dashboard').closest('a');
+    expect(dashboardLink?.className).toContain('text-blue-600');
+  });
+
+  test('highlights Activity tab on /activity', () => {
+    render(
+      <MemoryRouter initialEntries={['/activity']}>
+        <BottomNav onOpenMore={() => {}} />
+      </MemoryRouter>
+    );
+
+    const activityLink = screen.getByText('Activity').closest('a');
+    expect(activityLink?.className).toContain('text-blue-600');
+  });
+
   test('does not render any dot indicator between icon and text', () => {
     const { container } = render(
       <MemoryRouter initialEntries={['/dashboard']}>

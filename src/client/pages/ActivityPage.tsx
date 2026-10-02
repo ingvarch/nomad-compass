@@ -8,7 +8,6 @@ import {
   ErrorAlert,
   PageHeader,
   RefreshButton,
-  BackLink,
   DataTable,
   Select,
   type Column,
@@ -447,8 +446,6 @@ export default function ActivityPage() {
           </div>
         )}
       />
-
-      <BackLink to="/dashboard" />
     </div>
   );
 }

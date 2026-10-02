@@ -8,7 +8,6 @@ import {
   ErrorAlert,
   PageHeader,
   RefreshButton,
-  BackLink,
   DataTable,
   Badge,
   Spinner,
@@ -398,8 +397,6 @@ export default function FailedAllocationsPage() {
           </div>
         )}
       </div>
-
-      <BackLink to="/dashboard" />
     </div>
   );
 }

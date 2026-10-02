@@ -9,7 +9,6 @@ import {
   RefreshButton,
   Button,
   FilterButtons,
-  BackLink,
   DataTable,
   Badge,
   type Column,
@@ -218,8 +217,6 @@ export default function NodesPage() {
           );
         }}
       />
-
-      <BackLink to="/dashboard" />
     </div>
   );
 }

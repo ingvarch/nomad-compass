@@ -9,7 +9,6 @@ import {
   PageHeader,
   RefreshButton,
   FilterButtons,
-  BackLink,
   DataTable,
   Badge,
   type Column,
@@ -174,8 +173,6 @@ export default function ServersPage() {
           );
         }}
       />
-
-      <BackLink to="/dashboard" />
     </div>
   );
 }
