@@ -16,6 +16,17 @@ export interface DispatchErrors {
   payload?: string;
 }
 
+export function dispatchedJobPrefix(jobId: string): string {
+  return `${jobId}/dispatch-`;
+}
+
+/**
+ * A dispatched job is the child job Nomad creates for each dispatch of a parameterized job.
+ */
+export function isDispatchedJob(job: { ID: string; ParentID?: string }): boolean {
+  return !!job.ParentID && job.ID.startsWith(dispatchedJobPrefix(job.ParentID));
+}
+
 /**
  * Like Nomad's IsParameterized: a dispatched job keeps the block of its parent and cannot be dispatched again.
  */

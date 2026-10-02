@@ -10,6 +10,7 @@ import { ConfirmationDialog } from '../../ui/ConfirmationDialog';
 import { Badge } from '../../ui';
 import { jobPath, jobClonePath } from '../../../lib/utils/jobPath';
 import { isPeriodicLaunch } from '../../../lib/services/periodicService';
+import { isDispatchedJob } from '../../../lib/services/dispatchService';
 
 interface JobHeaderProps {
   jobName: string;
@@ -27,6 +28,7 @@ const JobHeader: React.FC<JobHeaderProps> = ({ jobName, jobId, namespace, parent
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [permissionError, setPermissionError] = useState<string | null>(null);
   const isLaunch = isPeriodicLaunch({ ID: jobId, ParentID: parentId });
+  const isDispatch = isDispatchedJob({ ID: jobId, ParentID: parentId });
   const isChild = !!parentId;
 
   const handleDelete = async () => {
@@ -82,9 +84,9 @@ const JobHeader: React.FC<JobHeaderProps> = ({ jobName, jobId, namespace, parent
             </p>
             <Badge variant="blue">Namespace: {namespace}</Badge>
           </div>
-          {isLaunch && (
+          {(isLaunch || isDispatch) && (
             <p className="text-xs sm:text-sm text-gray-600 dark:text-gray-400 mt-1">
-              Launch of{' '}
+              {isLaunch ? 'Launch of' : 'Dispatched from'}{' '}
               <Link to={jobPath(parentId!, namespace)} className="text-blue-600 hover:text-blue-800 dark:text-blue-400">
                 {parentId}
               </Link>
