@@ -20,6 +20,7 @@ import NodeDetailPage from './pages/NodeDetailPage';
 import ServersPage from './pages/ServersPage';
 import AllocationsPage from './pages/AllocationsPage';
 import NamespacesPage from './pages/NamespacesPage';
+import VariablesPage from './pages/VariablesPage';
 import TopologyPage from './pages/TopologyPage';
 import ActivityPage from './pages/ActivityPage';
 import AclPage from './pages/AclPage';
@@ -80,6 +81,10 @@ const router = createBrowserRouter([
       {
         path: '/namespaces',
         element: <NamespacesPage />,
+      },
+      {
+        path: '/variables',
+        element: <VariablesPage />,
       },
       {
         path: '/topology',

@@ -35,6 +35,7 @@ const navItems: NavItem[] = [
   { path: '/topology', label: 'Topology' },
   { path: '/servers', label: 'Servers' },
   { path: '/namespaces', label: 'Namespaces' },
+  { path: '/variables', label: 'Variables' },
   { path: '/acl', label: 'ACL', requiresManagement: true },
 ];
 

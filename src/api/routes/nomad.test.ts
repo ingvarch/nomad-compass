@@ -46,4 +46,14 @@ describe('Nomad proxy', () => {
 
     expect(calls[0].url).toBe('http://nomad.test:4646/v1/job/backup%2Fperiodic-1790611797?namespace=default');
   });
+
+  test('forwards variables endpoints /v1/vars and /v1/var', async () => {
+    const calls = mockFetch();
+
+    await proxy('/api/nomad/v1/vars?namespace=default');
+    expect(calls[0].url).toBe('http://nomad.test:4646/v1/vars?namespace=default');
+
+    await proxy('/api/nomad/v1/var/nomad/jobs/my-app?namespace=default');
+    expect(calls[1].url).toBe('http://nomad.test:4646/v1/var/nomad/jobs/my-app?namespace=default');
+  });
 });
