@@ -42,6 +42,10 @@ import {
   NomadDeployment,
   NomadDeploymentPromoteRequest,
 } from '../../types/deployment';
+import {
+  NomadJobScaleRequest,
+  NomadJobScaleResponse,
+} from '../../types/scale';
 import { PermissionError, isApiError } from '../errors';
 import { DEFAULT_NAMESPACE } from '../constants';
 import { periodicLaunchPrefix } from '../services/periodicService';
@@ -832,6 +836,42 @@ export class NomadClient {
       method: 'POST',
       body: JSON.stringify({ DeploymentID: deploymentId, Pause: pause }),
     });
+  }
+
+  // ==================== Job Scaling ====================
+
+  /**
+   * Scale a task group within a job
+   */
+  async scaleJobTaskGroup(
+    jobId: string,
+    group: string,
+    count: number,
+    options?: {
+      namespace?: string;
+      message?: string;
+      jobModifyIndex?: number;
+      enforceIndex?: boolean;
+    }
+  ): Promise<NomadJobScaleResponse> {
+    const params = options?.namespace ? { namespace: options.namespace } : undefined;
+    const body: NomadJobScaleRequest = {
+      Target: {
+        Group: group,
+      },
+      Count: count,
+      Message: options?.message,
+      JobModifyIndex: options?.jobModifyIndex,
+      EnforceIndex: options?.enforceIndex,
+    };
+    return this.request<NomadJobScaleResponse>(
+      `/v1/job/${encodeURIComponent(jobId)}/scale`,
+      {
+        method: 'POST',
+        params,
+        body: JSON.stringify(body),
+      }
+    );
   }
 }
 

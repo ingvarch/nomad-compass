@@ -27,6 +27,7 @@ Formerly Nomad Compass.
 - Shows the plan diff before a job is submitted, and reverts a job to any
   earlier version.
 - Tracks rolling deployments with real-time status, canary indicators, one-click canary promotion, and pause/resume/fail controls.
+- Scales task groups dynamically (+/- stepper, presets, zero-scale warning, and optional reason) without resubmitting full job specs.
 - Creates periodic (cron) batch jobs, runs them on demand, pauses their
   schedule and lists their launches.
 - Streams task logs with stdout/stderr filtering.

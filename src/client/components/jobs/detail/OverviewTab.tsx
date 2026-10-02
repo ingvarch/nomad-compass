@@ -12,6 +12,7 @@ interface OverviewTabProps {
   onToggleGroup: (groupName: string) => void;
   onToggleTask: (groupName: string, taskName: string) => void;
   onViewLogs?: (groupName: string) => void;
+  onScaleGroup?: (taskGroup: NomadTaskGroup) => void;
   schedule?: ReactNode;
   deploymentCard?: ReactNode;
 }
@@ -25,6 +26,7 @@ export function OverviewTab({
   onToggleGroup,
   onToggleTask,
   onViewLogs,
+  onScaleGroup,
   schedule,
   deploymentCard,
 }: OverviewTabProps) {
@@ -57,6 +59,7 @@ export function OverviewTab({
               onToggle={() => onToggleGroup(taskGroup.Name)}
               onToggleTask={(taskName: string) => onToggleTask(taskGroup.Name, taskName)}
               onViewLogs={onViewLogs && (() => onViewLogs(taskGroup.Name))}
+              onScale={onScaleGroup ? () => onScaleGroup(taskGroup) : undefined}
             />
           ))}
         </div>

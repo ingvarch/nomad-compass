@@ -4,6 +4,7 @@ import NetworkTable from './NetworkTable';
 import HealthCheckTable from './HealthCheckTable';
 import EnvironmentVariableDisplay from '../EnvironmentVariableDisplay';
 import type { NomadTaskGroup, NomadTask } from '../../../types/nomad';
+import { Scale } from 'lucide-react';
 
 interface TaskGroupCardProps {
   taskGroup: NomadTaskGroup;
@@ -12,6 +13,7 @@ interface TaskGroupCardProps {
   onToggle: () => void;
   onToggleTask: (taskName: string) => void;
   onViewLogs?: () => void;
+  onScale?: () => void;
 }
 
 function TaskDetail({ task }: { task: NomadTask }) {
@@ -143,25 +145,42 @@ const TaskGroupCard: React.FC<TaskGroupCardProps> = ({
   onToggle,
   onToggleTask,
   onViewLogs,
+  onScale,
 }) => {
   const tasks = taskGroup.Tasks || [];
 
   return (
     <div className="bg-white dark:bg-gray-800 shadow rounded-lg overflow-hidden">
       <div
-        className="px-6 py-5 border-b border-gray-200 dark:border-gray-700 flex items-center cursor-pointer"
+        className="px-6 py-5 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between cursor-pointer"
         onClick={onToggle}
       >
-        <ExpandIcon isExpanded={isExpanded} className="mr-2" />
-        <h3 className="text-lg font-medium text-gray-900 dark:text-white">
-          Task Group: {taskGroup.Name}
-          <span className="ml-2 px-2 py-1 text-xs font-semibold rounded-full bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200">
+        <div className="flex items-center flex-wrap gap-2">
+          <ExpandIcon isExpanded={isExpanded} className="mr-2" />
+          <h3 className="text-lg font-medium text-gray-900 dark:text-white">
+            Task Group: {taskGroup.Name}
+          </h3>
+          <span className="px-2 py-1 text-xs font-semibold rounded-full bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200">
             Count: {taskGroup.Count}
           </span>
-          <span className="ml-2 px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200">
+          <span className="px-2 py-1 text-xs font-semibold rounded-full bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200">
             Tasks: {tasks.length}
           </span>
-        </h3>
+        </div>
+
+        {onScale && (
+          <div className="flex items-center ml-4" onClick={(e) => e.stopPropagation()}>
+            <button
+              type="button"
+              onClick={onScale}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium rounded-md text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-900/30 hover:bg-blue-100 dark:hover:bg-blue-900/50 transition-colors border border-blue-200 dark:border-blue-800/50"
+              title={`Scale task group ${taskGroup.Name}`}
+            >
+              <Scale className="w-3.5 h-3.5" />
+              Scale
+            </button>
+          </div>
+        )}
       </div>
 
       {isExpanded && (

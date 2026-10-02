@@ -120,3 +120,28 @@ describe('NomadClient deployments & canary endpoints', () => {
     ]);
   });
 });
+
+describe('NomadClient job scale endpoint', () => {
+  test('scales job task group with count and options', async () => {
+    const calls = mockFetch(() => ({ body: { EvalID: 'eval-123', JobModifyIndex: 42 } }));
+    const client = new NomadClient();
+
+    const result = await client.scaleJobTaskGroup('web', 'frontend', 5, {
+      namespace: 'production',
+      message: 'scale up for traffic spike',
+      jobModifyIndex: 40,
+    });
+
+    expect(result).toEqual({ EvalID: 'eval-123', JobModifyIndex: 42 });
+    expect(calls).toHaveLength(1);
+    expect(calls[0].method).toBe('POST');
+    expect(calls[0].url).toBe('/api/nomad/v1/job/web/scale?namespace=production');
+    expect(calls[0].body).toEqual({
+      Target: { Group: 'frontend' },
+      Count: 5,
+      Message: 'scale up for traffic spike',
+      JobModifyIndex: 40,
+      EnforceIndex: undefined,
+    });
+  });
+});
