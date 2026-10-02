@@ -20,6 +20,23 @@ export default defineConfig({
   },
   build: {
     outDir: 'dist',
+    rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules')) {
+            if (id.includes('xterm') || id.includes('@xterm')) {
+              return 'vendor-xterm';
+            }
+            if (id.includes('lucide-react')) {
+              return 'vendor-icons';
+            }
+            if (id.includes('react-router') || id.includes('react-dom') || id.includes('react/')) {
+              return 'vendor-react';
+            }
+          }
+        },
+      },
+    },
   },
   server: {
     port: 5173,

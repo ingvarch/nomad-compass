@@ -1,36 +1,49 @@
 // src/client/App.tsx
+import React, { lazy, Suspense } from 'react';
 import { createBrowserRouter, RouterProvider, Navigate } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { ToastProvider } from './context/ToastContext';
 import { ThemeProvider } from './context/ThemeContext';
-import { ErrorBoundary } from './components/ui';
+import { ErrorBoundary, LoadingSpinner } from './components/ui';
 import { ToastContainer } from './components/ui/Toast';
 import ProtectedLayout from './components/layout/ProtectedLayout';
 
-// Pages
-import LoginPage from './pages/LoginPage';
-import DashboardPage from './pages/DashboardPage';
-import JobsPage from './pages/JobsPage';
-import JobDetailPage from './pages/JobDetailPage';
-import JobCreatePage from './pages/JobCreatePage';
-import JobEditPage from './pages/JobEditPage';
-import FailedAllocationsPage from './pages/FailedAllocationsPage';
-import NodesPage from './pages/NodesPage';
-import NodeDetailPage from './pages/NodeDetailPage';
-import ServersPage from './pages/ServersPage';
-import AllocationsPage from './pages/AllocationsPage';
-import NamespacesPage from './pages/NamespacesPage';
-import VariablesPage from './pages/VariablesPage';
-import NodePoolsPage from './pages/NodePoolsPage';
-import TopologyPage from './pages/TopologyPage';
-import ActivityPage from './pages/ActivityPage';
-import AclPage from './pages/AclPage';
-import ExecPage from './pages/ExecPage';
+// Lazy-loaded Pages for route-based code splitting
+const LoginPage = lazy(() => import('./pages/LoginPage'));
+const DashboardPage = lazy(() => import('./pages/DashboardPage'));
+const JobsPage = lazy(() => import('./pages/JobsPage'));
+const JobDetailPage = lazy(() => import('./pages/JobDetailPage'));
+const JobCreatePage = lazy(() => import('./pages/JobCreatePage'));
+const JobEditPage = lazy(() => import('./pages/JobEditPage'));
+const FailedAllocationsPage = lazy(() => import('./pages/FailedAllocationsPage'));
+const NodesPage = lazy(() => import('./pages/NodesPage'));
+const NodeDetailPage = lazy(() => import('./pages/NodeDetailPage'));
+const ServersPage = lazy(() => import('./pages/ServersPage'));
+const AllocationsPage = lazy(() => import('./pages/AllocationsPage'));
+const NamespacesPage = lazy(() => import('./pages/NamespacesPage'));
+const VariablesPage = lazy(() => import('./pages/VariablesPage'));
+const NodePoolsPage = lazy(() => import('./pages/NodePoolsPage'));
+const TopologyPage = lazy(() => import('./pages/TopologyPage'));
+const ActivityPage = lazy(() => import('./pages/ActivityPage'));
+const AclPage = lazy(() => import('./pages/AclPage'));
+const ExecPage = lazy(() => import('./pages/ExecPage'));
+
+const PageFallback: React.FC = () => (
+  <div className="flex items-center justify-center min-h-[40vh]">
+    <LoadingSpinner />
+  </div>
+);
+
+const withSuspense = (Component: React.ComponentType) => (
+  <Suspense fallback={<PageFallback />}>
+    <Component />
+  </Suspense>
+);
 
 const router = createBrowserRouter([
   {
     path: '/auth/login',
-    element: <LoginPage />,
+    element: withSuspense(LoginPage),
   },
   {
     element: <ProtectedLayout />,
@@ -41,71 +54,71 @@ const router = createBrowserRouter([
       },
       {
         path: '/dashboard',
-        element: <DashboardPage />,
+        element: withSuspense(DashboardPage),
       },
       {
         path: '/jobs',
-        element: <JobsPage />,
+        element: withSuspense(JobsPage),
       },
       {
         path: '/jobs/create',
-        element: <JobCreatePage />,
+        element: withSuspense(JobCreatePage),
       },
       {
         path: '/jobs/:id',
-        element: <JobDetailPage />,
+        element: withSuspense(JobDetailPage),
       },
       {
         path: '/jobs/:id/edit',
-        element: <JobEditPage />,
+        element: withSuspense(JobEditPage),
       },
       {
         path: '/allocations/failed',
-        element: <FailedAllocationsPage />,
+        element: withSuspense(FailedAllocationsPage),
       },
       {
         path: '/allocations',
-        element: <AllocationsPage />,
+        element: withSuspense(AllocationsPage),
       },
       {
         path: '/nodes',
-        element: <NodesPage />,
+        element: withSuspense(NodesPage),
       },
       {
         path: '/nodes/:nodeId',
-        element: <NodeDetailPage />,
+        element: withSuspense(NodeDetailPage),
       },
       {
         path: '/node-pools',
-        element: <NodePoolsPage />,
+        element: withSuspense(NodePoolsPage),
       },
       {
         path: '/servers',
-        element: <ServersPage />,
+        element: withSuspense(ServersPage),
       },
       {
         path: '/namespaces',
-        element: <NamespacesPage />,
+        element: withSuspense(NamespacesPage),
       },
       {
         path: '/variables',
-        element: <VariablesPage />,
+        element: withSuspense(VariablesPage),
       },
       {
         path: '/topology',
-        element: <TopologyPage />,
+        element: withSuspense(TopologyPage),
       },
       {
         path: '/activity',
-        element: <ActivityPage />,
+        element: withSuspense(ActivityPage),
       },
       {
         path: '/acl',
-        element: <AclPage />,
+        element: withSuspense(AclPage),
       },
       {
         path: '/exec/:allocId/:task',
-        element: <ExecPage />,
+        element: withSuspense(ExecPage),
       },
     ],
   },
