@@ -9,6 +9,7 @@ import {
   ErrorAlert,
   PageHeader,
   RefreshButton,
+  Button,
   DataTable,
   Badge,
   type Column,
@@ -234,13 +235,15 @@ export default function NamespacesPage() {
         description={`${namespaces.length} namespace${namespaces.length !== 1 ? 's' : ''} with ${totalJobs} total job${totalJobs !== 1 ? 's' : ''}`}
         actions={
           <div className="flex items-center gap-2">
-            <button
+            <Button
+              variant="primary"
+              size="sm"
+              className="hidden sm:inline-flex"
               onClick={() => setShowCreateModal(true)}
-              className="hidden sm:inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 dark:bg-monokai-blue dark:hover:bg-blue-600"
             >
-              <Plus className="w-4 h-4 mr-2" />
+              <Plus className="w-4 h-4 mr-1.5" />
               Create Namespace
-            </button>
+            </Button>
             <RefreshButton onClick={() => { setLoading(true); fetchData(); }} />
           </div>
         }

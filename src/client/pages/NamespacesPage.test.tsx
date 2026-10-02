@@ -53,6 +53,8 @@ describe('NamespacesPage', () => {
     // Desktop create button should have hidden sm:inline-flex to hide on mobile
     const createBtn = screen.getByRole('button', { name: /create namespace/i });
     expect(createBtn.className).toContain('hidden sm:');
+    const classes = createBtn.className.split(/\s+/);
+    expect(classes.includes('inline-flex')).toBe(false);
 
     // Verify Refresh button is glyph
     const refreshBtn = screen.getByRole('button', { name: /refresh/i });

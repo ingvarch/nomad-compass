@@ -38,10 +38,14 @@ export function Button({
   children,
   ...props
 }: ButtonProps) {
+  const hasDisplayClass = /(?:^|\s)(inline-flex|flex|inline-block|block|hidden|inline|grid|inline-grid)(?:\s|$)/.test(
+    className
+  );
+
   return (
     <button
       className={`
-        inline-flex items-center justify-center font-medium rounded-md
+        ${hasDisplayClass ? '' : 'inline-flex'} items-center justify-center font-medium rounded-md
         focus:outline-none focus:ring-2 focus:ring-offset-2
         disabled:opacity-50 disabled:cursor-not-allowed
         transition-colors

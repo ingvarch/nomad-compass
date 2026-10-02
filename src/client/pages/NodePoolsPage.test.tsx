@@ -197,5 +197,7 @@ describe('NodePoolsPage', () => {
 
     const createBtn = screen.getByRole('button', { name: /Create Node Pool/i });
     expect(createBtn.className).toContain('hidden sm:');
+    const classes = createBtn.className.split(/\s+/);
+    expect(classes.includes('inline-flex')).toBe(false);
   });
 });
