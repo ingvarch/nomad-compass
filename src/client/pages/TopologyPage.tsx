@@ -3,8 +3,9 @@ import { Link } from 'react-router-dom';
 import { createNomadClient } from '../lib/api/nomad';
 import { getErrorMessage } from '../lib/errors';
 import type { NomadNode, NomadAllocation } from '../types/nomad';
-import { LoadingSpinner, ErrorAlert, PageHeader, RefreshButton, BackLink } from '../components/ui';
+import { LoadingSpinner, ErrorAlert, PageHeader, RefreshButton, Select } from '../components/ui';
 import { jobPath } from '../lib/utils/jobPath';
+import { LayoutGrid, List } from 'lucide-react';
 
 interface NodeWithAllocations extends NomadNode {
   allocations: NomadAllocation[];
@@ -34,8 +35,8 @@ export default function TopologyPage() {
         client.getAllocations(),
       ]);
 
-      setNodes(nodesData);
-      setAllocations(allocsData);
+      setNodes(Array.isArray(nodesData) ? nodesData : []);
+      setAllocations(Array.isArray(allocsData) ? allocsData : []);
       setError(null);
     } catch (err) {
       setError(getErrorMessage(err, 'Failed to fetch topology data'));
@@ -130,81 +131,70 @@ export default function TopologyPage() {
         title="Cluster Topology"
         description="Visual overview of nodes and allocations"
         actions={
-          <RefreshButton onClick={() => { setLoading(true); fetchData(); }} />
+          <RefreshButton iconOnly onClick={() => { setLoading(true); fetchData(); }} />
         }
       />
 
       {error && <ErrorAlert message={error} />}
 
-      {/* Filter Bar */}
-      <div className="flex flex-wrap items-center gap-4 bg-white dark:bg-gray-800 rounded-lg shadow p-4">
-        {/* Datacenter Filter */}
-        <div>
-          <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Datacenter</label>
-          <select
+      {/* Filter and View Toolbar */}
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xs border border-gray-100 dark:border-gray-700/50 p-3 sm:p-4 flex flex-col sm:flex-row sm:items-end justify-between gap-3">
+        {/* Filters */}
+        <div className="flex flex-wrap items-center gap-3">
+          <Select
+            label="Datacenter"
             value={selectedDatacenter}
-            onChange={(e) => setSelectedDatacenter(e.target.value)}
-            className="px-3 py-1.5 bg-gray-100 dark:bg-gray-700 border-0 rounded text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
-          >
-            {datacenters.map((dc) => (
-              <option key={dc} value={dc}>
-                {dc === 'all' ? 'All Datacenters' : dc}
-              </option>
-            ))}
-          </select>
-        </div>
+            onChange={setSelectedDatacenter}
+            options={datacenters.map((dc) => ({
+              value: dc,
+              label: dc === 'all' ? 'All Datacenters' : dc,
+            }))}
+            className="w-full sm:w-auto min-w-[160px]"
+          />
 
-        {/* Group By */}
-        <div>
-          <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1">Group By</label>
-          <select
+          <Select
+            label="Group By"
             value={groupBy}
-            onChange={(e) => setGroupBy(e.target.value as GroupBy)}
-            className="px-3 py-1.5 bg-gray-100 dark:bg-gray-700 border-0 rounded text-sm text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500"
-          >
-            <option value="datacenter">Datacenter</option>
-            <option value="none">None</option>
-          </select>
+            onChange={(val) => setGroupBy(val as GroupBy)}
+            options={[
+              { value: 'datacenter', label: 'Datacenter' },
+              { value: 'none', label: 'None' },
+            ]}
+            className="w-full sm:w-auto min-w-[140px]"
+          />
         </div>
 
-        {/* View Mode */}
-        <div className="ml-auto flex items-center gap-2">
-          <button
-            onClick={() => setViewMode('grid')}
-            className={`p-2 rounded ${
-              viewMode === 'grid'
-                ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400'
-                : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'
-            }`}
-            title="Grid view"
-          >
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"
-              />
-            </svg>
-          </button>
-          <button
-            onClick={() => setViewMode('list')}
-            className={`p-2 rounded ${
-              viewMode === 'list'
-                ? 'bg-blue-100 dark:bg-blue-900/50 text-blue-600 dark:text-blue-400'
-                : 'text-gray-400 hover:text-gray-600 dark:hover:text-gray-300'
-            }`}
-            title="List view"
-          >
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M4 6h16M4 10h16M4 14h16M4 18h16"
-              />
-            </svg>
-          </button>
+        {/* View Mode Segmented Control */}
+        <div className="flex items-center justify-between sm:justify-end gap-2 pt-2.5 border-t border-gray-100 dark:border-gray-700/50 sm:border-0 sm:pt-0">
+          <span className="text-xs font-medium text-gray-500 dark:text-gray-400 sm:hidden">View</span>
+          <div className="inline-flex items-center rounded-lg p-0.5 bg-gray-100 dark:bg-gray-700/70 border border-gray-200/70 dark:border-gray-600/60">
+            <button
+              type="button"
+              onClick={() => setViewMode('grid')}
+              className={`p-1.5 rounded-md text-xs font-medium transition-colors ${
+                viewMode === 'grid'
+                  ? 'bg-white dark:bg-gray-800 text-blue-600 dark:text-blue-400 shadow-xs'
+                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
+              }`}
+              title="Grid view"
+              aria-label="Grid view"
+            >
+              <LayoutGrid className="w-4 h-4" />
+            </button>
+            <button
+              type="button"
+              onClick={() => setViewMode('list')}
+              className={`p-1.5 rounded-md text-xs font-medium transition-colors ${
+                viewMode === 'list'
+                  ? 'bg-white dark:bg-gray-800 text-blue-600 dark:text-blue-400 shadow-xs'
+                  : 'text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200'
+              }`}
+              title="List view"
+              aria-label="List view"
+            >
+              <List className="w-4 h-4" />
+            </button>
+          </div>
         </div>
       </div>
 
@@ -244,8 +234,6 @@ export default function TopologyPage() {
           </div>
         ))}
       </div>
-
-      <BackLink to="/dashboard" />
     </div>
   );
 }

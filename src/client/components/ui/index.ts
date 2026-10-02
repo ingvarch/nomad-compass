@@ -20,3 +20,4 @@ export { Spinner } from './Spinner';
 export { ThemeToggle } from './ThemeToggle';
 export { ToastContainer } from './Toast';
 export { VisibilityToggleButton } from './VisibilityToggleButton';
+export { Select, type SelectOption, type SelectProps } from './Select';

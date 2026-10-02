@@ -4,7 +4,7 @@ import { useAuth } from '../../context/AuthContext';
 import { createNomadClient } from '../../lib/api/nomad';
 import { getErrorMessage } from '../../lib/errors';
 import { NomadJobListStub, NomadNamespace } from '../../types/nomad';
-import { LoadingSpinner, ErrorAlert, Badge } from '../ui';
+import { LoadingSpinner, ErrorAlert, Badge, Select } from '../ui';
 import DataTable, { type Column } from '../ui/DataTable';
 import { StatusBadge } from './detail/StatusBadge';
 import { jobPath } from '../../lib/utils/jobPath';
@@ -106,8 +106,7 @@ const JobList: React.FC = () => {
     fetchNamespacesAndJobs();
   }, [isAuthenticated, selectedNamespace]);
 
-  const handleNamespaceChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const value = e.target.value;
+  const handleNamespaceChange = (value: string) => {
     if (value === '*') {
       searchParams.delete('namespace');
     } else {
@@ -130,22 +129,20 @@ const JobList: React.FC = () => {
 
   return (
     <div>
-      <div className="mb-4 flex items-center space-x-4">
-        <label htmlFor="namespace-select" className="text-sm font-medium text-gray-700 dark:text-monokai-text">
+      <div className="mb-4 flex items-center gap-3">
+        <label htmlFor="namespace-select" className="text-sm font-medium text-gray-700 dark:text-monokai-text shrink-0">
           Namespace:
         </label>
-        <select
+        <Select
           id="namespace-select"
           value={selectedNamespace}
           onChange={handleNamespaceChange}
-          className="block w-auto pl-3 pr-10 py-2 text-sm border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 rounded-md dark:bg-monokai-surface dark:border-monokai-muted dark:text-monokai-text dark:focus:ring-monokai-blue dark:focus:border-monokai-blue"
-        >
-          {namespaces.map((ns) => (
-            <option key={ns.Name} value={ns.Name}>
-              {ns.Name === '*' ? 'All Namespaces' : ns.Name}
-            </option>
-          ))}
-        </select>
+          options={namespaces.map((ns) => ({
+            value: ns.Name,
+            label: ns.Name === '*' ? 'All Namespaces' : ns.Name,
+          }))}
+          className="min-w-[160px]"
+        />
       </div>
 
       <DataTable

@@ -22,6 +22,7 @@ import {
   LoadingSpinner,
   ErrorAlert,
   ConfirmationDialog,
+  Select,
   type Column,
 } from '../components/ui';
 import { VariableModal } from '../components/variables/VariableModal';
@@ -238,19 +239,16 @@ export default function VariablesPage() {
           {/* Namespace Filter */}
           <div className="flex items-center gap-2">
             <Layers className="w-4 h-4 text-gray-400 shrink-0" />
-            <select
+            <Select
               aria-label="Filter by namespace"
               value={selectedNamespace}
-              onChange={(e) => handleNamespaceChange(e.target.value)}
-              className="text-sm border border-gray-300 dark:border-gray-600 rounded-lg px-2.5 py-1.5 bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="*">All Namespaces</option>
-              {namespaces.map((ns) => (
-                <option key={ns.Name} value={ns.Name}>
-                  {ns.Name}
-                </option>
-              ))}
-            </select>
+              onChange={handleNamespaceChange}
+              options={[
+                { value: '*', label: 'All Namespaces' },
+                ...namespaces.map((ns) => ({ value: ns.Name, label: ns.Name })),
+              ]}
+              className="min-w-[160px]"
+            />
           </div>
 
           {/* Search Filter */}

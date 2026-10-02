@@ -10,6 +10,7 @@ import {
   RefreshButton,
   BackLink,
   DataTable,
+  Select,
   type Column,
 } from '../components/ui';
 import { extractRecentEvents, formatTimeAgo, type RecentEvent } from '../lib/services/allocationAnalyzer';
@@ -231,7 +232,7 @@ export default function ActivityPage() {
             )}
           </>
         }
-        actions={<RefreshButton onClick={refetch} />}
+        actions={<RefreshButton iconOnly onClick={refetch} />}
       />
 
       {error && <ErrorAlert message={error} />}
@@ -254,58 +255,42 @@ export default function ActivityPage() {
           </div>
 
           {/* Namespace */}
-          <div>
-            <label className={labelSmallStyles}>
-              Namespace
-            </label>
-            <select
-              value={namespaceFilter}
-              onChange={(e) => setNamespaceFilter(e.target.value)}
-              className={selectClasses}
-            >
-              <option value="*">All Namespaces</option>
-              {namespaces.map((ns) => (
-                <option key={ns.Name} value={ns.Name}>
-                  {ns.Name}
-                </option>
-              ))}
-            </select>
-          </div>
+          <Select
+            label="Namespace"
+            value={namespaceFilter}
+            onChange={setNamespaceFilter}
+            options={[
+              { value: '*', label: 'All Namespaces' },
+              ...namespaces.map((ns) => ({ value: ns.Name, label: ns.Name })),
+            ]}
+          />
 
           {/* Severity */}
-          <div>
-            <label className={labelSmallStyles}>
-              Severity
-            </label>
-            <select
-              value={severityFilter}
-              onChange={(e) => setSeverityFilter(e.target.value as SeverityFilter)}
-              className={selectClasses}
-            >
-              <option value="all">All Severities</option>
-              <option value="error">Error</option>
-              <option value="warning">Warning</option>
-              <option value="info">Info</option>
-            </select>
-          </div>
+          <Select
+            label="Severity"
+            value={severityFilter}
+            onChange={(val) => setSeverityFilter(val as SeverityFilter)}
+            options={[
+              { value: 'all', label: 'All Severities' },
+              { value: 'error', label: 'Error' },
+              { value: 'warning', label: 'Warning' },
+              { value: 'info', label: 'Info' },
+            ]}
+          />
 
           {/* Time Range */}
-          <div>
-            <label className={labelSmallStyles}>
-              Time Range
-            </label>
-            <select
-              value={timeRangeFilter}
-              onChange={(e) => setTimeRangeFilter(e.target.value as TimeRangeFilter)}
-              className={selectClasses}
-            >
-              <option value="all">All Time</option>
-              <option value="1h">Last Hour</option>
-              <option value="6h">Last 6 Hours</option>
-              <option value="24h">Last 24 Hours</option>
-              <option value="7d">Last 7 Days</option>
-            </select>
-          </div>
+          <Select
+            label="Time Range"
+            value={timeRangeFilter}
+            onChange={(val) => setTimeRangeFilter(val as TimeRangeFilter)}
+            options={[
+              { value: 'all', label: 'All Time' },
+              { value: '1h', label: 'Last Hour' },
+              { value: '6h', label: 'Last 6 Hours' },
+              { value: '24h', label: 'Last 24 Hours' },
+              { value: '7d', label: 'Last 7 Days' },
+            ]}
+          />
         </div>
 
         {/* Event Type Filter (second row) */}
