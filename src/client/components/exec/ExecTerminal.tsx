@@ -3,6 +3,7 @@ import { Terminal } from 'xterm';
 import { FitAddon } from '@xterm/addon-fit';
 import 'xterm/css/xterm.css';
 import { useExecSession } from '../../hooks/useExecSession';
+import { TerminalAccessoryBar } from './TerminalAccessoryBar';
 
 interface ExecTerminalProps {
   allocId: string;
@@ -115,11 +116,16 @@ function ExecTerminal({
 
     // Handle resize
     const handleResize = () => {
-      fitAddon.fit();
-      sendResizeRef.current(terminal.cols, terminal.rows);
+      try {
+        fitAddon.fit();
+        sendResizeRef.current(terminal.cols, terminal.rows);
+      } catch {
+        // fit() can fail if terminal container is not visible
+      }
     };
 
     window.addEventListener('resize', handleResize);
+    window.visualViewport?.addEventListener('resize', handleResize);
 
     // Write initial message
     terminal.write('\x1b[36mConnecting to container...\x1b[0m\r\n');
@@ -129,6 +135,7 @@ function ExecTerminal({
 
     return () => {
       window.removeEventListener('resize', handleResize);
+      window.visualViewport?.removeEventListener('resize', handleResize);
       terminal.dispose();
       xtermRef.current = null;
       fitAddonRef.current = null;
@@ -187,8 +194,16 @@ function ExecTerminal({
       {/* Terminal container */}
       <div
         ref={terminalRef}
-        className="flex-1 p-2 bg-[#1a1b26]"
-        style={{ minHeight: '400px' }}
+        className="flex-1 p-2 bg-[#1a1b26] min-h-[300px] sm:min-h-[400px]"
+      />
+
+      {/* Mobile Accessory Bar */}
+      <TerminalAccessoryBar
+        onSendInput={(data) => {
+          sendInputRef.current(data);
+          xtermRef.current?.focus();
+        }}
+        disabled={!isConnected}
       />
     </div>
   );

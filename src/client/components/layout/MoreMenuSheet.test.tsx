@@ -58,4 +58,35 @@ describe('MoreMenuSheet', () => {
     fireEvent.click(logoutBtn);
     expect(loggedOut).toBe(true);
   });
+
+  test('shows Install App button when beforeinstallprompt event is fired', () => {
+    let closed = false;
+    render(
+      <MemoryRouter>
+        <ThemeProvider>
+          <MoreMenuSheet
+            isOpen={true}
+            onClose={() => { closed = true; }}
+            nomadAddr="http://nomad.local:4646"
+            onLogout={() => {}}
+          />
+        </ThemeProvider>
+      </MemoryRouter>
+    );
+
+    const promptMock = () => Promise.resolve();
+    const mockEvent = new Event('beforeinstallprompt');
+    Object.assign(mockEvent, {
+      prompt: promptMock,
+      userChoice: Promise.resolve({ outcome: 'accepted' }),
+    });
+
+    fireEvent(window, mockEvent);
+
+    const installBtn = screen.getByRole('button', { name: /install app/i });
+    expect(installBtn).toBeTruthy();
+
+    fireEvent.click(installBtn);
+    expect(closed).toBe(true);
+  });
 });

@@ -14,8 +14,10 @@ import {
   Lock,
   LockOpen,
   ChevronRight,
+  Download,
 } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
+import { usePwaInstall } from '../../hooks/usePwaInstall';
 import { parseNomadAddr } from '../../lib/utils/nomadAddr';
 
 interface MoreMenuSheetProps {
@@ -83,6 +85,7 @@ export const MoreMenuSheet: React.FC<MoreMenuSheetProps> = ({
 }) => {
   const location = useLocation();
   const sheetRef = useRef<HTMLDivElement>(null);
+  const { hasDeferredPrompt, promptInstall } = usePwaInstall();
 
   // Close on Escape key
   useEffect(() => {
@@ -288,6 +291,24 @@ export const MoreMenuSheet: React.FC<MoreMenuSheetProps> = ({
           {/* Section: Preferences & Session */}
           <div className="pt-2 border-t border-gray-100 dark:border-monokai-surface">
             <div className="space-y-2">
+              {/* Install App Button if browser prompt is available */}
+              {hasDeferredPrompt && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onClose();
+                    promptInstall();
+                  }}
+                  className="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-medium text-blue-600 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-monokai-surface transition-colors"
+                >
+                  <div className="flex items-center gap-3">
+                    <Download className="w-5 h-5 text-blue-500 dark:text-blue-400" />
+                    <span>Install App</span>
+                  </div>
+                  <ChevronRight className="w-4 h-4 text-blue-400" />
+                </button>
+              )}
+
               {/* Theme Toggle Button */}
               <ThemeRow />
 
