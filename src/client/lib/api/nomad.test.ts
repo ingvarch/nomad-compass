@@ -64,6 +64,13 @@ describe('NomadClient parameterized jobs', () => {
     expect(result).toEqual(reply);
   });
 
+  test('sends an idempotency token as a query parameter', async () => {
+    const calls = mockFetch(() => ({ body: {} }));
+    await new NomadClient().dispatchJob('export', { Meta: {} }, 'prod', 'nightly-2026-10-02');
+
+    expect(calls[0].url).toBe('/api/nomad/v1/job/export/dispatch?namespace=prod&idempotency_token=nightly-2026-10-02');
+  });
+
   test('lists dispatched jobs by ID prefix', async () => {
     const calls = mockFetch(() => ({ body: [] }));
     await new NomadClient().getDispatchedJobs('export', 'prod');

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { CheckCircle2, Paperclip, X } from 'lucide-react';
+import { CheckCircle2, ChevronRight, Paperclip, X } from 'lucide-react';
 import { Modal, Button, ErrorAlert } from '../../ui';
 import { getErrorMessage } from '../../../lib/errors';
 import {
@@ -17,7 +17,7 @@ import type { NomadJobDispatchRequest, NomadJobDispatchResponse } from '../../..
 interface DispatchJobModalProps {
   job: ParameterizedNomadJob;
   onClose: () => void;
-  onDispatch: (request: NomadJobDispatchRequest) => Promise<NomadJobDispatchResponse>;
+  onDispatch: (request: NomadJobDispatchRequest, idempotencyToken?: string) => Promise<NomadJobDispatchResponse>;
 }
 
 interface PayloadFile {
@@ -47,6 +47,9 @@ export function DispatchJobModal({ job, onClose, onDispatch }: DispatchJobModalP
   const [meta, setMeta] = useState<Record<string, string>>({});
   const [payloadText, setPayloadText] = useState('');
   const [payloadFile, setPayloadFile] = useState<PayloadFile | null>(null);
+  const [showAdvanced, setShowAdvanced] = useState(false);
+  const [priority, setPriority] = useState('');
+  const [idempotencyToken, setIdempotencyToken] = useState('');
   // Errors show only after the first attempt to dispatch
   const [attempted, setAttempted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -54,8 +57,10 @@ export function DispatchJobModal({ job, onClose, onDispatch }: DispatchJobModalP
   const [dispatched, setDispatched] = useState<NomadJobDispatchResponse | null>(null);
 
   const payload = payloadFile ? payloadFile.bytes : textEncoder.encode(payloadText);
-  const errors = validateDispatch(config, meta, payload.length);
+  const errors = validateDispatch(config, meta, payload.length, priority.trim());
   const shownErrors = attempted ? errors : { meta: {} as Record<string, string> };
+  // Nomad answers a token it has seen with the job it dispatched for it, without an evaluation
+  const isRepeat = dispatched !== null && !dispatched.EvalID;
 
   const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -73,7 +78,9 @@ export function DispatchJobModal({ job, onClose, onDispatch }: DispatchJobModalP
     setError(null);
     setIsSubmitting(true);
     try {
-      setDispatched(await onDispatch(dispatchRequest(meta, payload)));
+      setDispatched(
+        await onDispatch(dispatchRequest(meta, payload, priority.trim()), idempotencyToken.trim() || undefined)
+      );
     } catch (err) {
       setError(getErrorMessage(err, 'Failed to dispatch job', 'dispatch-job'));
     } finally {
@@ -88,7 +95,9 @@ export function DispatchJobModal({ job, onClose, onDispatch }: DispatchJobModalP
           <div className="flex items-start gap-3 p-3.5 bg-green-50 dark:bg-green-950/20 border border-green-200 dark:border-green-800/40 rounded-lg">
             <CheckCircle2 className="w-5 h-5 shrink-0 text-green-600 dark:text-green-400" />
             <div className="min-w-0">
-              <p className="text-sm font-medium text-green-800 dark:text-green-300">Job dispatched</p>
+              <p className="text-sm font-medium text-green-800 dark:text-green-300">
+                {isRepeat ? 'Already dispatched with this token' : 'Job dispatched'}
+              </p>
               <p className="mt-1 text-xs font-mono break-all text-green-700 dark:text-green-400">
                 {dispatched.DispatchedJobID}
               </p>
@@ -202,6 +211,54 @@ export function DispatchJobModal({ job, onClose, onDispatch }: DispatchJobModalP
               </div>
             </div>
           )}
+
+          <div>
+            <button
+              type="button"
+              onClick={() => setShowAdvanced((open) => !open)}
+              aria-expanded={showAdvanced}
+              className="inline-flex items-center gap-1 -my-3 py-3 text-sm font-medium text-gray-700 hover:text-gray-900 dark:text-gray-300 dark:hover:text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded"
+            >
+              <ChevronRight className={`w-4 h-4 transition-transform ${showAdvanced ? 'rotate-90' : ''}`} />
+              Advanced
+            </button>
+            {showAdvanced && (
+              <div className="mt-3 space-y-4">
+                <div>
+                  <label htmlFor="dispatch-priority" className={labelStyles}>
+                    Priority <OptionalMark />
+                  </label>
+                  <input
+                    id="dispatch-priority"
+                    type="text"
+                    inputMode="numeric"
+                    value={priority}
+                    onChange={(e) => setPriority(e.target.value)}
+                    placeholder={job.Priority !== undefined ? String(job.Priority) : undefined}
+                    disabled={isSubmitting}
+                    className={shownErrors.priority ? inputErrorStyles : inputStyles}
+                  />
+                  <FieldError message={shownErrors.priority} />
+                </div>
+                <div>
+                  <label htmlFor="dispatch-idempotency-token" className={labelStyles}>
+                    Idempotency token <OptionalMark />
+                  </label>
+                  <input
+                    id="dispatch-idempotency-token"
+                    type="text"
+                    value={idempotencyToken}
+                    onChange={(e) => setIdempotencyToken(e.target.value)}
+                    disabled={isSubmitting}
+                    className={`${inputStyles} font-mono text-sm`}
+                  />
+                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                    A second dispatch with the same token returns the first job instead of a new one.
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
 
           <div className="flex justify-end gap-3 pt-3 border-t border-gray-200 dark:border-gray-700">
             <Button type="button" variant="secondary" onClick={onClose} disabled={isSubmitting}>

@@ -14,6 +14,7 @@ export interface DispatchErrors {
   // Message per meta key
   meta: Record<string, string>;
   payload?: string;
+  priority?: string;
 }
 
 export function dispatchedJobPrefix(jobId: string): string {
@@ -47,12 +48,14 @@ export function dispatchMetaFields(config: NomadParameterizedJobConfig): Dispatc
 }
 
 /**
- * What Nomad would reject: a missing required meta key or payload, a payload over the limit.
+ * What Nomad would reject: a missing required meta key or payload, a payload over the limit,
+ * a priority below 1. An empty priority keeps the priority of the job.
  */
 export function validateDispatch(
   config: NomadParameterizedJobConfig,
   meta: Record<string, string>,
-  payloadSize: number
+  payloadSize: number,
+  priority = ''
 ): DispatchErrors {
   const errors: DispatchErrors = { meta: {} };
 
@@ -66,11 +69,16 @@ export function validateDispatch(
     errors.payload = `Payload is ${payloadSize} bytes, the limit is ${DISPATCH_PAYLOAD_SIZE_LIMIT}`;
   }
 
+  // The upper bound is job_max_priority of the servers, so Nomad checks it
+  if (priority !== '' && !(/^\d+$/.test(priority) && Number(priority) >= 1)) {
+    errors.priority = 'Priority must be a whole number of 1 or more';
+  }
+
   return errors;
 }
 
 export function hasDispatchErrors(errors: DispatchErrors): boolean {
-  return Object.keys(errors.meta).length > 0 || !!errors.payload;
+  return Object.keys(errors.meta).length > 0 || !!errors.payload || !!errors.priority;
 }
 
 function toBase64(bytes: Uint8Array): string {
@@ -84,10 +92,15 @@ function toBase64(bytes: Uint8Array): string {
 /**
  * Body of a dispatch. An empty meta key is left out, so the job keeps its own value for it.
  */
-export function dispatchRequest(meta: Record<string, string>, payload: Uint8Array): NomadJobDispatchRequest {
+export function dispatchRequest(
+  meta: Record<string, string>,
+  payload: Uint8Array,
+  priority = ''
+): NomadJobDispatchRequest {
   const request: NomadJobDispatchRequest = {
     Meta: Object.fromEntries(Object.entries(meta).filter(([, value]) => value !== '')),
   };
   if (payload.length > 0) request.Payload = toBase64(payload);
+  if (priority !== '') request.Priority = Number(priority);
   return request;
 }

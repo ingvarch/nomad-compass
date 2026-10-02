@@ -93,7 +93,28 @@ describe('validateDispatch', () => {
   });
 });
 
+describe('validateDispatch priority', () => {
+  const meta = { database: 'orders' };
+
+  test('accepts no priority, so the job keeps its own', () => {
+    expect(validateDispatch(config, meta, 0, '').priority).toBeUndefined();
+    expect(validateDispatch(config, meta, 0, '80').priority).toBeUndefined();
+  });
+
+  test('rejects a priority that is not a whole number of 1 or more', () => {
+    for (const priority of ['0', '-5', '2.5', 'high']) {
+      expect(validateDispatch(config, meta, 0, priority).priority).toBe('Priority must be a whole number of 1 or more');
+    }
+    expect(hasDispatchErrors(validateDispatch(config, meta, 0, '0'))).toBe(true);
+  });
+});
+
 describe('dispatchRequest', () => {
+  test('sends a priority when one is set', () => {
+    expect(dispatchRequest({}, new Uint8Array(), '80')).toEqual({ Meta: {}, Priority: 80 });
+    expect(dispatchRequest({}, new Uint8Array(), '')).toEqual({ Meta: {} });
+  });
+
   const noPayload = new Uint8Array();
 
   test('sends the filled meta keys and leaves out the empty ones', () => {

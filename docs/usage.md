@@ -118,6 +118,10 @@ child job with the ID `<job>/dispatch-<time>-<id>`.
    it to the file set by `dispatch_payload` in the task. The form hides the
    payload when the job has `payload = "forbidden"` and asks for it when the
    job has `payload = "required"`.
+   **Advanced** sets the priority of the dispatched job (empty keeps the
+   priority of the job; Nomad accepts 1 to `job_max_priority`, 100 by default)
+   and an idempotency token. A second dispatch with a token Nomad has seen
+   returns the job it dispatched then, and the form says so.
 3. **Result**: after the dispatch the form shows the ID of the new job and
    **Open Job** goes to its page. Dispatching needs the `dispatch-job`
    capability. Nomad rejects a dispatch of a stopped job, so the button is

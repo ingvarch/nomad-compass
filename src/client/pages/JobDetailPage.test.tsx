@@ -492,6 +492,22 @@ describe('JobDetailPage for a parameterized job', () => {
     ]);
   });
 
+  test('dispatches with an idempotency token', async () => {
+    const calls = mockFetch(nomad({ ...exportRoutes, '/api/nomad/v1/job/export/dispatch': dispatchReply }));
+    renderPage('/jobs/export?namespace=default');
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Dispatch' }));
+    fireEvent.change(screen.getByLabelText('database'), { target: { value: 'orders' } });
+    fireEvent.click(screen.getByRole('button', { name: 'Advanced' }));
+    fireEvent.change(screen.getByLabelText(/^Idempotency token/), { target: { value: 'nightly' } });
+    fireEvent.click(dispatchButtons().at(-1)!);
+
+    await screen.findByRole('link', { name: 'Open Job' });
+    expect(calls.filter((c) => c.method === 'POST').map((c) => c.url)).toEqual([
+      '/api/nomad/v1/job/export/dispatch?namespace=default&idempotency_token=nightly',
+    ]);
+  });
+
   // Nomad rejects a dispatch of a stopped job
   test('a stopped job cannot be dispatched', async () => {
     mockFetch(nomad({ ...exportRoutes, ...jobRoutes({ ...exportJob, Stop: true, Status: 'dead' }) }));
