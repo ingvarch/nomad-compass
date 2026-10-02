@@ -29,6 +29,11 @@ import {
   NomadAclTokenListItem,
   TokenType,
 } from '../../types/acl';
+import {
+  NomadVariable,
+  NomadVariableMetadata,
+  NomadVariableInput,
+} from '../../types/variables';
 import { PermissionError } from '../errors';
 import { DEFAULT_NAMESPACE } from '../constants';
 import { periodicLaunchPrefix } from '../services/periodicService';
@@ -638,6 +643,64 @@ export class NomadClient {
   async deleteAclToken(accessorId: string): Promise<void> {
     await this.request<void>(`/v1/acl/token/${encodeURIComponent(accessorId)}`, {
       method: 'DELETE',
+    });
+  }
+
+  /**
+   * Format variable endpoint path (strips leading slash)
+   */
+  private varEndpoint(path: string): string {
+    const cleanPath = path.startsWith('/') ? path.slice(1) : path;
+    return `/v1/var/${cleanPath}`;
+  }
+
+  /**
+   * List Nomad variables (metadata only)
+   */
+  async getVariables(namespace?: string, prefix?: string): Promise<NomadVariableMetadata[]> {
+    const params: Record<string, string> = {};
+    if (namespace) params.namespace = namespace;
+    if (prefix) params.prefix = prefix;
+    try {
+      const res = await this.request<NomadVariableMetadata[] | null>('/v1/vars', { params });
+      return res || [];
+    } catch (err: unknown) {
+      // 404 from Nomad means no variables found
+      if (err && typeof err === 'object' && 'status' in err && (err as { status: number }).status === 404) {
+        return [];
+      }
+      throw err;
+    }
+  }
+
+  /**
+   * Get a single variable with all items/secrets
+   */
+  async getVariable(path: string, namespace?: string): Promise<NomadVariable> {
+    const params = namespace ? { namespace } : undefined;
+    return this.request<NomadVariable>(this.varEndpoint(path), { params });
+  }
+
+  /**
+   * Create or update a Nomad variable
+   */
+  async putVariable(variable: NomadVariableInput): Promise<NomadVariable> {
+    const params = variable.Namespace ? { namespace: variable.Namespace } : undefined;
+    return this.request<NomadVariable>(this.varEndpoint(variable.Path), {
+      method: 'PUT',
+      params,
+      body: JSON.stringify(variable),
+    });
+  }
+
+  /**
+   * Delete a Nomad variable
+   */
+  async deleteVariable(path: string, namespace?: string): Promise<void> {
+    const params = namespace ? { namespace } : undefined;
+    await this.request<void>(this.varEndpoint(path), {
+      method: 'DELETE',
+      params,
     });
   }
 }

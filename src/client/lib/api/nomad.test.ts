@@ -49,3 +49,26 @@ describe('NomadClient periodic jobs', () => {
     expect(calls[0].url).toBe('/api/nomad/v1/jobs?namespace=default&prefix=backup%2Fperiodic-');
   });
 });
+
+describe('NomadClient variables endpoints', () => {
+  test('lists, reads, puts and deletes variables', async () => {
+    const calls = mockFetch(() => ({ body: [] }));
+    const client = new NomadClient();
+
+    await client.getVariables('prod', 'nomad/jobs');
+    await client.getVariable('nomad/jobs/my-app', 'prod');
+    await client.putVariable({
+      Path: 'nomad/jobs/my-app',
+      Namespace: 'prod',
+      Items: { FOO: 'bar' },
+    });
+    await client.deleteVariable('nomad/jobs/my-app', 'prod');
+
+    expect(calls.map((c) => ({ method: c.method || 'GET', url: c.url }))).toEqual([
+      { method: 'GET', url: '/api/nomad/v1/vars?namespace=prod&prefix=nomad%2Fjobs' },
+      { method: 'GET', url: '/api/nomad/v1/var/nomad/jobs/my-app?namespace=prod' },
+      { method: 'PUT', url: '/api/nomad/v1/var/nomad/jobs/my-app?namespace=prod' },
+      { method: 'DELETE', url: '/api/nomad/v1/var/nomad/jobs/my-app?namespace=prod' },
+    ]);
+  });
+});

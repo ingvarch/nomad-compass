@@ -42,6 +42,9 @@ function getRouteMeta(pathname: string): RouteMeta {
   if (pathname === '/namespaces') {
     return { title: 'Namespaces', backTo: '/dashboard' };
   }
+  if (pathname === '/variables') {
+    return { title: 'Variables', backTo: '/dashboard' };
+  }
   if (pathname === '/activity') {
     return { title: 'Activity' };
   }
