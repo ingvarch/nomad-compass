@@ -3,7 +3,7 @@ import { useParams, Link } from 'react-router-dom';
 import { createNomadClient } from '../lib/api/nomad';
 import { getErrorMessage } from '../lib/errors';
 import { NomadNodeDetail, NomadAllocation } from '../types/nomad';
-import { LoadingSpinner, ErrorAlert, BackLink, RefreshButton, Badge } from '../components/ui';
+import { LoadingSpinner, ErrorAlert, RefreshButton, Badge } from '../components/ui';
 import { NodeAttributes } from '../components/nodes/NodeAttributes';
 import { NodeAllocations } from '../components/nodes/NodeAllocations';
 import { getNodeStatusColor, getNodeEligibilityColor } from '../lib/utils/statusColors';
@@ -53,8 +53,7 @@ export default function NodeDetailPage() {
   if (error) {
     return (
       <div className="py-4">
-        <BackLink to="/nodes" label="Back to Nodes" />
-        <ErrorAlert message={error} className="mt-4" />
+        <ErrorAlert message={error} />
       </div>
     );
   }
@@ -62,8 +61,7 @@ export default function NodeDetailPage() {
   if (!node) {
     return (
       <div className="py-4">
-        <BackLink to="/nodes" label="Back to Nodes" />
-        <ErrorAlert message="Node not found" className="mt-4" />
+        <ErrorAlert message="Node not found" />
       </div>
     );
   }
@@ -76,8 +74,6 @@ export default function NodeDetailPage() {
     <div className="space-y-6">
       {/* Header */}
       <div className="flex flex-col gap-4">
-        <BackLink to="/nodes" label="Back to Nodes" />
-
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <div className="flex items-center gap-3">

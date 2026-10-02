@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useAclPermissions } from '../hooks/useAclPermissions';
-import { LoadingSpinner, ErrorAlert, PageHeader, BackLink } from '../components/ui';
+import { LoadingSpinner, ErrorAlert, PageHeader } from '../components/ui';
 import { PoliciesTab } from '../components/acl/tabs/PoliciesTab';
 import { RolesTab } from '../components/acl/tabs/RolesTab';
 import { TokensTab } from '../components/acl/tabs/TokensTab';
@@ -86,8 +86,6 @@ export default function AclPage() {
           <TokensTab hasManagementAccess={hasManagementAccess} />
         )}
       </div>
-
-      <BackLink to="/dashboard" />
     </div>
   );
 }

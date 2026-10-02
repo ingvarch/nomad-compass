@@ -2,6 +2,7 @@ import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { ChevronLeft, Plus } from 'lucide-react';
 import { ThemeToggle } from '../ui/ThemeToggle';
+import { useCurrentHeaderAction } from '../../context/HeaderActionContext';
 
 interface RouteMeta {
   title: string;
@@ -31,7 +32,7 @@ function getRouteMeta(pathname: string): RouteMeta {
     return { title: 'Topology' };
   }
   if (pathname === '/nodes') {
-    return { title: 'Nodes' };
+    return { title: 'Nodes', backTo: '/dashboard' };
   }
   if (pathname.startsWith('/nodes/')) {
     return { title: 'Node Details', backTo: '/nodes' };
@@ -52,16 +53,16 @@ function getRouteMeta(pathname: string): RouteMeta {
     return { title: 'Activity' };
   }
   if (pathname === '/allocations') {
-    return { title: 'Allocations' };
+    return { title: 'Allocations', backTo: '/dashboard' };
   }
   if (pathname === '/allocations/failed') {
     return { title: 'Failed Allocs', backTo: '/allocations' };
   }
   if (pathname === '/acl') {
-    return { title: 'ACL' };
+    return { title: 'ACL', backTo: '/dashboard' };
   }
   if (pathname.startsWith('/exec/')) {
-    return { title: 'Remote Exec', backTo: '/jobs' };
+    return { title: 'Remote Exec', backTo: '/allocations' };
   }
   return { title: 'ovoo' };
 }
@@ -69,6 +70,7 @@ function getRouteMeta(pathname: string): RouteMeta {
 export const MobileHeader: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const headerAction = useCurrentHeaderAction();
   const { title, backTo, showCreateJob } = getRouteMeta(location.pathname);
 
   const handleBack = () => {
@@ -103,7 +105,8 @@ export const MobileHeader: React.FC = () => {
             </button>
           ) : (
             <Link to="/dashboard" className="flex items-center gap-2 active:opacity-70 transition-opacity">
-              <img src="/icons/icon-192.png" alt="ovoo" className="w-7 h-7 rounded-md shadow-xs" />
+              <img src="/ovoo.svg" alt="ovoo" className="w-7 h-7 dark:hidden" />
+              <img src="/ovoo-dark.svg" alt="ovoo" className="w-7 h-7 hidden dark:block" />
               <span className="font-bold text-lg text-blue-600 dark:text-monokai-blue tracking-tight">ovoo</span>
             </Link>
           )}
@@ -118,10 +121,32 @@ export const MobileHeader: React.FC = () => {
 
         {/* Right: Action or Theme */}
         <div className="flex items-center justify-end min-w-[70px] gap-1.5">
-          {showCreateJob ? (
+          {headerAction ? (
+            headerAction.to ? (
+              <Link
+                to={headerAction.to}
+                aria-label={headerAction.label}
+                title={headerAction.label}
+                className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-blue-600 dark:bg-monokai-blue text-white dark:text-monokai-bg font-medium shadow-xs active:opacity-70 transition-opacity"
+              >
+                <Plus className="w-4 h-4 stroke-[2.5]" />
+              </Link>
+            ) : (
+              <button
+                type="button"
+                onClick={headerAction.onClick}
+                aria-label={headerAction.label}
+                title={headerAction.label}
+                className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-blue-600 dark:bg-monokai-blue text-white dark:text-monokai-bg font-medium shadow-xs active:opacity-70 transition-opacity cursor-pointer"
+              >
+                <Plus className="w-4 h-4 stroke-[2.5]" />
+              </button>
+            )
+          ) : showCreateJob ? (
             <Link
               to="/jobs/create"
               aria-label="Create Job"
+              title="Create Job"
               className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-blue-600 dark:bg-monokai-blue text-white dark:text-monokai-bg font-medium shadow-xs active:opacity-70 transition-opacity"
             >
               <Plus className="w-4 h-4 stroke-[2.5]" />

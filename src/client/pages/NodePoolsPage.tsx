@@ -18,6 +18,7 @@ import { getErrorMessage } from '../lib/errors';
 import { NodePoolModal } from '../components/nodepools/NodePoolModal';
 import { NodePoolDetailModal } from '../components/nodepools/NodePoolDetailModal';
 import { Layers, Plus, Search, Edit2, Trash2 } from 'lucide-react';
+import { useHeaderAction } from '../context/HeaderActionContext';
 
 export default function NodePoolsPage() {
   const { addToast } = useToast();
@@ -27,6 +28,16 @@ export default function NodePoolsPage() {
   const [editingPool, setEditingPool] = useState<NomadNodePool | null>(null);
   const [deletingPool, setDeletingPool] = useState<NomadNodePool | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+
+  useHeaderAction(
+    useMemo(
+      () => ({
+        label: 'Create Node Pool',
+        onClick: () => setIsCreateModalOpen(true),
+      }),
+      []
+    )
+  );
 
   const fetchPools = useCallback(async () => {
     const client = createNomadClient();
@@ -237,14 +248,15 @@ export default function NodePoolsPage() {
         description="Partition cluster nodes into distinct scheduling pools for targeted workloads"
         actions={
           <div className="flex items-center gap-2">
-            <RefreshButton onClick={refetch} />
             <Button
               variant="primary"
               size="sm"
+              className="hidden sm:inline-flex"
               onClick={() => setIsCreateModalOpen(true)}
             >
               <Plus className="w-4 h-4 mr-1.5" /> Create Node Pool
             </Button>
+            <RefreshButton onClick={refetch} />
           </div>
         }
       />

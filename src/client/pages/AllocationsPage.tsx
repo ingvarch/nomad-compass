@@ -10,7 +10,6 @@ import {
   PageHeader,
   RefreshButton,
   FilterButtons,
-  BackLink,
   DataTable,
   Badge,
   type Column,
@@ -264,8 +263,6 @@ export default function AllocationsPage() {
           );
         }}
       />
-
-      <BackLink to="/dashboard" />
     </div>
   );
 }

@@ -9,6 +9,7 @@ export default function JobsPage() {
       <PageHeader
         title="Nomad Jobs"
         description="View and manage jobs running in your Nomad cluster"
+        actionsClassName="hidden sm:flex"
         actions={
           <Link to="/jobs/create">
             <Button variant="primary">Create Job</Button>

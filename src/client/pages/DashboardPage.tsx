@@ -94,6 +94,7 @@ export default function DashboardPage() {
       <PageHeader
         title="Nomad Cluster Dashboard"
         description="Manage and monitor your Nomad cluster resources"
+        actionsClassName="hidden sm:flex"
         actions={
           <Link
             to="/jobs/create"

@@ -3,6 +3,7 @@ import { render, screen, fireEvent, waitFor, act } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom';
 import NodePoolsPage from './NodePoolsPage';
 import { ToastProvider } from '../context/ToastContext';
+import { HeaderActionProvider, useCurrentHeaderAction } from '../context/HeaderActionContext';
 import { mockFetch, type FetchCall } from '../../test/mockFetch';
 
 const mockPools = [
@@ -170,5 +171,33 @@ describe('NodePoolsPage', () => {
       expect(deleteCall).toBeDefined();
       expect(deleteCall?.url).toContain('/api/nomad/v1/node/pool/gpu-workers');
     });
+  });
+
+  test('registers mobile header action and hides desktop button on mobile', async () => {
+    mockFetch(handleNomadFetch);
+
+    const Inspector = () => {
+      const action = useCurrentHeaderAction();
+      return <div data-testid="registered-pool-action">{action?.label || 'none'}</div>;
+    };
+
+    render(
+      <MemoryRouter>
+        <ToastProvider>
+          <HeaderActionProvider>
+            <Inspector />
+            <NodePoolsPage />
+          </HeaderActionProvider>
+        </ToastProvider>
+      </MemoryRouter>
+    );
+
+    expect(await screen.findByTestId('registered-pool-action')).toBeTruthy();
+    expect(screen.getByTestId('registered-pool-action').textContent).toBe('Create Node Pool');
+
+    const createBtn = screen.getByRole('button', { name: /Create Node Pool/i });
+    expect(createBtn.className).toContain('hidden sm:');
+    const classes = createBtn.className.split(/\s+/);
+    expect(classes.includes('inline-flex')).toBe(false);
   });
 });

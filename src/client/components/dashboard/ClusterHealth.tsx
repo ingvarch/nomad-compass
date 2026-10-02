@@ -1,5 +1,5 @@
 import { NomadAgentSelf, NomadAgentMembers, NomadNode } from '../../types/nomad';
-import { clusterHealthColors, ClusterHealth as ClusterHealthType } from '../../lib/utils/statusColors';
+import { ClusterHealth as ClusterHealthType } from '../../lib/utils/statusColors';
 import { Badge } from '../ui';
 
 interface ClusterHealthProps {
@@ -14,13 +14,12 @@ function getHealthStatus(nodes: NomadNode[], activeFailedAllocations: number): C
   const downNodes = nodes.filter((n) => n.Status === 'down');
   const drainingNodes = nodes.filter((n) => n.Drain);
 
-  // Critical: down nodes or high percentage of active failures
+  // Critical: down nodes
   if (downNodes.length > 0) {
     return 'critical';
   }
 
   // Degraded: draining nodes or any ACTIVE failed allocations
-  // (not historical counters from JobSummary)
   if (drainingNodes.length > 0 || activeFailedAllocations > 0) {
     return 'degraded';
   }
@@ -34,16 +33,28 @@ function getLeaderName(members: NomadAgentMembers | null): string | null {
   return leader?.Name || null;
 }
 
-
-export function ClusterHealth({ agentSelf, agentMembers, nodes, activeFailedAllocations, loading }: ClusterHealthProps) {
+export function ClusterHealth({
+  agentSelf,
+  agentMembers,
+  nodes,
+  activeFailedAllocations,
+  loading,
+}: ClusterHealthProps) {
   if (loading) {
     return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow p-4 animate-pulse">
-        <div className="flex items-center gap-4">
-          <div className="w-12 h-12 bg-gray-200 dark:bg-gray-700 rounded-full" />
-          <div className="flex-1 space-y-2">
-            <div className="h-5 bg-gray-200 dark:bg-gray-700 rounded w-40" />
-            <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-60" />
+      <div
+        role="status"
+        aria-label="Loading cluster health"
+        className="rounded-lg border border-gray-200/60 dark:border-gray-700/50 bg-white/60 dark:bg-gray-800/60 px-3.5 py-2.5 shadow-xs animate-pulse"
+      >
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <div className="w-2.5 h-2.5 rounded-full bg-gray-300 dark:bg-gray-600" />
+            <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-28" />
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-14" />
+            <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-16" />
           </div>
         </div>
       </div>
@@ -51,53 +62,69 @@ export function ClusterHealth({ agentSelf, agentMembers, nodes, activeFailedAllo
   }
 
   const status = getHealthStatus(nodes, activeFailedAllocations);
-  const config = clusterHealthColors[status];
   const leader = getLeaderName(agentMembers);
   const version = agentSelf?.config?.Version?.Version;
   const region = agentSelf?.config?.Region;
 
+  // Compact status theme inspired by Cloudflare Status
+  const statusTheme = {
+    healthy: {
+      bg: 'bg-emerald-500/10 dark:bg-emerald-500/10 border-emerald-500/20 dark:border-emerald-500/30 text-emerald-900 dark:text-emerald-200',
+      dot: 'bg-emerald-500',
+      ping: 'bg-emerald-400',
+      label: 'Cluster Healthy',
+    },
+    degraded: {
+      bg: 'bg-amber-500/10 dark:bg-amber-500/10 border-amber-500/20 dark:border-amber-500/30 text-amber-900 dark:text-amber-200',
+      dot: 'bg-amber-500',
+      ping: 'bg-amber-400',
+      label: 'Cluster Degraded',
+    },
+    critical: {
+      bg: 'bg-red-500/10 dark:bg-red-500/10 border-red-500/20 dark:border-red-500/30 text-red-900 dark:text-red-200',
+      dot: 'bg-red-500',
+      ping: 'bg-red-400',
+      label: 'Cluster Critical',
+    },
+  }[status];
+
   return (
-    <div className={`rounded-lg shadow p-4 ${config.bg}`}>
-      <div className="flex items-center gap-4">
-        <div className="relative">
-          <div className={`w-12 h-12 ${config.dot} rounded-full flex items-center justify-center`}>
-            {status === 'healthy' && (
-              <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-              </svg>
-            )}
-            {status === 'degraded' && (
-              <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-                />
-              </svg>
-            )}
-            {status === 'critical' && (
-              <svg className="w-6 h-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            )}
-          </div>
-          {config.pulse && (
-            <div className={`absolute inset-0 w-12 h-12 ${config.dot} rounded-full animate-ping opacity-25`} />
-          )}
+    <div
+      role="status"
+      aria-label={`Cluster status: ${statusTheme.label}`}
+      className={`rounded-lg border px-3.5 py-2 shadow-xs transition-colors ${statusTheme.bg}`}
+    >
+      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-1.5">
+        {/* Left: Live pulsing dot + Status label */}
+        <div className="flex items-center gap-2.5">
+          <span className="relative flex h-2.5 w-2.5 shrink-0">
+            <span
+              className={`animate-ping absolute inline-flex h-full w-full rounded-full opacity-75 ${statusTheme.ping}`}
+            />
+            <span className={`relative inline-flex rounded-full h-2.5 w-2.5 ${statusTheme.dot}`} />
+          </span>
+          <span className="font-medium text-xs sm:text-sm tracking-tight text-gray-900 dark:text-white">
+            {statusTheme.label}
+          </span>
         </div>
 
-        <div className="flex-1">
-          <h2 className="text-lg font-semibold text-gray-900 dark:text-white">{config.label}</h2>
-          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-gray-600 dark:text-gray-400">
-            {leader && <span>Leader: {leader}</span>}
-            {version && (
-              <Badge variant="gray">v{version}</Badge>
-            )}
-            {region && (
-              <Badge variant="blue">{region}</Badge>
-            )}
-          </div>
+        {/* Right: Metadata pills (version, region, leader) */}
+        <div className="flex items-center gap-2 text-xs flex-wrap">
+          {leader && (
+            <span className="text-gray-600 dark:text-gray-300 text-xs truncate max-w-[150px] sm:max-w-none">
+              Leader: <span className="font-mono">{leader}</span>
+            </span>
+          )}
+          {version && (
+            <Badge variant="gray" className="font-mono text-[11px] py-0.5 px-2">
+              v{version}
+            </Badge>
+          )}
+          {region && (
+            <Badge variant="blue" className="text-[11px] py-0.5 px-2">
+              {region}
+            </Badge>
+          )}
         </div>
       </div>
     </div>
