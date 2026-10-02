@@ -58,3 +58,29 @@ describe('LaunchesTab', () => {
     expect(screen.getByText('Failed to load launches')).toBeTruthy();
   });
 });
+
+describe('LaunchesTab for a parameterized job', () => {
+  const dispatched: NomadJobListStub = {
+    ...launch, ID: 'export/dispatch-1790611797-8a1b2c3d', ParentID: 'export', Name: 'export/dispatch-1790611797-8a1b2c3d',
+  };
+
+  function renderDispatches(dispatches: NomadJobListStub[]) {
+    render(
+      <MemoryRouter>
+        <LaunchesTab kind="parameterized" launches={dispatches} loading={false} error={null} onRefresh={() => {}} />
+      </MemoryRouter>
+    );
+  }
+
+  test('lists the dispatched jobs', () => {
+    renderDispatches([dispatched]);
+    expect(screen.getByText('Dispatches (1)')).toBeTruthy();
+    expect(screen.getByRole('columnheader', { name: 'Dispatched' })).toBeTruthy();
+    expect(screen.getByRole('link').getAttribute('href')).toBe('/jobs/export%2Fdispatch-1790611797-8a1b2c3d?namespace=default');
+  });
+
+  test('explains an empty list', () => {
+    renderDispatches([]);
+    expect(screen.getByText(/^No dispatches yet\. .*garbage collection/)).toBeTruthy();
+  });
+});

@@ -55,6 +55,7 @@ import {
 import { PermissionError, isApiError } from '../errors';
 import { DEFAULT_NAMESPACE } from '../constants';
 import { periodicLaunchPrefix } from '../services/periodicService';
+import { dispatchedJobPrefix } from '../services/dispatchService';
 
 /**
  * NomadClient - A client for interacting with Nomad API
@@ -357,6 +358,15 @@ export class NomadClient {
   async getPeriodicLaunches(jobId: string, namespace: string = DEFAULT_NAMESPACE): Promise<NomadJobListStub[]> {
     return this.request<NomadJobListStub[]>('/v1/jobs', {
       params: { namespace, prefix: periodicLaunchPrefix(jobId) },
+    });
+  }
+
+  /**
+   * Get the dispatched jobs (child jobs) of a parameterized job
+   */
+  async getDispatchedJobs(jobId: string, namespace: string = DEFAULT_NAMESPACE): Promise<NomadJobListStub[]> {
+    return this.request<NomadJobListStub[]>('/v1/jobs', {
+      params: { namespace, prefix: dispatchedJobPrefix(jobId) },
     });
   }
 

@@ -1,41 +1,53 @@
 import { useSearchParams } from 'react-router-dom';
+import type { JobKind } from '../../../lib/services/jobKind';
 
-export type JobTabType = 'overview' | 'allocations' | 'launches' | 'versions' | 'evaluations' | 'logs' | 'exec';
+export type JobTabType =
+  | 'overview'
+  | 'allocations'
+  | 'launches'
+  | 'dispatches'
+  | 'versions'
+  | 'evaluations'
+  | 'logs'
+  | 'exec';
 
 interface Tab {
   id: JobTabType;
   label: string;
 }
 
-const TABS: Tab[] = [
-  { id: 'overview', label: 'Overview' },
-  { id: 'allocations', label: 'Allocations' },
-  { id: 'versions', label: 'Versions' },
-  { id: 'evaluations', label: 'Evaluations' },
-  { id: 'logs', label: 'Logs' },
-  { id: 'exec', label: 'Exec' },
-];
-
-// A periodic job has no allocations of its own: its runs are the launches
-const PERIODIC_TABS: Tab[] = [
-  { id: 'overview', label: 'Overview' },
-  { id: 'launches', label: 'Launches' },
-  { id: 'versions', label: 'Versions' },
-  { id: 'evaluations', label: 'Evaluations' },
-];
-
-function jobTabs(isPeriodic: boolean): Tab[] {
-  return isPeriodic ? PERIODIC_TABS : TABS;
-}
+// A periodic or parameterized job has no allocations of its own: its runs are the launches or dispatched jobs
+const TABS: Record<JobKind, Tab[]> = {
+  regular: [
+    { id: 'overview', label: 'Overview' },
+    { id: 'allocations', label: 'Allocations' },
+    { id: 'versions', label: 'Versions' },
+    { id: 'evaluations', label: 'Evaluations' },
+    { id: 'logs', label: 'Logs' },
+    { id: 'exec', label: 'Exec' },
+  ],
+  periodic: [
+    { id: 'overview', label: 'Overview' },
+    { id: 'launches', label: 'Launches' },
+    { id: 'versions', label: 'Versions' },
+    { id: 'evaluations', label: 'Evaluations' },
+  ],
+  parameterized: [
+    { id: 'overview', label: 'Overview' },
+    { id: 'dispatches', label: 'Dispatches' },
+    { id: 'versions', label: 'Versions' },
+    { id: 'evaluations', label: 'Evaluations' },
+  ],
+};
 
 interface JobDetailTabsProps {
   namespace: string;
-  isPeriodic?: boolean;
+  kind?: JobKind;
 }
 
-export function JobDetailTabs({ namespace, isPeriodic = false }: JobDetailTabsProps) {
+export function JobDetailTabs({ namespace, kind = 'regular' }: JobDetailTabsProps) {
   const [searchParams, setSearchParams] = useSearchParams();
-  const activeTab = useActiveJobTab(isPeriodic);
+  const activeTab = useActiveJobTab(kind);
 
   const handleTabChange = (tabId: JobTabType) => {
     const newParams = new URLSearchParams(searchParams);
@@ -54,7 +66,7 @@ export function JobDetailTabs({ namespace, isPeriodic = false }: JobDetailTabsPr
   return (
     <div className="border-b border-gray-200 dark:border-gray-700">
       <nav className="flex -mb-px space-x-3 sm:space-x-8 overflow-x-auto no-scrollbar scroll-smooth">
-        {jobTabs(isPeriodic).map((tab) => (
+        {TABS[kind].map((tab) => (
           <button
             key={tab.id}
             onClick={() => handleTabChange(tab.id)}
@@ -75,8 +87,8 @@ export function JobDetailTabs({ namespace, isPeriodic = false }: JobDetailTabsPr
 /**
  * Tab from the URL, or the overview when this job has no such tab
  */
-export function useActiveJobTab(isPeriodic: boolean): JobTabType {
+export function useActiveJobTab(kind: JobKind): JobTabType {
   const [searchParams] = useSearchParams();
   const tab = searchParams.get('tab');
-  return jobTabs(isPeriodic).find(({ id }) => id === tab)?.id ?? 'overview';
+  return TABS[kind].find(({ id }) => id === tab)?.id ?? 'overview';
 }

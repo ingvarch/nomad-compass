@@ -415,22 +415,75 @@ describe('JobDetailPage for a parameterized job', () => {
   const dispatchReply = {
     DispatchedJobID: dispatchedJob.ID, EvalID: 'eval-1', EvalCreateIndex: 7, JobCreateIndex: 6, Index: 7,
   };
+  // The dispatched job as the jobs list returns it
+  const dispatchedStub = {
+    ID: dispatchedJob.ID, ParentID: 'export', Name: dispatchedJob.ID, Namespace: 'default', Type: 'batch',
+    Status: 'dead', Stop: false, Periodic: false, SubmitTime: 1790611797886474000,
+  };
+  // The job and its dispatched jobs, none yet
+  const exportRoutes = { ...jobRoutes(exportJob), '/api/nomad/v1/jobs?': [] };
 
   // The dialog renders after the page, so its button is the last one
   function dispatchButtons() {
     return screen.getAllByRole('button', { name: 'Dispatch' });
   }
 
+  async function dispatchWithDatabase(database: string) {
+    fireEvent.click(await screen.findByRole('button', { name: 'Dispatch' }));
+    fireEvent.change(screen.getByLabelText('database'), { target: { value: database } });
+    fireEvent.click(dispatchButtons().at(-1)!);
+  }
+
+  // A parameterized job has no allocations of its own: its runs are the dispatched jobs
+  test('has the Dispatches tab instead of the allocation tabs', async () => {
+    mockFetch(nomad(exportRoutes));
+    renderPage('/jobs/export?namespace=default');
+
+    expect(await screen.findByRole('button', { name: 'Dispatches' })).toBeTruthy();
+    expect(screen.getByRole('button', { name: 'Versions' })).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Allocations' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Logs' })).toBeNull();
+    expect(screen.queryByRole('button', { name: 'Exec' })).toBeNull();
+  });
+
+  test('a task group of a parameterized job has no View Logs button', async () => {
+    const withGroup = { ...exportJob, TaskGroups: [{ Name: 'g', Count: 1, Tasks: [{ Name: 'run', Driver: 'raw_exec', Config: {} }] }] };
+    mockFetch(nomad({ ...exportRoutes, ...jobRoutes(withGroup) }));
+    renderPage('/jobs/export?namespace=default');
+
+    fireEvent.click(await screen.findByText('Task Group: g'));
+    expect(screen.getByText('run')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'View Logs' })).toBeNull();
+  });
+
+  test('lists the dispatched jobs and shows a new one after a dispatch', async () => {
+    let dispatched = false;
+    mockFetch((call) => {
+      if (call.url.startsWith('/api/nomad/v1/job/export/dispatch')) {
+        dispatched = true;
+        return { body: dispatchReply };
+      }
+      if (call.url.startsWith('/api/nomad/v1/jobs?')) return { body: dispatched ? [dispatchedStub] : [] };
+      return nomad(exportRoutes)(call);
+    });
+    renderPage('/jobs/export?namespace=default&tab=dispatches');
+
+    expect(await screen.findByText('Dispatches (0)')).toBeTruthy();
+    await dispatchWithDatabase('orders');
+
+    expect(await screen.findByText('Dispatches (1)')).toBeTruthy();
+    const listed = screen.getByRole('link', { name: formatDateLongZoned(dispatchedStub.SubmitTime) });
+    expect(listed.getAttribute('href')).toBe('/jobs/export%2Fdispatch-1790611797-8a1b2c3d?namespace=default');
+  });
+
   test('dispatches the job and links to the dispatched job', async () => {
     const calls = mockFetch(nomad({
-      ...jobRoutes(exportJob),
+      ...exportRoutes,
       '/api/nomad/v1/job/export/dispatch': dispatchReply,
     }));
     renderPage('/jobs/export?namespace=default');
 
-    fireEvent.click(await screen.findByRole('button', { name: 'Dispatch' }));
-    fireEvent.change(screen.getByLabelText('database'), { target: { value: 'orders' } });
-    fireEvent.click(dispatchButtons().at(-1)!);
+    await dispatchWithDatabase('orders');
 
     const link = await screen.findByRole('link', { name: 'Open Job' });
     expect(link.getAttribute('href')).toBe('/jobs/export%2Fdispatch-1790611797-8a1b2c3d?namespace=default');
@@ -441,7 +494,7 @@ describe('JobDetailPage for a parameterized job', () => {
 
   // Nomad rejects a dispatch of a stopped job
   test('a stopped job cannot be dispatched', async () => {
-    mockFetch(nomad(jobRoutes({ ...exportJob, Stop: true, Status: 'dead' })));
+    mockFetch(nomad({ ...exportRoutes, ...jobRoutes({ ...exportJob, Stop: true, Status: 'dead' }) }));
     renderPage('/jobs/export?namespace=default');
 
     const button = (await screen.findByRole('button', { name: 'Dispatch' })) as HTMLButtonElement;

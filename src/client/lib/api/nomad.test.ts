@@ -63,6 +63,13 @@ describe('NomadClient parameterized jobs', () => {
     ]);
     expect(result).toEqual(reply);
   });
+
+  test('lists dispatched jobs by ID prefix', async () => {
+    const calls = mockFetch(() => ({ body: [] }));
+    await new NomadClient().getDispatchedJobs('export', 'prod');
+
+    expect(calls[0].url).toBe('/api/nomad/v1/jobs?namespace=prod&prefix=export%2Fdispatch-');
+  });
 });
 
 describe('NomadClient variables endpoints', () => {
