@@ -70,7 +70,8 @@ output of `openssl rand -hex 32`. Then run `bun run dev`, open
 
 ## Documentation
 
-- [Usage](docs/usage.md): signing in, jobs, logs, remote exec, namespaces.
+- [Usage](docs/usage.md): signing in, dashboard, jobs, logs, remote exec,
+  allocations, topology, nodes, servers, activity, ACL, and mobile PWA.
 - [Configuration](docs/configuration.md): environment variables, the ticket
   secret and local `.dev.vars`.
 - [Deployment](docs/deployment.md): Cloudflare Workers, Docker, Compose,
