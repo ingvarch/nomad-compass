@@ -19,6 +19,8 @@ import type {
   JobStopResponse,
   LogResponse,
   NomadServiceRegistration,
+  NomadDrainSpec,
+  NomadNodeActionResponse,
 } from '../../types/nomad';
 import {
   NomadAclPolicy,
@@ -461,6 +463,52 @@ export class NomadClient {
    */
   async getNodeAllocations(nodeId: string): Promise<NomadAllocation[]> {
     return this.request<NomadAllocation[]>(`/v1/node/${nodeId}/allocations`);
+  }
+
+  /**
+   * Toggle or configure node drain status
+   */
+  async drainNode(
+    nodeId: string,
+    drainSpec: NomadDrainSpec | null,
+    markEligible: boolean = false
+  ): Promise<NomadNodeActionResponse> {
+    return this.request<NomadNodeActionResponse>(`/v1/node/${encodeURIComponent(nodeId)}/drain`, {
+      method: 'POST',
+      body: JSON.stringify({
+        NodeID: nodeId,
+        DrainSpec: drainSpec,
+        MarkEligible: markEligible,
+      }),
+    });
+  }
+
+  /**
+   * Toggle node scheduling eligibility (eligible or ineligible)
+   */
+  async toggleNodeEligibility(
+    nodeId: string,
+    eligibility: 'eligible' | 'ineligible'
+  ): Promise<NomadNodeActionResponse> {
+    return this.request<NomadNodeActionResponse>(`/v1/node/${encodeURIComponent(nodeId)}/eligibility`, {
+      method: 'POST',
+      body: JSON.stringify({
+        NodeID: nodeId,
+        Eligibility: eligibility,
+      }),
+    });
+  }
+
+  /**
+   * Purge a dead/offline node from cluster state
+   */
+  async purgeNode(nodeId: string): Promise<NomadNodeActionResponse> {
+    return this.request<NomadNodeActionResponse>(`/v1/node/${encodeURIComponent(nodeId)}/purge`, {
+      method: 'POST',
+      body: JSON.stringify({
+        NodeID: nodeId,
+      }),
+    });
   }
 
   /**
