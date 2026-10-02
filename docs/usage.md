@@ -176,6 +176,22 @@ active namespace.
 - The Namespaces page (`/namespaces`) lists all namespaces, showing active job
   counts, and allows creating and deleting namespaces.
 
+## Variables & secrets
+
+The Variables & Secrets interface (`/variables`) provides access to Nomad's
+encrypted key/value configuration store:
+
+- **Filter & search**: filter variables by target namespace or find configuration
+  paths instantly with real-time path search.
+- **Masked value inspection**: values remain hidden behind password masks by
+  default. Inspect individual items with a show/hide toggle, copy values directly
+  to clipboard, or reveal all items with a single click.
+- **Form & JSON editors**: create and update variables using an intuitive
+  key-value editor (with masked secret inputs) or switch to a raw JSON editor
+  for bulk editing and pasting configuration payloads.
+- **Safe deletion**: confirmation dialog prevents accidental deletion of
+  workload configuration.
+
 ## Access control (ACL)
 
 The ACL management interface (`/acl`) provides tools for securing your
