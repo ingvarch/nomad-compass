@@ -10,8 +10,10 @@ import {
   FilterButtons,
   BackLink,
   DataTable,
+  Badge,
   type Column,
 } from '../components/ui';
+import { ChevronRight } from 'lucide-react';
 import { getNodeStatusColor, getStatusClasses } from '../lib/utils/statusColors';
 import { useFetch } from '../hooks/useFetch';
 import { useFilteredData } from '../hooks/useFilteredData';
@@ -152,6 +154,43 @@ export default function NodesPage() {
         keyExtractor={(node) => node.ID}
         onRowClick={(node) => navigate(`/nodes/${node.ID}`)}
         emptyState={{ message: 'No nodes found.' }}
+        mobileCardRenderer={(node) => {
+          const statusColors = getNodeStatusColor(node.Status, node.Drain);
+          return (
+            <div className="p-4 space-y-2">
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0 flex-1">
+                  <h3 className="text-base font-semibold text-blue-600 dark:text-blue-400 truncate">
+                    {node.Name}
+                  </h3>
+                  <p className="text-xs text-gray-400 dark:text-gray-500 font-mono truncate">
+                    {node.ID.slice(0, 8)}
+                  </p>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${getStatusClasses(statusColors)}`}>
+                    {node.Drain ? 'draining' : node.Status}
+                  </span>
+                  <ChevronRight className="w-4 h-4 text-gray-400" />
+                </div>
+              </div>
+
+              <div className="flex items-center gap-2 pt-1 border-t border-gray-100 dark:border-gray-800 text-xs text-gray-500 dark:text-gray-400 flex-wrap">
+                <Badge variant="blue">{node.Datacenter || '-'}</Badge>
+                {node.NodeResources && (
+                  <span>{formatResources(node.NodeResources.Cpu.CpuShares, node.NodeResources.Memory.MemoryMB)}</span>
+                )}
+                <span className={`ml-auto font-medium ${
+                  node.SchedulingEligibility === 'eligible'
+                    ? 'text-green-600 dark:text-green-400'
+                    : 'text-gray-500'
+                }`}>
+                  {node.SchedulingEligibility}
+                </span>
+              </div>
+            </div>
+          );
+        }}
       />
 
       <BackLink to="/dashboard" />

@@ -144,6 +144,35 @@ export default function ServersPage() {
         columns={columns}
         keyExtractor={(member) => member.Name}
         emptyState={{ message: 'No servers found.' }}
+        mobileCardRenderer={(member) => {
+          const statusColors = getServerStatusColor(member.Status);
+          return (
+            <div className="p-4 space-y-2">
+              <div className="flex items-start justify-between gap-2">
+                <div className="min-w-0 flex-1">
+                  <div className="flex items-center gap-2">
+                    <h3 className="text-base font-semibold text-gray-900 dark:text-white truncate">
+                      {member.Name}
+                    </h3>
+                    {member.Leader && <Badge variant="blue">Leader</Badge>}
+                  </div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 font-mono mt-0.5">
+                    {member.Addr}:{member.Port}
+                  </p>
+                </div>
+
+                <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${getStatusClasses(statusColors)}`}>
+                  {member.Status}
+                </span>
+              </div>
+
+              <div className="flex items-center justify-between pt-1 border-t border-gray-100 dark:border-gray-800 text-xs text-gray-500 dark:text-gray-400">
+                <span>{serverInfo ? `DC: ${serverInfo.datacenter}` : `Port: ${member.Port}`}</span>
+                <span>Proto: {member.ProtocolCur}</span>
+              </div>
+            </div>
+          );
+        }}
       />
 
       <BackLink to="/dashboard" />

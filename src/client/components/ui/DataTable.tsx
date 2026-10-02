@@ -27,6 +27,7 @@ interface DataTableProps<T> {
   keyExtractor: (item: T, index: number) => string | number;
   onRowClick?: (item: T) => void;
   emptyState?: EmptyStateConfig;
+  mobileCardRenderer?: (item: T, index: number) => ReactNode;
 }
 
 function DataTable<T>({
@@ -35,6 +36,7 @@ function DataTable<T>({
   keyExtractor,
   onRowClick,
   emptyState = { message: 'No items found.' },
+  mobileCardRenderer,
 }: DataTableProps<T>) {
   if (items.length === 0) {
     return (
@@ -50,7 +52,23 @@ function DataTable<T>({
 
   return (
     <div className="bg-white dark:bg-gray-800 shadow rounded-lg overflow-hidden">
-      <div className="overflow-x-auto">
+      {/* Mobile Card List View */}
+      {mobileCardRenderer && (
+        <div className="sm:hidden divide-y divide-gray-100 dark:divide-gray-700/60">
+          {items.map((item, index) => (
+            <div
+              key={keyExtractor(item, index)}
+              className={onRowClick ? 'cursor-pointer active:bg-gray-50 dark:active:bg-monokai-surface/60 transition-colors' : ''}
+              onClick={onRowClick ? () => onRowClick(item) : undefined}
+            >
+              {mobileCardRenderer(item, index)}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Desktop Table View */}
+      <div className={mobileCardRenderer ? 'hidden sm:block overflow-x-auto' : 'overflow-x-auto'}>
         <table className={tableStyles}>
           <thead className={tableHeaderStyles}>
             <tr>
