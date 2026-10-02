@@ -89,4 +89,97 @@ describe('MoreMenuSheet', () => {
     fireEvent.click(installBtn);
     expect(closed).toBe(true);
   });
+
+  test('dismisses on swipe down on drag handle past threshold', () => {
+    let closed = false;
+    render(
+      <MemoryRouter>
+        <ThemeProvider>
+          <MoreMenuSheet
+            isOpen={true}
+            onClose={() => { closed = true; }}
+            nomadAddr="http://nomad.local:4646"
+            onLogout={() => {}}
+          />
+        </ThemeProvider>
+      </MemoryRouter>
+    );
+
+    const handle = screen.getByTestId('sheet-drag-handle');
+    fireEvent.touchStart(handle, { touches: [{ clientY: 100 }] });
+    fireEvent.touchMove(handle, { touches: [{ clientY: 250 }] });
+    fireEvent.touchEnd(handle);
+
+    expect(closed).toBe(true);
+  });
+
+  test('does not dismiss when swipe down on drag handle is below threshold', () => {
+    let closed = false;
+    render(
+      <MemoryRouter>
+        <ThemeProvider>
+          <MoreMenuSheet
+            isOpen={true}
+            onClose={() => { closed = true; }}
+            nomadAddr="http://nomad.local:4646"
+            onLogout={() => {}}
+          />
+        </ThemeProvider>
+      </MemoryRouter>
+    );
+
+    const handle = screen.getByTestId('sheet-drag-handle');
+    fireEvent.touchStart(handle, { touches: [{ clientY: 100 }] });
+    fireEvent.touchMove(handle, { touches: [{ clientY: 110 }] });
+    fireEvent.touchEnd(handle);
+
+    expect(closed).toBe(false);
+  });
+
+  test('dismisses on mouse drag down on handle past threshold', () => {
+    let closed = false;
+    render(
+      <MemoryRouter>
+        <ThemeProvider>
+          <MoreMenuSheet
+            isOpen={true}
+            onClose={() => { closed = true; }}
+            nomadAddr="http://nomad.local:4646"
+            onLogout={() => {}}
+          />
+        </ThemeProvider>
+      </MemoryRouter>
+    );
+
+    const handle = screen.getByTestId('sheet-drag-handle');
+    fireEvent.mouseDown(handle, { clientY: 100 });
+    fireEvent.mouseMove(window, { clientY: 250 });
+    fireEvent.mouseUp(window);
+
+    expect(closed).toBe(true);
+  });
+
+  test('closes when backdrop is clicked', () => {
+    let closed = false;
+    const { container } = render(
+      <MemoryRouter>
+        <ThemeProvider>
+          <MoreMenuSheet
+            isOpen={true}
+            onClose={() => { closed = true; }}
+            nomadAddr="http://nomad.local:4646"
+            onLogout={() => {}}
+          />
+        </ThemeProvider>
+      </MemoryRouter>
+    );
+
+    // The backdrop has aria-hidden="true"
+    const backdrop = container.querySelector('[aria-hidden="true"]');
+    expect(backdrop).toBeTruthy();
+    if (backdrop) {
+      fireEvent.click(backdrop);
+      expect(closed).toBe(true);
+    }
+  });
 });

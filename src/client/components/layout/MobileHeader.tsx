@@ -80,22 +80,29 @@ export const MobileHeader: React.FC = () => {
   };
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-30 pt-safe h-14 bg-white/95 dark:bg-monokai-bg/95 backdrop-blur-md border-b border-gray-200 dark:border-monokai-surface sm:hidden">
-      <div className="flex items-center justify-between h-full px-3.5">
+    <header
+      className="fixed top-0 left-0 right-0 z-30 bg-white/85 dark:bg-monokai-bg/85 backdrop-blur-xl border-b border-gray-200/80 dark:border-monokai-surface/80 pt-safe pl-safe pr-safe sm:hidden"
+      style={{
+        paddingTop: 'env(safe-area-inset-top, 0px)',
+        paddingLeft: 'env(safe-area-inset-left, 0px)',
+        paddingRight: 'env(safe-area-inset-right, 0px)',
+      }}
+    >
+      <div className="flex items-center justify-between h-11 px-3.5">
         {/* Left: Back button or Logo */}
         <div className="flex items-center min-w-[70px]">
           {backTo ? (
             <button
               type="button"
               onClick={handleBack}
-              className="inline-flex items-center gap-0.5 text-blue-600 dark:text-monokai-blue font-medium text-sm -ml-1 p-1 rounded-lg active:scale-95 transition-transform"
+              className="inline-flex items-center gap-0.5 text-blue-600 dark:text-monokai-blue font-medium text-[15px] -ml-1 py-1.5 px-2 rounded-lg active:opacity-60 transition-opacity"
               aria-label="Go back"
             >
-              <ChevronLeft className="w-5 h-5" />
+              <ChevronLeft className="w-5 h-5 -ml-1 stroke-[2.2]" />
               <span>Back</span>
             </button>
           ) : (
-            <Link to="/dashboard" className="flex items-center gap-2 active:opacity-80 transition-opacity">
+            <Link to="/dashboard" className="flex items-center gap-2 active:opacity-70 transition-opacity">
               <img src="/icons/icon-192.png" alt="ovoo" className="w-7 h-7 rounded-md shadow-xs" />
               <span className="font-bold text-lg text-blue-600 dark:text-monokai-blue tracking-tight">ovoo</span>
             </Link>
@@ -104,7 +111,7 @@ export const MobileHeader: React.FC = () => {
 
         {/* Center: Title */}
         <div className="flex-1 text-center truncate px-2">
-          <h1 className="text-base font-semibold text-gray-900 dark:text-monokai-text truncate">
+          <h1 className="text-[17px] font-semibold text-gray-900 dark:text-monokai-text truncate tracking-tight">
             {title}
           </h1>
         </div>
@@ -115,7 +122,7 @@ export const MobileHeader: React.FC = () => {
             <Link
               to="/jobs/create"
               aria-label="Create Job"
-              className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-blue-600 dark:bg-monokai-blue text-white dark:text-monokai-bg font-medium shadow-sm active:scale-95 transition-transform"
+              className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-blue-600 dark:bg-monokai-blue text-white dark:text-monokai-bg font-medium shadow-xs active:opacity-70 transition-opacity"
             >
               <Plus className="w-4 h-4 stroke-[2.5]" />
             </Link>

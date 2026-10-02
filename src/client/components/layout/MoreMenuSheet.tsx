@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import {
   Folders,
@@ -87,7 +87,19 @@ export const MoreMenuSheet: React.FC<MoreMenuSheetProps> = ({
 }) => {
   const location = useLocation();
   const sheetRef = useRef<HTMLDivElement>(null);
+  const contentRef = useRef<HTMLDivElement>(null);
   const { hasDeferredPrompt, promptInstall } = usePwaInstall();
+
+  // Gesture state for swipe-down dismissal
+  const [dragOffset, setDragOffset] = useState(0);
+  const [isDragging, setIsDragging] = useState(false);
+  const dragStartY = useRef(0);
+  const dragStartTime = useRef(0);
+  const currentDragOffset = useRef(0);
+  const isHandleDrag = useRef(false);
+
+  const contentStartY = useRef(0);
+  const isContentDragging = useRef(false);
 
   // Close on Escape key
   useEffect(() => {
@@ -111,6 +123,116 @@ export const MoreMenuSheet: React.FC<MoreMenuSheetProps> = ({
     }
   }, [isOpen]);
 
+  // Handle drag for handle & header
+  const handleDragStart = (e: React.TouchEvent | React.MouseEvent) => {
+    const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
+    dragStartY.current = clientY;
+    dragStartTime.current = Date.now();
+    currentDragOffset.current = 0;
+    isHandleDrag.current = true;
+    setIsDragging(true);
+  };
+
+  const handleDragMove = (e: React.TouchEvent | React.MouseEvent) => {
+    if (!isHandleDrag.current) return;
+    const clientY = 'touches' in e ? e.touches[0].clientY : e.clientY;
+    const deltaY = clientY - dragStartY.current;
+    if (deltaY > 0) {
+      currentDragOffset.current = deltaY;
+      setDragOffset(deltaY);
+    } else {
+      const damped = deltaY * 0.15;
+      currentDragOffset.current = damped;
+      setDragOffset(damped);
+    }
+  };
+
+  const handleDragEnd = useCallback(() => {
+    if (!isHandleDrag.current) return;
+    isHandleDrag.current = false;
+    setIsDragging(false);
+
+    const elapsed = Date.now() - dragStartTime.current;
+    const offset = currentDragOffset.current;
+    const velocity = offset / Math.max(elapsed, 1);
+
+    if (offset > 90 || (offset > 30 && velocity > 0.4)) {
+      setDragOffset(0);
+      onClose();
+    } else {
+      setDragOffset(0);
+    }
+  }, [onClose]);
+
+  // Handle swipe-down from content when at top
+  const handleContentTouchStart = (e: React.TouchEvent) => {
+    contentStartY.current = e.touches[0].clientY;
+    dragStartTime.current = Date.now();
+    currentDragOffset.current = 0;
+    isContentDragging.current = false;
+  };
+
+  const handleContentTouchMove = (e: React.TouchEvent) => {
+    const currentY = e.touches[0].clientY;
+    const deltaY = currentY - contentStartY.current;
+    const scrollTop = contentRef.current?.scrollTop ?? 0;
+
+    if (scrollTop <= 0 && deltaY > 0) {
+      isContentDragging.current = true;
+      setIsDragging(true);
+      currentDragOffset.current = deltaY;
+      setDragOffset(deltaY);
+    }
+  };
+
+  const handleContentTouchEnd = () => {
+    if (isContentDragging.current) {
+      isContentDragging.current = false;
+      setIsDragging(false);
+
+      const elapsed = Date.now() - dragStartTime.current;
+      const offset = currentDragOffset.current;
+      const velocity = offset / Math.max(elapsed, 1);
+
+      if (offset > 90 || (offset > 30 && velocity > 0.4)) {
+        setDragOffset(0);
+        onClose();
+      } else {
+        setDragOffset(0);
+      }
+    }
+  };
+
+  // Mouse drag support for desktop/testing
+  useEffect(() => {
+    if (!isDragging || !isHandleDrag.current) return;
+
+    const onMouseMove = (e: MouseEvent) => {
+      const deltaY = e.clientY - dragStartY.current;
+      if (deltaY > 0) {
+        currentDragOffset.current = deltaY;
+        setDragOffset(deltaY);
+      } else {
+        const damped = deltaY * 0.15;
+        currentDragOffset.current = damped;
+        setDragOffset(damped);
+      }
+    };
+
+    const onMouseUp = () => {
+      if (isHandleDrag.current) {
+        handleDragEnd();
+      }
+    };
+
+    window.addEventListener('mousemove', onMouseMove);
+    window.addEventListener('mouseup', onMouseUp);
+    return () => {
+      window.removeEventListener('mousemove', onMouseMove);
+      window.removeEventListener('mouseup', onMouseUp);
+    };
+  }, [isDragging, handleDragEnd]);
+
   if (!isOpen) return null;
 
   const parsed = nomadAddr ? parseNomadAddr(nomadAddr) : null;
@@ -122,10 +244,18 @@ export const MoreMenuSheet: React.FC<MoreMenuSheetProps> = ({
   const isCurrent = (path: string) => location.pathname === path || location.pathname.startsWith(`${path}/`);
 
   return (
-    <div className="fixed inset-0 z-50 sm:hidden flex flex-col justify-end" role="dialog" aria-modal="true">
+    <div
+      className="fixed inset-0 z-50 sm:hidden flex flex-col justify-end"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="more-menu-title"
+    >
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-black/60 backdrop-blur-xs transition-opacity animate-in fade-in"
+        className="fixed inset-0 bg-black/50 backdrop-blur-xs transition-opacity duration-200"
+        style={{
+          opacity: dragOffset > 0 ? Math.max(0, 1 - dragOffset / 350) : 1,
+        }}
         onClick={onClose}
         aria-hidden="true"
       />
@@ -133,17 +263,41 @@ export const MoreMenuSheet: React.FC<MoreMenuSheetProps> = ({
       {/* Sheet Container */}
       <div
         ref={sheetRef}
-        className="relative z-10 w-full max-h-[85vh] bg-white dark:bg-monokai-bg rounded-t-3xl shadow-2xl border-t border-gray-200 dark:border-monokai-surface flex flex-col overflow-hidden pb-safe animate-in slide-in-from-bottom duration-300"
+        className="relative z-10 w-full max-h-[85vh] bg-white/95 dark:bg-monokai-bg/95 backdrop-blur-xl rounded-t-[28px] shadow-2xl border-t border-gray-200/80 dark:border-monokai-surface/80 flex flex-col overflow-hidden pb-safe pl-safe pr-safe animate-in slide-in-from-bottom duration-300"
+        style={{
+          transform: `translate3d(0, ${Math.max(0, dragOffset)}px, 0)`,
+          transition: isDragging ? 'none' : 'transform 0.28s cubic-bezier(0.32, 0.72, 0, 1)',
+          paddingBottom: 'calc(env(safe-area-inset-bottom, 0px) + 1.25rem)',
+          paddingLeft: 'env(safe-area-inset-left, 0px)',
+          paddingRight: 'env(safe-area-inset-right, 0px)',
+        }}
       >
-        {/* Drag Handle */}
-        <div className="pt-3 pb-2 flex justify-center cursor-grab active:cursor-grabbing" onClick={onClose}>
-          <div className="w-12 h-1.5 rounded-full bg-gray-300 dark:bg-monokai-surface" />
+        {/* Apple HIG Drag Handle / Grabber */}
+        <div
+          data-testid="sheet-drag-handle"
+          className="pt-3 pb-2 flex justify-center items-center cursor-grab active:cursor-grabbing touch-none select-none"
+          onTouchStart={handleDragStart}
+          onTouchMove={handleDragMove}
+          onTouchEnd={handleDragEnd}
+          onTouchCancel={handleDragEnd}
+          onMouseDown={handleDragStart}
+        >
+          <div className="w-9 h-1.25 rounded-full bg-gray-300 dark:bg-monokai-surface" />
         </div>
 
         {/* Header */}
-        <div className="flex items-center justify-between px-5 pb-3 border-b border-gray-100 dark:border-monokai-surface">
+        <div
+          className="flex items-center justify-between px-5 pb-3 border-b border-gray-100 dark:border-monokai-surface touch-none select-none"
+          onTouchStart={handleDragStart}
+          onTouchMove={handleDragMove}
+          onTouchEnd={handleDragEnd}
+          onTouchCancel={handleDragEnd}
+          onMouseDown={handleDragStart}
+        >
           <div>
-            <h2 className="text-lg font-bold text-gray-900 dark:text-monokai-text">Cluster & Menu</h2>
+            <h2 id="more-menu-title" className="text-[17px] font-semibold text-gray-900 dark:text-monokai-text tracking-tight">
+              Cluster & Menu
+            </h2>
             {parsed && (
               <div className="flex items-center gap-1.5 mt-0.5 text-xs text-gray-500 dark:text-monokai-muted">
                 {parsed.isSecure ? (
@@ -160,14 +314,21 @@ export const MoreMenuSheet: React.FC<MoreMenuSheetProps> = ({
             type="button"
             onClick={onClose}
             aria-label="Close menu"
-            className="p-2 rounded-full text-gray-400 hover:text-gray-600 hover:bg-gray-100 dark:text-monokai-muted dark:hover:text-monokai-text dark:hover:bg-monokai-surface transition-colors"
+            className="p-1.5 rounded-full bg-gray-100 hover:bg-gray-200 dark:bg-monokai-surface text-gray-500 hover:text-gray-700 dark:text-monokai-muted dark:hover:text-monokai-text transition-colors"
           >
-            <X className="w-5 h-5" />
+            <X className="w-4 h-4" />
           </button>
         </div>
 
         {/* Scrollable Content */}
-        <div className="overflow-y-auto px-4 py-3 space-y-4">
+        <div
+          ref={contentRef}
+          className="overflow-y-auto px-4 py-3 space-y-4"
+          onTouchStart={handleContentTouchStart}
+          onTouchMove={handleContentTouchMove}
+          onTouchEnd={handleContentTouchEnd}
+          onTouchCancel={handleContentTouchEnd}
+        >
           {/* Section: Cluster Resources */}
           <div>
             <div className="px-2 mb-1.5 text-xs font-semibold uppercase tracking-wider text-gray-400 dark:text-monokai-muted">

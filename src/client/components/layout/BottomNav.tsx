@@ -53,9 +53,14 @@ export const BottomNav: React.FC<BottomNavProps> = ({ onOpenMore, isMoreOpen = f
   return (
     <nav
       aria-label="Mobile Navigation Bar"
-      className="fixed bottom-0 left-0 right-0 z-40 sm:hidden bg-white/95 dark:bg-monokai-bg/95 backdrop-blur-md border-t border-gray-200 dark:border-monokai-surface pb-safe"
+      className="fixed bottom-0 left-0 right-0 z-40 sm:hidden bg-white/85 dark:bg-monokai-bg/85 backdrop-blur-xl border-t border-gray-200/80 dark:border-monokai-surface/80 pb-safe pl-safe pr-safe"
+      style={{
+        paddingBottom: 'env(safe-area-inset-bottom, 0px)',
+        paddingLeft: 'env(safe-area-inset-left, 0px)',
+        paddingRight: 'env(safe-area-inset-right, 0px)',
+      }}
     >
-      <div className="grid grid-cols-5 h-16 max-w-md mx-auto">
+      <div className="grid grid-cols-5 h-[50px] max-w-md mx-auto">
         {navTabs.map((tab) => {
           const Icon = tab.icon;
           const active = !isMoreOpen && tab.isActive(pathname);
@@ -64,19 +69,14 @@ export const BottomNav: React.FC<BottomNavProps> = ({ onOpenMore, isMoreOpen = f
             <Link
               key={tab.id}
               to={tab.path}
-              className={`flex flex-col items-center justify-center py-1 transition-transform active:scale-90 ${
+              className={`flex flex-col items-center justify-center py-1 select-none active:opacity-60 transition-opacity ${
                 active
-                  ? 'text-blue-600 dark:text-monokai-blue font-semibold'
-                  : 'text-gray-500 dark:text-monokai-muted hover:text-gray-900 dark:hover:text-monokai-text'
+                  ? 'text-blue-600 dark:text-monokai-blue font-medium'
+                  : 'text-[#8E8E93] dark:text-[#98989D] hover:text-gray-900 dark:hover:text-monokai-text'
               }`}
             >
-              <div className="relative">
-                <Icon className={`w-5 h-5 transition-transform ${active ? 'scale-110' : ''}`} />
-                {active && (
-                  <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-blue-600 dark:bg-monokai-blue" />
-                )}
-              </div>
-              <span className="text-[11px] mt-1 tracking-tight">{tab.label}</span>
+              <Icon className={`w-5 h-5 ${active ? 'stroke-[2.2]' : 'stroke-[1.75]'}`} />
+              <span className="text-[10px] leading-tight mt-1 tracking-tight">{tab.label}</span>
             </Link>
           );
         })}
@@ -87,19 +87,14 @@ export const BottomNav: React.FC<BottomNavProps> = ({ onOpenMore, isMoreOpen = f
           onClick={onOpenMore}
           aria-expanded={isMoreOpen}
           aria-label="Open More Menu"
-          className={`flex flex-col items-center justify-center py-1 transition-transform active:scale-90 ${
+          className={`flex flex-col items-center justify-center py-1 select-none active:opacity-60 transition-opacity ${
             isMoreOpen
-              ? 'text-blue-600 dark:text-monokai-blue font-semibold'
-              : 'text-gray-500 dark:text-monokai-muted hover:text-gray-900 dark:hover:text-monokai-text'
+              ? 'text-blue-600 dark:text-monokai-blue font-medium'
+              : 'text-[#8E8E93] dark:text-[#98989D] hover:text-gray-900 dark:hover:text-monokai-text'
           }`}
         >
-          <div className="relative">
-            <Menu className={`w-5 h-5 transition-transform ${isMoreOpen ? 'scale-110' : ''}`} />
-            {isMoreOpen && (
-              <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-blue-600 dark:bg-monokai-blue" />
-            )}
-          </div>
-          <span className="text-[11px] mt-1 tracking-tight">More</span>
+          <Menu className={`w-5 h-5 ${isMoreOpen ? 'stroke-[2.2]' : 'stroke-[1.75]'}`} />
+          <span className="text-[10px] leading-tight mt-1 tracking-tight">More</span>
         </button>
       </div>
     </nav>
