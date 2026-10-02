@@ -90,3 +90,20 @@ deletes namespaces.
 
 The ACL page manages policies (with a visual or an HCL editor), roles and
 tokens.
+
+## Mobile & Progressive Web App (PWA)
+
+ovoo is designed mobile-first and can be installed as a Progressive Web App:
+
+- **Installation**: Tap the **Install** banner on Chromium/Android browsers, or
+  use **Share** → **Add to Home Screen** on iOS Safari. Once installed, ovoo
+  runs in full-screen standalone mode without browser chrome.
+- **Mobile navigation**: Quickly navigate between Dashboard, Jobs, Topology,
+  and Activity via the fixed bottom navigation bar. Additional links and settings
+  are accessed through the "More" bottom sheet.
+- **Adaptive card views**: Data tables automatically switch to touch-optimized
+  cards on smaller viewports, with swipeable tab bars and floating action buttons.
+- **Mobile remote terminal**: The web terminal provides an accessory bar with
+  common mobile keys (`ESC`, `TAB`, `Ctrl+C`, `Ctrl+D`, arrows, and clear) and
+  dynamically responds to the virtual keyboard viewport.
+

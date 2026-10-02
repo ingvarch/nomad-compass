@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Outlet, useNavigate } from 'react-router-dom';
+import { Outlet, useNavigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useAclPermissions } from '../../hooks/useAclPermissions';
 import { LoadingSpinner } from '../ui';
@@ -7,14 +7,18 @@ import DashboardNav from './DashboardNav';
 import MobileHeader from './MobileHeader';
 import BottomNav from './BottomNav';
 import MoreMenuSheet from './MoreMenuSheet';
+import PwaInstallPrompt from '../pwa/PwaInstallPrompt';
 
 const ProtectedLayout: React.FC = () => {
   const { isAuthenticated, isLoading, logout } = useAuth();
   const { hasManagementAccess } = useAclPermissions();
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [isMoreOpen, setIsMoreOpen] = useState(false);
   const [nomadAddr, setNomadAddr] = useState<string | null>(null);
+
+  const isExecRoute = location.pathname.startsWith('/exec/');
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
@@ -45,16 +49,24 @@ const ProtectedLayout: React.FC = () => {
       {/* Mobile Top App Bar */}
       <MobileHeader />
 
-      {/* Main Content Area */}
-      <main className="max-w-7xl mx-auto pt-[calc(env(safe-area-inset-top)+4.25rem)] sm:pt-6 pb-[calc(env(safe-area-inset-bottom)+5rem)] sm:pb-8 px-4 sm:px-6 lg:px-8">
+      {/* Main Content Area (reduced bottom padding on exec routes to maximize terminal space) */}
+      <main
+        className={`max-w-7xl mx-auto pt-[calc(env(safe-area-inset-top)+4.25rem)] sm:pt-6 ${
+          isExecRoute
+            ? 'pb-[calc(env(safe-area-inset-bottom)+1rem)] sm:pb-8'
+            : 'pb-[calc(env(safe-area-inset-bottom)+5rem)] sm:pb-8'
+        } px-4 sm:px-6 lg:px-8`}
+      >
         <Outlet />
       </main>
 
-      {/* Mobile Bottom Navigation Bar */}
-      <BottomNav
-        onOpenMore={() => setIsMoreOpen(true)}
-        isMoreOpen={isMoreOpen}
-      />
+      {/* Mobile Bottom Navigation Bar (hidden on exec terminal to avoid keyboard overlap) */}
+      {!isExecRoute && (
+        <BottomNav
+          onOpenMore={() => setIsMoreOpen(true)}
+          isMoreOpen={isMoreOpen}
+        />
+      )}
 
       {/* Mobile More Menu Sheet */}
       <MoreMenuSheet
@@ -64,6 +76,9 @@ const ProtectedLayout: React.FC = () => {
         onLogout={logout}
         hasManagementAccess={hasManagementAccess}
       />
+
+      {/* PWA Install & Update Prompts */}
+      <PwaInstallPrompt />
     </div>
   );
 };

@@ -35,6 +35,9 @@ Formerly Nomad Compass.
   topology.
 - Manages ACL policies (visual or HCL editor), roles and tokens, and creates
   and deletes namespaces.
+- Works on mobile as an installable Progressive Web App (PWA) with a bottom
+  navigation bar, touch-friendly card views, floating actions, offline app shell
+  caching, and virtual terminal keys.
 - Has light, dark and system themes.
 
 ![Remote exec in the browser](docs/images/exec.png)
