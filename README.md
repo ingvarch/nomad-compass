@@ -37,6 +37,8 @@ Formerly Nomad Compass.
   and deletes namespaces.
 - Manages encrypted Nomad variables and secrets with masked value inspection,
   search, and form/JSON editors.
+- Manages Node Pools and scheduler algorithms (spread vs binpack) across cluster
+  nodes.
 - Works on mobile as an installable Progressive Web App (PWA) with a bottom
   navigation bar, touch-friendly card views, floating actions, offline app shell
   caching, and virtual terminal keys.
@@ -73,8 +75,8 @@ output of `openssl rand -hex 32`. Then run `bun run dev`, open
 ## Documentation
 
 - [Usage](docs/usage.md): signing in, dashboard, jobs, logs, remote exec,
-  allocations, topology, nodes, servers, activity, namespaces, variables &
-  secrets, ACL, and mobile PWA.
+  allocations, topology, nodes, node pools, servers, activity, namespaces,
+  variables & secrets, ACL, and mobile PWA.
 - [Configuration](docs/configuration.md): environment variables, the ticket
   secret and local `.dev.vars`.
 - [Deployment](docs/deployment.md): Cloudflare Workers, Docker, Compose,

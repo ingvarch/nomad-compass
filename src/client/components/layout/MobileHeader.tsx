@@ -45,6 +45,9 @@ function getRouteMeta(pathname: string): RouteMeta {
   if (pathname === '/variables') {
     return { title: 'Variables', backTo: '/dashboard' };
   }
+  if (pathname === '/node-pools') {
+    return { title: 'Node Pools', backTo: '/dashboard' };
+  }
   if (pathname === '/activity') {
     return { title: 'Activity' };
   }

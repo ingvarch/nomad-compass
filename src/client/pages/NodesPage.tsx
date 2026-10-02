@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { createNomadClient } from '../lib/api/nomad';
 import type { NomadNode } from '../types/nomad';
 import {
@@ -7,13 +7,14 @@ import {
   ErrorAlert,
   PageHeader,
   RefreshButton,
+  Button,
   FilterButtons,
   BackLink,
   DataTable,
   Badge,
   type Column,
 } from '../components/ui';
-import { ChevronRight } from 'lucide-react';
+import { ChevronRight, Layers } from 'lucide-react';
 import { getNodeStatusColor, getStatusClasses } from '../lib/utils/statusColors';
 import { useFetch } from '../hooks/useFetch';
 import { useFilteredData } from '../hooks/useFilteredData';
@@ -102,6 +103,19 @@ export default function NodesPage() {
       ),
     },
     {
+      key: 'nodePool',
+      header: 'Node Pool',
+      render: (node) => {
+        const pool = node.NodePool || 'default';
+        const isDefault = pool.toLowerCase() === 'default';
+        return (
+          <Badge variant={isDefault ? 'gray' : 'purple'} size="sm">
+            {pool}
+          </Badge>
+        );
+      },
+    },
+    {
       key: 'resources',
       header: 'Resources',
       render: (node) => (
@@ -137,7 +151,16 @@ export default function NodesPage() {
       <PageHeader
         title="Nodes"
         description="View and manage cluster nodes"
-        actions={<RefreshButton onClick={refetch} />}
+        actions={
+          <div className="flex items-center gap-2">
+            <RefreshButton onClick={refetch} />
+            <Link to="/node-pools">
+              <Button variant="secondary" size="sm">
+                <Layers className="w-4 h-4 mr-1.5" /> Node Pools
+              </Button>
+            </Link>
+          </div>
+        }
       />
 
       {error && <ErrorAlert message={error} />}
@@ -177,6 +200,9 @@ export default function NodesPage() {
 
               <div className="flex items-center gap-2 pt-1 border-t border-gray-100 dark:border-gray-800 text-xs text-gray-500 dark:text-gray-400 flex-wrap">
                 <Badge variant="blue">{node.Datacenter || '-'}</Badge>
+                <Badge variant={node.NodePool && node.NodePool !== 'default' ? 'purple' : 'gray'}>
+                  {node.NodePool || 'default'}
+                </Badge>
                 {node.NodeResources && (
                   <span>{formatResources(node.NodeResources.Cpu.CpuShares, node.NodeResources.Memory.MemoryMB)}</span>
                 )}

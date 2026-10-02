@@ -33,6 +33,7 @@ const navItems: NavItem[] = [
   { path: '/dashboard', label: 'Dashboard' },
   { path: '/jobs', label: 'Jobs' },
   { path: '/topology', label: 'Topology' },
+  { path: '/node-pools', label: 'Node Pools' },
   { path: '/servers', label: 'Servers' },
   { path: '/namespaces', label: 'Namespaces' },
   { path: '/variables', label: 'Variables' },

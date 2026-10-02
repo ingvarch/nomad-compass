@@ -90,6 +90,9 @@ export default function NodeDetailPage() {
               <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${eligibilityColors.bg} ${eligibilityColors.text}`}>
                 {node.SchedulingEligibility}
               </span>
+              <Badge variant={node.NodePool && node.NodePool !== 'default' ? 'purple' : 'gray'}>
+                pool: {node.NodePool || 'default'}
+              </Badge>
               {node.Drain && (
                 <Badge variant="red">draining</Badge>
               )}

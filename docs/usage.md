@@ -145,6 +145,22 @@ The Nodes page (`/nodes`) and node detail pages provide node administration:
 - **Resource breakdown**: inspect allocated vs. total CPU, memory, and disk
   capacity for individual nodes.
 
+## Node pools
+
+Node pools (Nomad 1.6+ and 2.0+) partition client nodes into distinct
+scheduling pools for targeted workloads:
+
+- **Pool administration**: the Node Pools page (`/node-pools`) lists all
+  configured pools with their scheduler algorithm (`spread` or `binpack`),
+  metadata tags, and assigned node counts.
+- **Create and edit pools**: create custom node pools specifying the name,
+  description, placement algorithm (`spread` to distribute allocations across
+  nodes or `binpack` to pack densely), and custom metadata key/value pairs.
+- **Inspect pool nodes**: view detailed pool configuration and the list of
+  client nodes currently running in each pool with their status and resources.
+- **Node integration**: the Nodes page (`/nodes`) displays the node pool badge
+  for each node and allows direct navigation to Node Pools management.
+
 ## Servers & Raft consensus
 
 The Servers page (`/servers`) monitors the Nomad control plane:
