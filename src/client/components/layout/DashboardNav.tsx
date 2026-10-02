@@ -38,7 +38,11 @@ const navItems: NavItem[] = [
   { path: '/acl', label: 'ACL', requiresManagement: true },
 ];
 
-const DashboardNav: React.FC = () => {
+interface DashboardNavProps {
+  className?: string;
+}
+
+const DashboardNav: React.FC<DashboardNavProps> = ({ className = '' }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [nomadAddr, setNomadAddr] = useState<string | null>(null);
   const location = useLocation();
@@ -62,7 +66,7 @@ const DashboardNav: React.FC = () => {
   );
 
   return (
-    <nav className="bg-white dark:bg-monokai-bg shadow-sm border-b border-gray-200 dark:border-monokai-surface">
+    <nav className={`bg-white dark:bg-monokai-bg shadow-sm border-b border-gray-200 dark:border-monokai-surface ${className}`}>
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
           <div className="flex">

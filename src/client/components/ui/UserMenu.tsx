@@ -1,16 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
 import { Menu, ChevronDown, Lock, LockOpen, Sun, Moon, LogOut } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
+import { parseNomadAddr } from '../../lib/utils/nomadAddr';
 
 interface UserMenuProps {
   nomadAddr: string | null;
   onLogout: () => void;
-}
-
-function parseNomadAddr(addr: string): { isSecure: boolean; displayAddr: string } {
-  const isSecure = addr.startsWith('https://');
-  const displayAddr = addr.replace(/^https?:\/\//, '');
-  return { isSecure, displayAddr };
 }
 
 export function UserMenu({ nomadAddr, onLogout }: UserMenuProps) {
