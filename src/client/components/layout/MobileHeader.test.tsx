@@ -15,6 +15,8 @@ describe('MobileHeader', () => {
     );
 
     expect(screen.getByText('ovoo')).toBeTruthy();
+    const logoImgs = screen.getAllByAltText('ovoo');
+    expect(logoImgs.length).toBeGreaterThanOrEqual(1);
     expect(screen.getByRole('link', { name: /create job/i })).toBeTruthy();
   });
 

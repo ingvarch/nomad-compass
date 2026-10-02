@@ -72,9 +72,11 @@ const DashboardNav: React.FC<DashboardNavProps> = ({ className = '' }) => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
           <div className="flex">
-            <div className="flex-shrink-0 flex items-center">
+            <Link to="/dashboard" className="flex-shrink-0 flex items-center gap-2">
+              <img src="/ovoo.svg" alt="ovoo" className="w-7 h-7 dark:hidden" />
+              <img src="/ovoo-dark.svg" alt="ovoo" className="w-7 h-7 hidden dark:block" />
               <span className="text-blue-600 dark:text-monokai-blue font-bold text-xl">ovoo</span>
-            </div>
+            </Link>
             <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
               {visibleNavItems.map(item => (
                 <Link

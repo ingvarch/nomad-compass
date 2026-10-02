@@ -67,9 +67,14 @@ export const PwaInstallPrompt: React.FC = () => {
           <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-3 min-w-0">
               <img
-                src="/icons/icon-192.png"
+                src="/ovoo.svg"
                 alt="ovoo logo"
-                className="w-10 h-10 rounded-xl shrink-0 shadow-xs object-cover"
+                className="w-10 h-10 rounded-xl shrink-0 shadow-xs object-cover dark:hidden"
+              />
+              <img
+                src="/ovoo-dark.svg"
+                alt="ovoo logo"
+                className="w-10 h-10 rounded-xl shrink-0 shadow-xs object-cover hidden dark:block"
               />
               <div className="min-w-0">
                 <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">

@@ -103,7 +103,8 @@ export const MobileHeader: React.FC = () => {
             </button>
           ) : (
             <Link to="/dashboard" className="flex items-center gap-2 active:opacity-70 transition-opacity">
-              <img src="/icons/icon-192.png" alt="ovoo" className="w-7 h-7 rounded-md shadow-xs" />
+              <img src="/ovoo.svg" alt="ovoo" className="w-7 h-7 dark:hidden" />
+              <img src="/ovoo-dark.svg" alt="ovoo" className="w-7 h-7 hidden dark:block" />
               <span className="font-bold text-lg text-blue-600 dark:text-monokai-blue tracking-tight">ovoo</span>
             </Link>
           )}
