@@ -47,7 +47,14 @@
   --background-end-rgb: 39, 40, 34;
 }
 
+html {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+  height: 100%;
+}
+
 body {
+  min-height: 100%;
   color: rgb(var(--foreground-rgb));
   background: linear-gradient(
       to bottom,
@@ -60,3 +67,36 @@ body {
 .dark body {
   background: #272822;
 }
+
+/* Prevent auto-zoom on iOS when focusing inputs */
+@media (max-width: 640px) {
+  input,
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}
+
+/* Mobile & PWA Utility classes */
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+.pt-safe {
+  padding-top: env(safe-area-inset-top, 0px);
+}
+
+.h-safe-screen {
+  height: 100vh;
+  height: 100dvh;
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+

@@ -1,0 +1,54 @@
+{
+  "name": "ovoo — Nomad Web UI",
+  "short_name": "ovoo",
+  "description": "A web UI for HashiCorp Nomad",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#272822",
+  "theme_color": "#272822",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-maskable-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable"
+    },
+    {
+      "src": "/icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Dashboard",
+      "url": "/dashboard",
+      "description": "Cluster overview and health"
+    },
+    {
+      "name": "Jobs",
+      "url": "/jobs",
+      "description": "View and manage Nomad jobs"
+    },
+    {
+      "name": "Create Job",
+      "url": "/jobs/create",
+      "description": "Create a new Nomad job"
+    }
+  ]
+}
