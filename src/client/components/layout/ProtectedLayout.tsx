@@ -51,11 +51,15 @@ const ProtectedLayout: React.FC = () => {
 
       {/* Main Content Area (reduced bottom padding on exec routes to maximize terminal space) */}
       <main
-        className={`max-w-7xl mx-auto pt-[calc(env(safe-area-inset-top)+4.25rem)] sm:pt-6 ${
+        className={`max-w-7xl mx-auto pt-[calc(env(safe-area-inset-top,0px)+4.25rem)] sm:pt-6 ${
           isExecRoute
-            ? 'pb-[calc(env(safe-area-inset-bottom)+1rem)] sm:pb-8'
-            : 'pb-[calc(env(safe-area-inset-bottom)+5rem)] sm:pb-8'
+            ? 'pb-[calc(env(safe-area-inset-bottom,0px)+1rem)] sm:pb-8'
+            : 'pb-[calc(env(safe-area-inset-bottom,0px)+4.5rem)] sm:pb-8'
         } px-4 sm:px-6 lg:px-8`}
+        style={{
+          paddingLeft: 'max(1rem, env(safe-area-inset-left, 0px))',
+          paddingRight: 'max(1rem, env(safe-area-inset-right, 0px))',
+        }}
       >
         <Outlet />
       </main>

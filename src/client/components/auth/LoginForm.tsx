@@ -55,8 +55,14 @@ const LoginForm: React.FC = () => {
   }
 
   return (
-      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-monokai-bg relative">
-        <div className="absolute top-4 right-4">
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-monokai-bg relative px-4">
+        <div
+          className="absolute"
+          style={{
+            top: 'calc(env(safe-area-inset-top, 0px) + 1rem)',
+            right: 'calc(env(safe-area-inset-right, 0px) + 1rem)',
+          }}
+        >
           <ThemeToggle />
         </div>
         <div className="max-w-md w-full p-6 bg-white dark:bg-monokai-surface rounded-lg shadow-md">
