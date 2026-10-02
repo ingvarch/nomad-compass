@@ -456,3 +456,52 @@ describe('JobDetailPage deployment', () => {
     });
   });
 });
+
+describe('JobDetailPage task group scaling', () => {
+  const serviceWithGroup = {
+    ...service,
+    TaskGroups: [
+      {
+        Name: 'web-group',
+        Count: 3,
+        Tasks: [{ Name: 'server', Driver: 'docker' }],
+      },
+    ],
+  };
+
+  test('opens scale dialog and scales task group', async () => {
+    let scaledCount = 0;
+    mockFetch((call) => {
+      if (call.url.startsWith('/api/auth/validate')) return { body: { authenticated: true } };
+      if (call.url.startsWith('/api/nomad/v1/job/web/deployment')) return { body: null };
+      if (call.url.startsWith('/api/nomad/v1/job/web?')) return { body: serviceWithGroup };
+      if (call.url.startsWith('/api/nomad/v1/job/web/allocations')) return { body: [] };
+      if (call.url.startsWith('/api/nomad/v1/job/web/versions')) return { body: { Versions: [] } };
+      if (call.url.startsWith('/api/nomad/v1/job/web/scale')) {
+        scaledCount = (call.body as { Count: number }).Count;
+        return { body: { EvalID: 'eval-scaled', JobModifyIndex: 10 } };
+      }
+      return undefined;
+    });
+
+    renderPage('/jobs/web?namespace=default');
+
+    expect(await screen.findByText('Task Group: web-group')).toBeTruthy();
+    const scaleBtn = screen.getByRole('button', { name: 'Scale' });
+    expect(scaleBtn).toBeTruthy();
+
+    // Click Scale to open modal
+    fireEvent.click(scaleBtn);
+    expect(await screen.findByText('Scale Task Group: web-group')).toBeTruthy();
+    expect(screen.getByText('3 allocations')).toBeTruthy();
+
+    // Increment count using Increase count button (+1 -> 4)
+    fireEvent.click(screen.getByRole('button', { name: 'Increase count' }));
+    const submitBtn = screen.getByRole('button', { name: 'Scale to 4' });
+    fireEvent.click(submitBtn);
+
+    await waitFor(() => {
+      expect(scaledCount).toBe(4);
+    });
+  });
+});

@@ -19,6 +19,7 @@ import {
   PeriodicActions,
   LaunchesTab,
   DeploymentCard,
+  ScaleTaskGroupModal,
 } from '../components/jobs/detail';
 import JobActions from '../components/jobs/JobActions';
 import PermissionErrorModal from '../components/ui/PermissionErrorModal';
@@ -37,6 +38,7 @@ export default function JobDetailPage() {
   const [allocations, setAllocations] = useState<NomadAllocation[]>([]);
   const [deployment, setDeployment] = useState<NomadDeployment | null>(null);
   const [isDeploymentBusy, setIsDeploymentBusy] = useState(false);
+  const [scalingGroup, setScalingGroup] = useState<NomadTaskGroup | null>(null);
   const [serviceRegistrations, setServiceRegistrations] = useState<NomadServiceRegistration[]>([]);
   const [createTime, setCreateTime] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -247,6 +249,23 @@ export default function JobDetailPage() {
     }
   };
 
+  const canScaleJob = Boolean(
+    job &&
+    job.Type !== 'system' &&
+    job.Type !== 'sysbatch'
+  );
+
+  const handleScaleGroup = async (groupName: string, count: number, message?: string) => {
+    const client = createNomadClient();
+    await client.scaleJobTaskGroup(jobId, groupName, count, {
+      namespace,
+      message,
+      jobModifyIndex: job?.JobModifyIndex,
+    });
+    addToast(`Task group "${groupName}" scaled to ${count}`, 'success');
+    await refreshJob();
+  };
+
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -329,6 +348,7 @@ export default function JobDetailPage() {
           onToggleTask={toggleTaskDetails}
           // A periodic job has no logs of its own: they are on its launches
           onViewLogs={isPeriodic ? undefined : handleViewLogs}
+          onScaleGroup={canScaleJob ? setScalingGroup : undefined}
           schedule={
             job.Periodic && (
               <ScheduleCard
@@ -399,6 +419,16 @@ export default function JobDetailPage() {
           Back
         </button>
       </div>
+
+      {/* Scale Task Group Modal */}
+      {scalingGroup && (
+        <ScaleTaskGroupModal
+          isOpen={Boolean(scalingGroup)}
+          onClose={() => setScalingGroup(null)}
+          taskGroup={scalingGroup}
+          onScale={handleScaleGroup}
+        />
+      )}
     </div>
   );
 }

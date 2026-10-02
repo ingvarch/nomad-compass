@@ -57,6 +57,13 @@ The dashboard provides a bird's-eye view of your Nomad cluster:
    - **Fail**: manually fail a deployment to trigger auto-revert if configured.
    - Allocations associated with canaries display a distinct purple `canary` badge on
      the Allocations page.
+8. **Task group scaling**: click the **Scale** button on any non-system task group card
+   in the Overview tab to open the Quick Scale dialog:
+   - Adjust desired allocation count with `+` and `-` stepper buttons or direct numeric input.
+   - Use quick delta buttons (`-5`, `-1`, `+1`, `+5`) and presets (`Stop All (0)` or `Reset`).
+   - Displays real-time change impact (scale up vs scale down allocations, and scale-to-zero warning).
+   - Enter an optional message/reason persisted in Nomad's scaling events.
+   - Nomad adjusts running allocations dynamically without registering a full job specification modification.
 
 ## Periodic jobs
 
