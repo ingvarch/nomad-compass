@@ -1,5 +1,5 @@
 // src/lib/api/nomad.ts
-import {
+import type {
   NomadJobsResponse,
   NomadJobListStub,
   ApiError,
@@ -38,7 +38,11 @@ import {
   NomadNodePool,
   NomadNodePoolInput,
 } from '../../types/nodepools';
-import { PermissionError } from '../errors';
+import {
+  NomadDeployment,
+  NomadDeploymentPromoteRequest,
+} from '../../types/deployment';
+import { PermissionError, isApiError } from '../errors';
 import { DEFAULT_NAMESPACE } from '../constants';
 import { periodicLaunchPrefix } from '../services/periodicService';
 
@@ -748,6 +752,86 @@ export class NomadClient {
    */
   async getNodePoolNodes(name: string): Promise<NomadNode[]> {
     return this.request<NomadNode[]>(`/v1/node/pool/${encodeURIComponent(name)}/nodes`);
+  }
+
+  // ==================== Deployments & Canaries ====================
+
+  /**
+   * Get the latest deployment for a job, or null if no deployment exists
+   */
+  async getJobDeployment(jobId: string, namespace?: string): Promise<NomadDeployment | null> {
+    try {
+      const params = namespace ? { namespace } : undefined;
+      const res = await this.request<NomadDeployment>(
+        `/v1/job/${encodeURIComponent(jobId)}/deployment`,
+        { params }
+      );
+      if (!res || !res.ID) {
+        return null;
+      }
+      return res;
+    } catch (err: unknown) {
+      if (
+        (isApiError(err) && (err.statusCode === 404 || err.message?.toLowerCase().includes('not found'))) ||
+        (err instanceof Error && err.message?.toLowerCase().includes('not found'))
+      ) {
+        return null;
+      }
+      throw err;
+    }
+  }
+
+  /**
+   * List all deployments
+   */
+  async getDeployments(namespace?: string): Promise<NomadDeployment[]> {
+    const params = namespace ? { namespace } : undefined;
+    return this.request<NomadDeployment[]>('/v1/deployments', { params });
+  }
+
+  /**
+   * Get a single deployment by ID
+   */
+  async getDeployment(id: string): Promise<NomadDeployment> {
+    return this.request<NomadDeployment>(`/v1/deployment/${encodeURIComponent(id)}`);
+  }
+
+  /**
+   * Promote canaries for a deployment
+   */
+  async promoteDeployment(
+    deploymentId: string,
+    options?: { all?: boolean; groups?: string[] }
+  ): Promise<void> {
+    const body: NomadDeploymentPromoteRequest = {
+      DeploymentID: deploymentId,
+      All: options?.all ?? true,
+      Groups: options?.groups,
+    };
+    await this.request<void>(`/v1/deployment/promote/${encodeURIComponent(deploymentId)}`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    });
+  }
+
+  /**
+   * Manually fail a deployment
+   */
+  async failDeployment(deploymentId: string): Promise<void> {
+    await this.request<void>(`/v1/deployment/fail/${encodeURIComponent(deploymentId)}`, {
+      method: 'POST',
+      body: JSON.stringify({ DeploymentID: deploymentId }),
+    });
+  }
+
+  /**
+   * Pause or resume a deployment
+   */
+  async pauseDeployment(deploymentId: string, pause: boolean): Promise<void> {
+    await this.request<void>(`/v1/deployment/pause/${encodeURIComponent(deploymentId)}`, {
+      method: 'POST',
+      body: JSON.stringify({ DeploymentID: deploymentId, Pause: pause }),
+    });
   }
 }
 

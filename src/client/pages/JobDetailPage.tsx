@@ -18,12 +18,14 @@ import {
   ScheduleCard,
   PeriodicActions,
   LaunchesTab,
+  DeploymentCard,
 } from '../components/jobs/detail';
 import JobActions from '../components/jobs/JobActions';
 import PermissionErrorModal from '../components/ui/PermissionErrorModal';
 import { usePeriodicActions, usePeriodicLaunches } from '../hooks';
 import { scheduleState } from '../lib/services/periodicService';
 import type { NomadAllocation, NomadServiceRegistration, NomadJob, NomadTaskGroup } from '../types/nomad';
+import type { NomadDeployment } from '../types/deployment';
 
 export default function JobDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -33,6 +35,8 @@ export default function JobDetailPage() {
   const { addToast } = useToast();
   const [job, setJob] = useState<NomadJob | null>(null);
   const [allocations, setAllocations] = useState<NomadAllocation[]>([]);
+  const [deployment, setDeployment] = useState<NomadDeployment | null>(null);
+  const [isDeploymentBusy, setIsDeploymentBusy] = useState(false);
   const [serviceRegistrations, setServiceRegistrations] = useState<NomadServiceRegistration[]>([]);
   const [createTime, setCreateTime] = useState<number | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -55,14 +59,16 @@ export default function JobDetailPage() {
     if (isFirstLoad) setIsLoading(true);
     try {
       const client = createNomadClient();
-      // Fetch job, allocations, and versions in parallel
-      const [jobDetail, jobAllocations, jobVersions] = await Promise.all([
+      // Fetch job, allocations, versions, and deployment in parallel
+      const [jobDetail, jobAllocations, jobVersions, jobDeployment] = await Promise.all([
         client.getJob(jobId, namespace),
         client.getJobAllocations(jobId, namespace),
         client.getJobVersions(jobId, namespace),
+        client.getJobDeployment(jobId, namespace).catch(() => null),
       ]);
       setJob(jobDetail);
       setAllocations(jobAllocations || []);
+      setDeployment(jobDeployment);
 
       // Get creation time from the oldest available version
       if (jobVersions?.Versions?.length > 0) {
@@ -172,6 +178,75 @@ export default function JobDetailPage() {
     setSearchParams(newParams);
   };
 
+  const isDeploymentActive = deployment?.Status === 'running' || deployment?.Status === 'paused';
+
+  // Poll deployment when active
+  useEffect(() => {
+    if (!job || !isDeploymentActive) {
+      return;
+    }
+    const interval = setInterval(async () => {
+      try {
+        const client = createNomadClient();
+        const updated = await client.getJobDeployment(jobId, namespace);
+        setDeployment(updated);
+      } catch {
+        // ignore polling errors
+      }
+    }, 4000);
+    return () => clearInterval(interval);
+  }, [job, isDeploymentActive, jobId, namespace]);
+
+  const handlePromoteDeployment = async (options?: { all?: boolean; groups?: string[] }) => {
+    if (!deployment) return;
+    const client = createNomadClient();
+    try {
+      setIsDeploymentBusy(true);
+      await client.promoteDeployment(deployment.ID, options);
+      addToast('Canary deployment promoted successfully', 'success');
+      const updated = await client.getJobDeployment(jobId, namespace);
+      setDeployment(updated);
+      refreshJob();
+    } catch (err) {
+      addToast(getErrorMessage(err), 'error');
+    } finally {
+      setIsDeploymentBusy(false);
+    }
+  };
+
+  const handlePauseDeployment = async (pause: boolean) => {
+    if (!deployment) return;
+    const client = createNomadClient();
+    try {
+      setIsDeploymentBusy(true);
+      await client.pauseDeployment(deployment.ID, pause);
+      addToast(pause ? 'Deployment rollout paused' : 'Deployment rollout resumed', 'info');
+      const updated = await client.getJobDeployment(jobId, namespace);
+      setDeployment(updated);
+    } catch (err) {
+      addToast(getErrorMessage(err), 'error');
+    } finally {
+      setIsDeploymentBusy(false);
+    }
+  };
+
+  const handleFailDeployment = async () => {
+    if (!deployment) return;
+    const client = createNomadClient();
+    try {
+      setIsDeploymentBusy(true);
+      await client.failDeployment(deployment.ID);
+      addToast('Deployment marked as failed', 'warning');
+      const updated = await client.getJobDeployment(jobId, namespace);
+      setDeployment(updated);
+      refreshJob();
+    } catch (err) {
+      addToast(getErrorMessage(err), 'error');
+    } finally {
+      setIsDeploymentBusy(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -264,6 +339,17 @@ export default function JobDetailPage() {
                 lastLaunch={launches.data?.[0]}
                 launchesLoading={launches.loading}
                 launchesError={launches.error}
+              />
+            )
+          }
+          deploymentCard={
+            deployment && (
+              <DeploymentCard
+                deployment={deployment}
+                onPromote={handlePromoteDeployment}
+                onPause={handlePauseDeployment}
+                onFail={handleFailDeployment}
+                isBusy={isDeploymentBusy}
               />
             )
           }

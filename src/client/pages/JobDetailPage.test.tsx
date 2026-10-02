@@ -401,3 +401,58 @@ describe('JobDetailPage for a service job', () => {
     expect(screen.queryByText(/Launch of/)).toBeNull();
   });
 });
+
+describe('JobDetailPage deployment', () => {
+  const deployment = {
+    ID: 'dep-12345678',
+    JobID: 'web',
+    JobVersion: 2,
+    Status: 'running',
+    StatusDescription: 'Deployment running',
+    TaskGroups: {
+      api: {
+        AutoPromote: false,
+        AutoRevert: false,
+        Canaries: ['alloc-1'],
+        DesiredCanaries: 1,
+        DesiredTotal: 3,
+        HealthyAllocs: 1,
+        PlacedAllocs: 3,
+        Promoted: false,
+        UnhealthyAllocs: 0,
+      },
+    },
+  };
+
+  test('renders deployment card and promotes canaries', async () => {
+    let promoted = false;
+    mockFetch((call) => {
+      if (call.url.startsWith('/api/auth/validate')) return { body: { authenticated: true } };
+      if (call.url.startsWith('/api/nomad/v1/job/web/deployment')) return { body: deployment };
+      if (call.url.startsWith('/api/nomad/v1/job/web?')) return { body: service };
+      if (call.url.startsWith('/api/nomad/v1/job/web/allocations')) return { body: [] };
+      if (call.url.startsWith('/api/nomad/v1/job/web/versions')) return { body: { Versions: [] } };
+      if (call.url.startsWith('/api/nomad/v1/deployment/promote/dep-12345678')) {
+        promoted = true;
+        return { body: {} };
+      }
+      return undefined;
+    });
+
+    renderPage('/jobs/web?namespace=default');
+
+    expect(await screen.findByText('dep-1234')).toBeTruthy();
+    expect(screen.getByText('Deployment')).toBeTruthy();
+    const promoteBtn = screen.getByRole('button', { name: /Promote Canaries/i });
+    expect(promoteBtn).toBeTruthy();
+
+    fireEvent.click(promoteBtn);
+    const promoteButtons = await screen.findAllByRole('button', { name: /Promote Canaries/i });
+    // The confirmation dialog's confirm button is the last one rendered
+    fireEvent.click(promoteButtons[promoteButtons.length - 1]);
+
+    await waitFor(() => {
+      expect(promoted).toBe(true);
+    });
+  });
+});

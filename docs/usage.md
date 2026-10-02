@@ -46,6 +46,17 @@ The dashboard provides a bird's-eye view of your Nomad cluster:
 6. **Versions and rollback**: the Versions tab lists every historical version
    of a job, displays the spec diff against the current version, and allows
    one-click reversion to any previous version.
+7. **Canary deployments and promotion**: when a job runs a rolling update with
+   canaries (`update { canary = N }`), ovoo displays an active **Deployment** card
+   at the top of the Overview tab:
+   - Displays deployment ID, status (running, successful, paused, failed), and target version.
+   - Shows canary progress and placed allocation counts per task group.
+   - **Promote Canaries**: promotes all canary allocations (or individual task groups),
+     signaling Nomad that canaries are healthy to proceed with the full rolling update.
+   - **Pause / Resume**: pause an in-flight deployment to inspect canaries or troubleshoot issues.
+   - **Fail**: manually fail a deployment to trigger auto-revert if configured.
+   - Allocations associated with canaries display a distinct purple `canary` badge on
+     the Allocations page.
 
 ## Periodic jobs
 

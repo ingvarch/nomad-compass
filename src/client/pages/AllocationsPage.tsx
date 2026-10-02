@@ -107,10 +107,18 @@ export default function AllocationsPage() {
       header: 'Status',
       render: (alloc) => {
         const statusColors = getAllocationStatusColor(alloc.ClientStatus);
+        const isCanary = alloc.DeploymentStatus?.Canary;
         return (
-          <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${getStatusClasses(statusColors)}`}>
-            {alloc.ClientStatus}
-          </span>
+          <div className="flex items-center gap-1.5">
+            <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${getStatusClasses(statusColors)}`}>
+              {alloc.ClientStatus}
+            </span>
+            {isCanary && (
+              <Badge variant="purple" size="xs">
+                canary
+              </Badge>
+            )}
+          </div>
         );
       },
     },
@@ -219,9 +227,16 @@ export default function AllocationsPage() {
                   </div>
                 </div>
 
-                <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${getStatusClasses(statusColors)}`}>
-                  {alloc.ClientStatus}
-                </span>
+                <div className="flex items-center gap-1.5">
+                  <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${getStatusClasses(statusColors)}`}>
+                    {alloc.ClientStatus}
+                  </span>
+                  {alloc.DeploymentStatus?.Canary && (
+                    <Badge variant="purple" size="xs">
+                      canary
+                    </Badge>
+                  )}
+                </div>
               </div>
 
               <div className="flex items-center justify-between pt-1 border-t border-gray-100 dark:border-gray-800 text-xs text-gray-500 dark:text-gray-400">
