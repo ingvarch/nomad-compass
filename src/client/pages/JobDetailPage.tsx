@@ -26,9 +26,10 @@ import {
 } from '../components/jobs/detail';
 import JobActions from '../components/jobs/JobActions';
 import PermissionErrorModal from '../components/ui/PermissionErrorModal';
-import { usePeriodicActions, usePeriodicLaunches } from '../hooks';
+import { usePeriodicActions, useChildJobs } from '../hooks';
 import { scheduleState } from '../lib/services/periodicService';
 import { isParameterized } from '../lib/services/dispatchService';
+import { jobKind, type JobKind } from '../lib/services/jobKind';
 import type {
   NomadAllocation,
   NomadServiceRegistration,
@@ -160,11 +161,14 @@ export default function JobDetailPage() {
   }, [loadJob]);
 
   // While another job's page loads, `job` is still the previous job
-  const isPeriodic = !!job?.Periodic && job.ID === jobId && (job.Namespace || DEFAULT_NAMESPACE) === namespace;
-  const activeTab = useActiveJobTab(isPeriodic);
-  const launches = usePeriodicLaunches(jobId, namespace, isPeriodic);
+  const kind: JobKind =
+    job && job.ID === jobId && (job.Namespace || DEFAULT_NAMESPACE) === namespace ? jobKind(job) : 'regular';
+  const isPeriodic = kind === 'periodic';
+  const activeTab = useActiveJobTab(kind);
+  // Launches of a periodic job or dispatched jobs of a parameterized one
+  const childJobs = useChildJobs(jobId, namespace, kind);
   const periodic = usePeriodicActions(isPeriodic ? job : null, {
-    onLaunched: launches.refetch,
+    onLaunched: childJobs.refetch,
     onScheduleChanged: refreshJob,
   });
 
@@ -277,8 +281,12 @@ export default function JobDetailPage() {
     await refreshJob();
   };
 
-  const handleDispatch = (request: NomadJobDispatchRequest) =>
-    createNomadClient().dispatchJob(jobId, request, namespace);
+  const handleDispatch = async (request: NomadJobDispatchRequest) => {
+    const result = await createNomadClient().dispatchJob(jobId, request, namespace);
+    // The dialog shows the new job at once; the list follows in the background
+    childJobs.refetch();
+    return result;
+  };
 
   if (isLoading) {
     return (
@@ -363,7 +371,7 @@ export default function JobDetailPage() {
         }
       />
 
-      <JobDetailTabs namespace={namespace} isPeriodic={isPeriodic} />
+      <JobDetailTabs namespace={namespace} kind={kind} />
 
       {/* Tab Content */}
       {activeTab === 'overview' && (
@@ -375,8 +383,8 @@ export default function JobDetailPage() {
           expandedGroups={expandedGroups}
           onToggleGroup={toggleGroupDetails}
           onToggleTask={toggleTaskDetails}
-          // A periodic job has no logs of its own: they are on its launches
-          onViewLogs={isPeriodic ? undefined : handleViewLogs}
+          // A periodic or parameterized job has no logs of its own: they are on its child jobs
+          onViewLogs={kind === 'regular' ? handleViewLogs : undefined}
           onScaleGroup={canScaleJob ? setScalingGroup : undefined}
           schedule={
             job.Periodic && (
@@ -385,9 +393,9 @@ export default function JobDetailPage() {
                 state={periodicState}
                 nextLaunch={periodic.nextLaunch}
                 nextLaunchError={periodic.nextLaunchError}
-                lastLaunch={launches.data?.[0]}
-                launchesLoading={launches.loading}
-                launchesError={launches.error}
+                lastLaunch={childJobs.data?.[0]}
+                launchesLoading={childJobs.loading}
+                launchesError={childJobs.error}
               />
             )
           }
@@ -409,12 +417,13 @@ export default function JobDetailPage() {
         <AllocationsTab allocations={allocations} onRefresh={refreshJob} />
       )}
 
-      {activeTab === 'launches' && (
+      {kind !== 'regular' && (activeTab === 'launches' || activeTab === 'dispatches') && (
         <LaunchesTab
-          launches={launches.data || []}
-          loading={launches.loading}
-          error={launches.error}
-          onRefresh={launches.refetch}
+          kind={kind}
+          launches={childJobs.data || []}
+          loading={childJobs.loading}
+          error={childJobs.error}
+          onRefresh={childJobs.refetch}
         />
       )}
 

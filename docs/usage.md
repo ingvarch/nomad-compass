@@ -123,6 +123,12 @@ child job with the ID `<job>/dispatch-<time>-<id>`.
    capability. Nomad rejects a dispatch of a stopped job, so the button is
    disabled until the job is started. A dispatched job links back to its job
    and has no Dispatch button.
+4. **Dispatches**: a parameterized job has no allocations of its own, so its
+   page has the Overview, Dispatches, Versions and Evaluations tabs. The
+   Dispatches tab lists the dispatched jobs newest first, with their status
+   and allocation counts, and shows a new one right after a dispatch. Nomad
+   removes finished dispatched jobs during garbage collection
+   (`job_gc_threshold`, 4 hours by default).
 
 ## Viewing logs
 
