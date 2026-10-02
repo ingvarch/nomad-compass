@@ -7,7 +7,6 @@ import {
   ErrorAlert,
   PageHeader,
   RefreshButton,
-  Button,
   FilterButtons,
   DataTable,
   Badge,
@@ -153,10 +152,13 @@ export default function NodesPage() {
         actions={
           <div className="flex items-center gap-2">
             <RefreshButton onClick={refetch} />
-            <Link to="/node-pools">
-              <Button variant="secondary" size="sm">
-                <Layers className="w-4 h-4 mr-1.5" /> Node Pools
-              </Button>
+            <Link
+              to="/node-pools"
+              aria-label="Node Pools"
+              title="Node Pools"
+              className="inline-flex items-center justify-center p-2 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700/60 focus:outline-none focus:ring-2 focus:ring-blue-500 shadow-xs transition-colors"
+            >
+              <Layers className="w-4 h-4" />
             </Link>
           </div>
         }

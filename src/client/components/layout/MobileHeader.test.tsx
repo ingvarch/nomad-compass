@@ -1,8 +1,9 @@
 import { describe, test, expect } from 'bun:test';
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { MemoryRouter } from 'react-router-dom';
 import MobileHeader from './MobileHeader';
 import { ThemeProvider } from '../../context/ThemeContext';
+import { HeaderActionProvider, useHeaderAction } from '../../context/HeaderActionContext';
 
 describe('MobileHeader', () => {
   test('renders logo and create button on top-level dashboard', () => {
@@ -70,5 +71,32 @@ describe('MobileHeader', () => {
 
     expect(screen.getByRole('button', { name: /go back/i })).toBeTruthy();
     expect(screen.queryByText('ovoo')).toBeNull();
+  });
+
+  test('renders plus button when custom headerAction is provided and handles click', () => {
+    let clicked = false;
+    const ActionSetter = () => {
+      useHeaderAction({
+        label: 'Create Test Resource',
+        onClick: () => { clicked = true; },
+      });
+      return null;
+    };
+
+    render(
+      <MemoryRouter initialEntries={['/namespaces']}>
+        <ThemeProvider>
+          <HeaderActionProvider>
+            <ActionSetter />
+            <MobileHeader />
+          </HeaderActionProvider>
+        </ThemeProvider>
+      </MemoryRouter>
+    );
+
+    const plusBtn = screen.getByRole('button', { name: 'Create Test Resource' });
+    expect(plusBtn).toBeTruthy();
+    fireEvent.click(plusBtn);
+    expect(clicked).toBe(true);
   });
 });

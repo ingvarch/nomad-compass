@@ -17,6 +17,8 @@ import NamespaceForm from '../components/namespaces/NamespaceForm';
 import DeleteNamespaceConfirm from '../components/namespaces/DeleteNamespaceConfirm';
 import { useToast } from '../context/ToastContext';
 import { countJobsByNamespace } from '../lib/services/jobCounts';
+import { useHeaderAction } from '../context/HeaderActionContext';
+import { Plus } from 'lucide-react';
 
 interface NamespaceInfo {
   namespace: NomadNamespace;
@@ -33,6 +35,16 @@ export default function NamespacesPage() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [editingNamespace, setEditingNamespace] = useState<NomadNamespace | null>(null);
   const [deletingNamespace, setDeletingNamespace] = useState<NomadNamespace | null>(null);
+
+  useHeaderAction(
+    useMemo(
+      () => ({
+        label: 'Create Namespace',
+        onClick: () => setShowCreateModal(true),
+      }),
+      []
+    )
+  );
 
   const { addToast } = useToast();
 
@@ -221,14 +233,12 @@ export default function NamespacesPage() {
         title="Namespaces"
         description={`${namespaces.length} namespace${namespaces.length !== 1 ? 's' : ''} with ${totalJobs} total job${totalJobs !== 1 ? 's' : ''}`}
         actions={
-          <div className="flex gap-2">
+          <div className="flex items-center gap-2">
             <button
               onClick={() => setShowCreateModal(true)}
-              className="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 dark:bg-monokai-blue dark:hover:bg-blue-600"
+              className="hidden sm:inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 dark:bg-monokai-blue dark:hover:bg-blue-600"
             >
-              <svg className="w-4 h-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-              </svg>
+              <Plus className="w-4 h-4 mr-2" />
               Create Namespace
             </button>
             <RefreshButton onClick={() => { setLoading(true); fetchData(); }} />

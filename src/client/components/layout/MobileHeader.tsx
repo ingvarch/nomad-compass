@@ -2,6 +2,7 @@ import React from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { ChevronLeft, Plus } from 'lucide-react';
 import { ThemeToggle } from '../ui/ThemeToggle';
+import { useCurrentHeaderAction } from '../../context/HeaderActionContext';
 
 interface RouteMeta {
   title: string;
@@ -69,6 +70,7 @@ function getRouteMeta(pathname: string): RouteMeta {
 export const MobileHeader: React.FC = () => {
   const location = useLocation();
   const navigate = useNavigate();
+  const headerAction = useCurrentHeaderAction();
   const { title, backTo, showCreateJob } = getRouteMeta(location.pathname);
 
   const handleBack = () => {
@@ -119,10 +121,32 @@ export const MobileHeader: React.FC = () => {
 
         {/* Right: Action or Theme */}
         <div className="flex items-center justify-end min-w-[70px] gap-1.5">
-          {showCreateJob ? (
+          {headerAction ? (
+            headerAction.to ? (
+              <Link
+                to={headerAction.to}
+                aria-label={headerAction.label}
+                title={headerAction.label}
+                className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-blue-600 dark:bg-monokai-blue text-white dark:text-monokai-bg font-medium shadow-xs active:opacity-70 transition-opacity"
+              >
+                <Plus className="w-4 h-4 stroke-[2.5]" />
+              </Link>
+            ) : (
+              <button
+                type="button"
+                onClick={headerAction.onClick}
+                aria-label={headerAction.label}
+                title={headerAction.label}
+                className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-blue-600 dark:bg-monokai-blue text-white dark:text-monokai-bg font-medium shadow-xs active:opacity-70 transition-opacity cursor-pointer"
+              >
+                <Plus className="w-4 h-4 stroke-[2.5]" />
+              </button>
+            )
+          ) : showCreateJob ? (
             <Link
               to="/jobs/create"
               aria-label="Create Job"
+              title="Create Job"
               className="inline-flex items-center justify-center w-8 h-8 rounded-full bg-blue-600 dark:bg-monokai-blue text-white dark:text-monokai-bg font-medium shadow-xs active:opacity-70 transition-opacity"
             >
               <Plus className="w-4 h-4 stroke-[2.5]" />
