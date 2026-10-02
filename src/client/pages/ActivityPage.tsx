@@ -13,6 +13,7 @@ import {
   Select,
   type Column,
 } from '../components/ui';
+import { Search, X, SlidersHorizontal, ChevronDown, RotateCcw } from 'lucide-react';
 import { extractRecentEvents, formatTimeAgo, type RecentEvent } from '../lib/services/allocationAnalyzer';
 import { severityColors, getStatusClasses } from '../lib/utils/statusColors';
 import { labelSmallStyles } from '../lib/styles';
@@ -41,6 +42,7 @@ export default function ActivityPage() {
   const [timeRangeFilter, setTimeRangeFilter] = useState<TimeRangeFilter>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [eventTypeFilter, setEventTypeFilter] = useState<string>('all');
+  const [showFilters, setShowFilters] = useState(false);
 
   const { data, loading, error, refetch } = useFetch(
     async (): Promise<ActivityData> => {
@@ -195,8 +197,21 @@ export default function ActivityPage() {
     },
   ], []);
 
-  const selectClasses =
-    'block w-full pl-3 pr-8 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500';
+  const activeFiltersCount = useMemo(() => {
+    let count = 0;
+    if (namespaceFilter !== '*') count++;
+    if (severityFilter !== 'all') count++;
+    if (timeRangeFilter !== 'all') count++;
+    if (eventTypeFilter !== 'all') count++;
+    return count;
+  }, [namespaceFilter, severityFilter, timeRangeFilter, eventTypeFilter]);
+
+  const handleResetFilters = () => {
+    setNamespaceFilter('*');
+    setSeverityFilter('all');
+    setTimeRangeFilter('all');
+    setEventTypeFilter('all');
+  };
 
   if (loading) {
     return (
@@ -237,91 +252,156 @@ export default function ActivityPage() {
 
       {error && <ErrorAlert message={error} />}
 
-      {/* Filters */}
+      {/* Filters Card */}
       <div className="bg-white dark:bg-gray-800 shadow rounded-lg p-4">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
-          {/* Search */}
-          <div className="lg:col-span-2">
-            <label className={labelSmallStyles}>
-              Search
-            </label>
+        {/* Always visible Search bar + Filters toggle */}
+        <div className="flex items-center gap-2">
+          <div className="relative flex-1">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500 pointer-events-none" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Job, task, or message..."
-              className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+              placeholder="Search job, task, or message..."
+              className="w-full pl-9 pr-8 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-lg bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
             />
+            {searchQuery && (
+              <button
+                type="button"
+                onClick={() => setSearchQuery('')}
+                aria-label="Clear search"
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 p-0.5 rounded cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
           </div>
 
-          {/* Namespace */}
-          <Select
-            label="Namespace"
-            value={namespaceFilter}
-            onChange={setNamespaceFilter}
-            options={[
-              { value: '*', label: 'All Namespaces' },
-              ...namespaces.map((ns) => ({ value: ns.Name, label: ns.Name })),
-            ]}
-          />
-
-          {/* Severity */}
-          <Select
-            label="Severity"
-            value={severityFilter}
-            onChange={(val) => setSeverityFilter(val as SeverityFilter)}
-            options={[
-              { value: 'all', label: 'All Severities' },
-              { value: 'error', label: 'Error' },
-              { value: 'warning', label: 'Warning' },
-              { value: 'info', label: 'Info' },
-            ]}
-          />
-
-          {/* Time Range */}
-          <Select
-            label="Time Range"
-            value={timeRangeFilter}
-            onChange={(val) => setTimeRangeFilter(val as TimeRangeFilter)}
-            options={[
-              { value: 'all', label: 'All Time' },
-              { value: '1h', label: 'Last Hour' },
-              { value: '6h', label: 'Last 6 Hours' },
-              { value: '24h', label: 'Last 24 Hours' },
-              { value: '7d', label: 'Last 7 Days' },
-            ]}
-          />
+          <button
+            type="button"
+            onClick={() => setShowFilters(!showFilters)}
+            aria-expanded={showFilters}
+            aria-label="Toggle filters"
+            className={`inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium rounded-lg border transition-all cursor-pointer select-none shrink-0 ${
+              showFilters || activeFiltersCount > 0
+                ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300'
+                : 'border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-200 hover:bg-gray-50 dark:hover:bg-gray-600'
+            }`}
+          >
+            <SlidersHorizontal className="w-4 h-4" />
+            <span>Filters</span>
+            {activeFiltersCount > 0 && (
+              <span
+                data-testid="active-filters-badge"
+                className="inline-flex items-center justify-center px-1.5 py-0.2 text-[11px] font-semibold rounded-full bg-blue-600 text-white min-w-[18px] h-[18px]"
+              >
+                {activeFiltersCount}
+              </span>
+            )}
+            <ChevronDown
+              className={`w-3.5 h-3.5 text-gray-400 dark:text-gray-500 transition-transform duration-200 ${
+                showFilters ? 'rotate-180' : ''
+              }`}
+            />
+          </button>
         </div>
 
-        {/* Event Type Filter (second row) */}
-        <div className="mt-4">
-          <label className={labelSmallStyles}>
-            Event Type
-          </label>
-          <div className="flex flex-wrap gap-2">
-            <button
-              onClick={() => setEventTypeFilter('all')}
-              className={`px-3 py-1 text-xs rounded-full transition-colors ${
-                eventTypeFilter === 'all'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-              }`}
-            >
-              All Types
-            </button>
-            {eventTypes.map((type) => (
-              <button
-                key={type}
-                onClick={() => setEventTypeFilter(type)}
-                className={`px-3 py-1 text-xs rounded-full transition-colors ${
-                  eventTypeFilter === type
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
-                }`}
-              >
-                {type}
-              </button>
-            ))}
+        {/* Collapsible Advanced Filters Section */}
+        <div
+          data-testid="activity-filters-panel"
+          className={`grid transition-[grid-template-rows,opacity] duration-250 ease-in-out ${
+            showFilters
+              ? 'grid-rows-[1fr] opacity-100 mt-4'
+              : 'grid-rows-[0fr] opacity-0 pointer-events-none'
+          }`}
+        >
+          <div className={`min-h-0 ${showFilters ? 'overflow-visible' : 'overflow-hidden'}`}>
+            <div className="pt-4 border-t border-gray-100 dark:border-gray-700/60 space-y-4">
+              {/* Secondary Selects Grid */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                {/* Namespace */}
+                <Select
+                  label="Namespace"
+                  value={namespaceFilter}
+                  onChange={setNamespaceFilter}
+                  options={[
+                    { value: '*', label: 'All Namespaces' },
+                    ...namespaces.map((ns) => ({ value: ns.Name, label: ns.Name })),
+                  ]}
+                />
+
+                {/* Severity */}
+                <Select
+                  label="Severity"
+                  value={severityFilter}
+                  onChange={(val) => setSeverityFilter(val as SeverityFilter)}
+                  options={[
+                    { value: 'all', label: 'All Severities' },
+                    { value: 'error', label: 'Error' },
+                    { value: 'warning', label: 'Warning' },
+                    { value: 'info', label: 'Info' },
+                  ]}
+                />
+
+                {/* Time Range */}
+                <Select
+                  label="Time Range"
+                  value={timeRangeFilter}
+                  onChange={(val) => setTimeRangeFilter(val as TimeRangeFilter)}
+                  options={[
+                    { value: 'all', label: 'All Time' },
+                    { value: '1h', label: 'Last Hour' },
+                    { value: '6h', label: 'Last 6 Hours' },
+                    { value: '24h', label: 'Last 24 Hours' },
+                    { value: '7d', label: 'Last 7 Days' },
+                  ]}
+                />
+              </div>
+
+              {/* Event Type Filter */}
+              <div>
+                <div className="flex items-center justify-between mb-1.5">
+                  <label className={labelSmallStyles}>Event Type</label>
+                  {activeFiltersCount > 0 && (
+                    <button
+                      type="button"
+                      onClick={handleResetFilters}
+                      className="inline-flex items-center gap-1 text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 font-medium cursor-pointer"
+                    >
+                      <RotateCcw className="w-3 h-3" />
+                      Reset filters
+                    </button>
+                  )}
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setEventTypeFilter('all')}
+                    className={`px-3 py-1 text-xs rounded-full transition-colors cursor-pointer ${
+                      eventTypeFilter === 'all'
+                        ? 'bg-blue-600 text-white font-medium shadow-xs'
+                        : 'bg-gray-100 dark:bg-gray-700/80 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                    }`}
+                  >
+                    All Types
+                  </button>
+                  {eventTypes.map((type) => (
+                    <button
+                      key={type}
+                      type="button"
+                      onClick={() => setEventTypeFilter(type)}
+                      className={`px-3 py-1 text-xs rounded-full transition-colors cursor-pointer ${
+                        eventTypeFilter === type
+                          ? 'bg-blue-600 text-white font-medium shadow-xs'
+                          : 'bg-gray-100 dark:bg-gray-700/80 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600'
+                      }`}
+                    >
+                      {type}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
           </div>
         </div>
       </div>
