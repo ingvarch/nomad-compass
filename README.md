@@ -35,6 +35,8 @@ Formerly Nomad Compass.
   cookie and never appears in a URL.
 - Lists allocations, failed allocations, nodes, servers and the cluster
   topology.
+- Restarts, signals and stops single allocations, and reschedules the failed
+  allocations of a job.
 - Manages ACL policies (visual or HCL editor), roles and tokens, and creates
   and deletes namespaces.
 - Manages encrypted Nomad variables and secrets with masked value inspection,

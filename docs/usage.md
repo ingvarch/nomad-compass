@@ -137,6 +137,24 @@ container:
   - Placement failures caused by exhausted node resources.
 - **Quick exec**: launch a remote terminal directly from any allocation row
   or card without navigating to the job details first.
+- **Allocation actions**: the actions menu of an allocation on the Allocations
+  page, the Failed Allocations page and the Allocations tab of a job. The menu
+  shows only what Nomad accepts for the allocation's status:
+  - *Restart Allocation* (running): restarts all running tasks or one task in
+    place, on the same node.
+  - *Send Signal* (running): sends a POSIX signal such as `SIGHUP` or `SIGUSR1`
+    to one task.
+  - *Stop Allocation* (running, pending): stops the allocation after a
+    confirmation, with an optional "No shutdown delay". Nomad then schedules a
+    replacement, which may land on another node. This is how an allocation is
+    moved: Nomad has no separate reschedule call for a live allocation.
+  - *Reschedule Failed Allocations* (failed): asks Nomad to place the failed
+    allocations of the job again now, including the ones past their reschedule
+    limit. It applies to the whole job, like `nomad job eval -force-reschedule`,
+    and the scheduler still decides: it places nothing for a job whose
+    deployment failed.
+  Restart, signal and stop need the `alloc-lifecycle` capability; rescheduling
+  needs `submit-job`.
 
 ## Cluster topology
 

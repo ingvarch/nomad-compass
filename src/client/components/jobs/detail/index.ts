@@ -9,6 +9,7 @@ export { TaskEventsTable } from './TaskEventsTable';
 export { JobDetailTabs, useActiveJobTab } from './JobDetailTabs';
 export type { JobTabType } from './JobDetailTabs';
 export { OverviewTab } from './OverviewTab';
+export { AllocationsTab } from './AllocationsTab';
 export { VersionsTab } from './VersionsTab';
 export { EvaluationsTab } from './EvaluationsTab';
 export { LogsTab } from './LogsTab';

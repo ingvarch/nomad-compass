@@ -11,6 +11,7 @@ import {
   JobDetailTabs,
   useActiveJobTab,
   OverviewTab,
+  AllocationsTab,
   VersionsTab,
   EvaluationsTab,
   LogsTab,
@@ -374,6 +375,10 @@ export default function JobDetailPage() {
             )
           }
         />
+      )}
+
+      {activeTab === 'allocations' && (
+        <AllocationsTab allocations={allocations} onRefresh={refreshJob} />
       )}
 
       {activeTab === 'launches' && (

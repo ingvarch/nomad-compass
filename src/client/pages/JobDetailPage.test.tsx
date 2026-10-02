@@ -505,3 +505,77 @@ describe('JobDetailPage task group scaling', () => {
     });
   });
 });
+
+describe('JobDetailPage allocations', () => {
+  const allocation = {
+    ID: 'aaaa1111-2222-3333', Name: 'web.api[0]', JobID: 'web', JobType: 'service', Namespace: 'default',
+    TaskGroup: 'api', NodeName: 'node-alpha', ClientStatus: 'running', DesiredStatus: 'run',
+    CreateTime: 1790611000000000000, TaskStates: { server: { State: 'running', Failed: false, Restarts: 0 } },
+  };
+  const allocationsPath = '/api/nomad/v1/job/web/allocations';
+  const webRoutes = { ...jobRoutes(service), [allocationsPath]: [allocation] };
+
+  function allocationLoads(calls: FetchCall[]) {
+    return calls.filter((c) => c.url.startsWith(allocationsPath)).length;
+  }
+
+  test('lists the allocations of the job with their actions', async () => {
+    mockFetch(nomad(webRoutes));
+    renderPage('/jobs/web?namespace=default');
+
+    fireEvent.click(await screen.findByRole('button', { name: 'Allocations' }));
+
+    expect(await screen.findByText('Allocations (1)')).toBeTruthy();
+    // Table row and mobile card
+    expect(screen.getAllByText('aaaa1111')).toHaveLength(2);
+    expect(screen.getAllByText('node-alpha')).toHaveLength(2);
+    expect(screen.getAllByRole('button', { name: /allocation actions/i })).toHaveLength(2);
+  });
+
+  test('stopping an allocation reloads the allocations and stays on the tab', async () => {
+    const calls = mockFetch(nomad(webRoutes));
+    renderPage('/jobs/web?namespace=default&tab=allocations');
+
+    const heading = await screen.findByText('Allocations (1)');
+    const loadsBefore = allocationLoads(calls);
+    fireEvent.click(screen.getAllByRole('button', { name: /allocation actions/i })[0]);
+    fireEvent.click(screen.getByRole('menuitem', { name: 'Stop Allocation' }));
+    fireEvent.click(screen.getByRole('button', { name: 'Stop Allocation' }));
+
+    await waitFor(() => expect(allocationLoads(calls)).toBe(loadsBefore + 1));
+    expect(calls.filter((c) => c.method === 'POST').map((c) => c.url)).toEqual([
+      '/api/nomad/v1/allocation/aaaa1111-2222-3333/stop?namespace=default',
+    ]);
+    expect(heading.isConnected).toBe(true);
+  });
+
+  // Nomad needs a moment to place a replacement: the list right after an action can still be the old one
+  test('refresh reloads the allocations', async () => {
+    const calls = mockFetch(nomad(webRoutes));
+    renderPage('/jobs/web?namespace=default&tab=allocations');
+
+    await screen.findByText('Allocations (1)');
+    const loadsBefore = allocationLoads(calls);
+    fireEvent.click(screen.getByRole('button', { name: 'Refresh' }));
+
+    await waitFor(() => expect(allocationLoads(calls)).toBe(loadsBefore + 1));
+  });
+
+  test('a job without allocations says so', async () => {
+    mockFetch(nomad(jobRoutes(service)));
+    renderPage('/jobs/web?namespace=default&tab=allocations');
+
+    expect(await screen.findByText('Allocations (0)')).toBeTruthy();
+    expect(screen.getByText('This job has no allocations.')).toBeTruthy();
+  });
+
+  // A periodic job has no allocations of its own
+  test('a periodic job has no Allocations tab', async () => {
+    mockFetch(nomad(parentRoutes));
+    renderPage('/jobs/backup?namespace=default');
+
+    expect(await screen.findByText('Schedule')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Allocations' })).toBeNull();
+    await waitForNextAndLastLaunch();
+  });
+});
