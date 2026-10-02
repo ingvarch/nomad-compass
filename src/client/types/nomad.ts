@@ -324,6 +324,7 @@ export interface NomadNode {
         Disk: { DiskMB: number };
     };
     Attributes?: Record<string, string>;
+    NodePool?: string;
 }
 
 // Extended node detail type for individual node view

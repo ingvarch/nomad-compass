@@ -72,3 +72,28 @@ describe('NomadClient variables endpoints', () => {
     ]);
   });
 });
+
+describe('NomadClient node pools endpoints', () => {
+  test('lists, reads, creates, deletes node pools, and lists pool nodes', async () => {
+    const calls = mockFetch(() => ({ body: [] }));
+    const client = new NomadClient();
+
+    await client.getNodePools();
+    await client.getNodePool('prod-eng');
+    await client.createOrUpdateNodePool({
+      Name: 'prod-eng',
+      Description: 'Production workloads',
+      SchedulerConfiguration: { SchedulerAlgorithm: 'spread' },
+    });
+    await client.getNodePoolNodes('prod-eng');
+    await client.deleteNodePool('prod-eng');
+
+    expect(calls.map((c) => ({ method: c.method || 'GET', url: c.url }))).toEqual([
+      { method: 'GET', url: '/api/nomad/v1/node/pools' },
+      { method: 'GET', url: '/api/nomad/v1/node/pool/prod-eng' },
+      { method: 'POST', url: '/api/nomad/v1/node/pool/prod-eng' },
+      { method: 'GET', url: '/api/nomad/v1/node/pool/prod-eng/nodes' },
+      { method: 'DELETE', url: '/api/nomad/v1/node/pool/prod-eng' },
+    ]);
+  });
+});

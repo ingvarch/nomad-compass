@@ -16,6 +16,7 @@ import {
   ChevronRight,
   Download,
   KeyRound,
+  Layers,
 } from 'lucide-react';
 import { useTheme } from '../../context/ThemeContext';
 import { usePwaInstall } from '../../hooks/usePwaInstall';
@@ -217,6 +218,22 @@ export const MoreMenuSheet: React.FC<MoreMenuSheetProps> = ({
                 <div className="flex items-center gap-3">
                   <HardDrive className="w-5 h-5 text-gray-500 dark:text-monokai-muted" />
                   <span>Nodes</span>
+                </div>
+                <ChevronRight className="w-4 h-4 text-gray-400 dark:text-monokai-muted" />
+              </Link>
+
+              <Link
+                to="/node-pools"
+                onClick={handleLinkClick}
+                className={`flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-medium transition-colors ${
+                  isCurrent('/node-pools')
+                    ? 'bg-blue-50 text-blue-600 dark:bg-monokai-surface dark:text-monokai-blue'
+                    : 'text-gray-700 hover:bg-gray-100 dark:text-monokai-text dark:hover:bg-monokai-surface'
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <Layers className="w-5 h-5 text-gray-500 dark:text-monokai-muted" />
+                  <span>Node Pools</span>
                 </div>
                 <ChevronRight className="w-4 h-4 text-gray-400 dark:text-monokai-muted" />
               </Link>

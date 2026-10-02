@@ -34,6 +34,10 @@ import {
   NomadVariableMetadata,
   NomadVariableInput,
 } from '../../types/variables';
+import {
+  NomadNodePool,
+  NomadNodePoolInput,
+} from '../../types/nodepools';
 import { PermissionError } from '../errors';
 import { DEFAULT_NAMESPACE } from '../constants';
 import { periodicLaunchPrefix } from '../services/periodicService';
@@ -702,6 +706,48 @@ export class NomadClient {
       method: 'DELETE',
       params,
     });
+  }
+
+  // ==================== Node Pools ====================
+
+  /**
+   * Get all node pools
+   */
+  async getNodePools(): Promise<NomadNodePool[]> {
+    return this.request<NomadNodePool[]>('/v1/node/pools');
+  }
+
+  /**
+   * Get a single node pool by name
+   */
+  async getNodePool(name: string): Promise<NomadNodePool> {
+    return this.request<NomadNodePool>(`/v1/node/pool/${encodeURIComponent(name)}`);
+  }
+
+  /**
+   * Create or update a node pool
+   */
+  async createOrUpdateNodePool(pool: NomadNodePoolInput): Promise<void> {
+    await this.request<void>(`/v1/node/pool/${encodeURIComponent(pool.Name)}`, {
+      method: 'POST',
+      body: JSON.stringify(pool),
+    });
+  }
+
+  /**
+   * Delete a node pool
+   */
+  async deleteNodePool(name: string): Promise<void> {
+    await this.request<void>(`/v1/node/pool/${encodeURIComponent(name)}`, {
+      method: 'DELETE',
+    });
+  }
+
+  /**
+   * List nodes in a node pool
+   */
+  async getNodePoolNodes(name: string): Promise<NomadNode[]> {
+    return this.request<NomadNode[]>(`/v1/node/pool/${encodeURIComponent(name)}/nodes`);
   }
 }
 

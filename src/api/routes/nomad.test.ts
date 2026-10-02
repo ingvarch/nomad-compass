@@ -56,4 +56,14 @@ describe('Nomad proxy', () => {
     await proxy('/api/nomad/v1/var/nomad/jobs/my-app?namespace=default');
     expect(calls[1].url).toBe('http://nomad.test:4646/v1/var/nomad/jobs/my-app?namespace=default');
   });
+
+  test('forwards node pools endpoints /v1/node/pools and /v1/node/pool/:name', async () => {
+    const calls = mockFetch();
+
+    await proxy('/api/nomad/v1/node/pools');
+    expect(calls[0].url).toBe('http://nomad.test:4646/v1/node/pools');
+
+    await proxy('/api/nomad/v1/node/pool/prod-eng/nodes');
+    expect(calls[1].url).toBe('http://nomad.test:4646/v1/node/pool/prod-eng/nodes');
+  });
 });

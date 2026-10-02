@@ -21,6 +21,7 @@ import ServersPage from './pages/ServersPage';
 import AllocationsPage from './pages/AllocationsPage';
 import NamespacesPage from './pages/NamespacesPage';
 import VariablesPage from './pages/VariablesPage';
+import NodePoolsPage from './pages/NodePoolsPage';
 import TopologyPage from './pages/TopologyPage';
 import ActivityPage from './pages/ActivityPage';
 import AclPage from './pages/AclPage';
@@ -73,6 +74,10 @@ const router = createBrowserRouter([
       {
         path: '/nodes/:nodeId',
         element: <NodeDetailPage />,
+      },
+      {
+        path: '/node-pools',
+        element: <NodePoolsPage />,
       },
       {
         path: '/servers',
