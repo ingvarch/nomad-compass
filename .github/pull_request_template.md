@@ -5,7 +5,7 @@
 ## Checklist
 
 - [ ] The test for this change was written first and failed
-- [ ] `bun run lint`, `bun run typecheck`, `bun test` and `bun run build:all` are green (CI does not run them yet)
+- [ ] `bun run lint`, `bun run typecheck`, `bun test` and `bun run build:all` are green
 - [ ] The title is a conventional commit: `feat(ui): ...`, `fix(api): ...`, `fix(exec): ...`
 
 ### If the change touches the server (`src/api`, `src/lib`, `src/entry.*`)
