@@ -136,7 +136,7 @@ export function DispatchJobModal({ job, onClose, onDispatch }: DispatchJobModalP
                   onChange={(e) => setMeta((prev) => ({ ...prev, [key]: e.target.value }))}
                   placeholder={job.Meta?.[key]}
                   disabled={isSubmitting}
-                  className={`${fieldError ? inputErrorStyles : inputStyles} placeholder-gray-400 dark:placeholder-gray-500`}
+                  className={fieldError ? inputErrorStyles : inputStyles}
                 />
                 <FieldError message={fieldError} />
               </div>

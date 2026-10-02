@@ -5,7 +5,7 @@
 
 // Base input styles (text inputs, selects)
 export const inputBaseStyles =
-  'border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-blue-500';
+  'border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500';
 
 // Full-width input (most common)
 export const inputStyles = `w-full p-2 ${inputBaseStyles}`;
@@ -25,7 +25,7 @@ export const selectStyles = inputStyles;
 
 // Input with error state
 export const inputErrorStyles =
-  'w-full p-2 border border-red-500 dark:border-red-400 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-red-500';
+  'w-full p-2 border border-red-500 dark:border-red-400 rounded-md bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-red-500';
 
 // Button base styles
 const buttonBase =
@@ -62,14 +62,14 @@ export const buttonAddRowStyles =
 
 // Monokai theme input styles (for job/namespace forms with monokai dark theme)
 export const inputMonokaiBaseStyles =
-  'border border-gray-300 dark:border-monokai-muted rounded-md bg-white dark:bg-monokai-surface text-gray-900 dark:text-monokai-text focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-monokai-blue';
+  'border border-gray-300 dark:border-monokai-muted rounded-md bg-white dark:bg-monokai-surface text-gray-900 dark:text-monokai-text placeholder-gray-400 dark:placeholder-monokai-muted focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-monokai-blue';
 
 export const inputMonokaiStyles = `w-full p-2 ${inputMonokaiBaseStyles}`;
 
 export const inputMonokaiFlexStyles = `flex-1 p-2 ${inputMonokaiBaseStyles}`;
 
 export const inputMonokaiErrorStyles =
-  'w-full p-2 border border-red-500 dark:border-monokai-red rounded-md bg-white dark:bg-monokai-surface text-gray-900 dark:text-monokai-text focus:outline-none focus:ring-2 focus:ring-red-500';
+  'w-full p-2 border border-red-500 dark:border-monokai-red rounded-md bg-white dark:bg-monokai-surface text-gray-900 dark:text-monokai-text placeholder-gray-400 dark:placeholder-monokai-muted focus:outline-none focus:ring-2 focus:ring-red-500';
 
 // Label styles (for form labels)
 export const labelStyles = 'block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1';
