@@ -145,3 +145,79 @@ describe('NomadClient job scale endpoint', () => {
     });
   });
 });
+
+describe('NomadClient allocation lifecycle endpoints', () => {
+  test('restarts the running tasks of an allocation or one task', async () => {
+    const calls = mockFetch();
+    const client = new NomadClient();
+
+    // Restart entire allocation
+    await client.restartAllocation('alloc-1', undefined, 'default');
+    // Restart specific task
+    await client.restartAllocation('alloc-1', 'web', 'prod');
+
+    expect(calls).toEqual([
+      {
+        method: 'POST',
+        url: '/api/nomad/v1/client/allocation/alloc-1/restart?namespace=default',
+        body: { TaskName: '' },
+      },
+      {
+        method: 'POST',
+        url: '/api/nomad/v1/client/allocation/alloc-1/restart?namespace=prod',
+        body: { TaskName: 'web' },
+      },
+    ]);
+  });
+
+  test('stops allocation with options', async () => {
+    const calls = mockFetch(() => ({ body: { EvalID: 'eval-stop-1', Index: 54 } }));
+    const client = new NomadClient();
+
+    const stopped = await client.stopAllocation('alloc-1', undefined, 'default');
+    await client.stopAllocation('alloc-1', { noShutdownDelay: true, reschedule: true }, 'prod');
+
+    expect(stopped).toEqual({ EvalID: 'eval-stop-1', Index: 54 });
+    expect(calls).toHaveLength(2);
+    expect(calls[0]).toMatchObject({
+      method: 'POST',
+      url: '/api/nomad/v1/allocation/alloc-1/stop?namespace=default',
+    });
+    expect(calls[1]).toMatchObject({
+      method: 'POST',
+      url: '/api/nomad/v1/allocation/alloc-1/stop?no_shutdown_delay=true&reschedule=true&namespace=prod',
+    });
+  });
+
+  test('reschedules the failed allocations of a job', async () => {
+    const calls = mockFetch(() => ({ body: { EvalID: 'eval-reschedule-1' } }));
+    const client = new NomadClient();
+
+    await client.rescheduleFailedAllocations(id, 'prod');
+
+    expect(calls).toEqual([
+      {
+        method: 'POST',
+        url: `/api/nomad/v1/job/${encoded}/evaluate?namespace=prod`,
+        body: { JobID: id, EvalOptions: { ForceReschedule: true } },
+      },
+    ]);
+  });
+
+  test('signals task within allocation', async () => {
+    const calls = mockFetch(() => ({ body: {} }));
+    const client = new NomadClient();
+
+    await client.signalTask('alloc-1', 'web', 'SIGHUP', 'prod');
+
+    expect(calls).toHaveLength(1);
+    expect(calls[0]).toMatchObject({
+      method: 'POST',
+      url: '/api/nomad/v1/client/allocation/alloc-1/signal?namespace=prod',
+    });
+    expect(calls[0].body).toEqual({
+      Task: 'web',
+      Signal: 'SIGHUP',
+    });
+  });
+});

@@ -507,6 +507,17 @@ export interface NomadAllocation {
     ModifyIndex: number;
 }
 
+export interface NomadStopAllocationOptions {
+    noShutdownDelay?: boolean;
+    // Batch allocations are replaced only when asked; `nomad alloc stop` asks for them
+    reschedule?: boolean;
+}
+
+export interface NomadAllocationStopResponse {
+    EvalID: string;
+    Index: number;
+}
+
 // Evaluation types
 export interface NomadEvaluation {
     ID: string;

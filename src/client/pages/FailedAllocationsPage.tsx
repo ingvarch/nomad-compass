@@ -21,6 +21,7 @@ import {
 } from '../lib/utils/statusColors';
 import { formatTimestamp } from '../lib/utils/dateFormatter';
 import { jobPath } from '../lib/utils/jobPath';
+import { AllocationActionsDropdown } from '../components/allocations';
 
 interface FailedAllocationInfo {
   allocation: NomadAllocation;
@@ -140,10 +141,10 @@ export default function FailedAllocationsPage() {
     }
   };
 
-  const handleRefresh = () => {
+  const handleRefresh = useCallback(() => {
     setLoading(true);
-    fetchData();
-  };
+    return fetchData();
+  }, [fetchData]);
 
   const totalHistoricalCount = useMemo(
     () => historicalJobs.reduce((sum, j) => sum + j.failedCount, 0),
@@ -211,7 +212,18 @@ export default function FailedAllocationsPage() {
         </span>
       ),
     },
-  ], []);
+    {
+      key: 'actions',
+      header: 'Actions',
+      textAlign: 'right',
+      render: ({ allocation }) => (
+        <AllocationActionsDropdown
+          allocation={allocation}
+          onSuccess={handleRefresh}
+        />
+      ),
+    },
+  ], [handleRefresh]);
 
   const headerActions = (
     <>
@@ -322,7 +334,10 @@ export default function FailedAllocationsPage() {
 
                   <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 pt-1">
                     <span>Node: {allocation.NodeName || allocation.NodeID?.slice(0, 8) || '-'}</span>
-                    <span>{formatTimestamp(allocation.ModifyTime)}</span>
+                    <div className="flex items-center gap-3">
+                      <span>{formatTimestamp(allocation.ModifyTime)}</span>
+                      <AllocationActionsDropdown allocation={allocation} onSuccess={handleRefresh} />
+                    </div>
                   </div>
                 </div>
               )}

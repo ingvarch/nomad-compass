@@ -14,18 +14,9 @@ import {
   Badge,
   type Column,
 } from '../components/ui';
-import { getAllocationStatusColor, getStatusClasses } from '../lib/utils/statusColors';
 import { formatTimestamp } from '../lib/utils/dateFormatter';
-import { Terminal } from 'lucide-react';
 import { jobPath } from '../lib/utils/jobPath';
-
-function getFirstTask(alloc: NomadAllocation): string | null {
-  if (alloc.TaskStates) {
-    const tasks = Object.keys(alloc.TaskStates);
-    if (tasks.length > 0) return tasks[0];
-  }
-  return null;
-}
+import { AllocationActionsDropdown, AllocationStatusBadge } from '../components/allocations';
 
 type StatusFilter = 'all' | 'running' | 'pending' | 'complete' | 'failed';
 
@@ -104,22 +95,7 @@ export default function AllocationsPage() {
     {
       key: 'status',
       header: 'Status',
-      render: (alloc) => {
-        const statusColors = getAllocationStatusColor(alloc.ClientStatus);
-        const isCanary = alloc.DeploymentStatus?.Canary;
-        return (
-          <div className="flex items-center gap-1.5">
-            <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${getStatusClasses(statusColors)}`}>
-              {alloc.ClientStatus}
-            </span>
-            {isCanary && (
-              <Badge variant="purple" size="xs">
-                canary
-              </Badge>
-            )}
-          </div>
-        );
-      },
+      render: (alloc) => <AllocationStatusBadge allocation={alloc} />,
     },
     {
       key: 'node',
@@ -150,24 +126,11 @@ export default function AllocationsPage() {
       key: 'actions',
       header: 'Actions',
       textAlign: 'right',
-      render: (alloc) => {
-        if (alloc.ClientStatus !== 'running') return null;
-        const firstTask = getFirstTask(alloc);
-        if (!firstTask) return null;
-        return (
-          <Link
-            to={`/exec/${alloc.ID}/${firstTask}?namespace=${alloc.Namespace}`}
-            className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-gray-700 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded transition-colors"
-            title="Open terminal"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <Terminal className="w-3.5 h-3.5" />
-            Exec
-          </Link>
-        );
-      },
+      render: (alloc) => (
+        <AllocationActionsDropdown allocation={alloc} onSuccess={refetch} />
+      ),
     },
-  ], [jobs]);
+  ], [jobs, refetch]);
 
   if (loading) {
     return (
@@ -201,8 +164,6 @@ export default function AllocationsPage() {
         emptyState={{ message: 'No allocations found.' }}
         mobileCardRenderer={(alloc) => {
           const job = jobs.get(alloc.JobID);
-          const statusColors = getAllocationStatusColor(alloc.ClientStatus);
-          const firstTask = getFirstTask(alloc);
 
           return (
             <div className="p-4 space-y-2.5">
@@ -226,16 +187,7 @@ export default function AllocationsPage() {
                   </div>
                 </div>
 
-                <div className="flex items-center gap-1.5">
-                  <span className={`px-2 py-0.5 text-xs font-medium rounded-full ${getStatusClasses(statusColors)}`}>
-                    {alloc.ClientStatus}
-                  </span>
-                  {alloc.DeploymentStatus?.Canary && (
-                    <Badge variant="purple" size="xs">
-                      canary
-                    </Badge>
-                  )}
-                </div>
+                <AllocationStatusBadge allocation={alloc} />
               </div>
 
               <div className="flex items-center justify-between pt-1 border-t border-gray-100 dark:border-gray-800 text-xs text-gray-500 dark:text-gray-400">
@@ -246,17 +198,7 @@ export default function AllocationsPage() {
 
                 <div className="flex items-center gap-3">
                   <span>{formatTimestamp(alloc.CreateTime)}</span>
-                  {alloc.ClientStatus === 'running' && firstTask && (
-                    <Link
-                      to={`/exec/${alloc.ID}/${firstTask}?namespace=${alloc.Namespace}`}
-                      className="inline-flex items-center gap-1 px-2 py-1 text-xs font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-monokai-surface hover:bg-blue-100 rounded transition-colors"
-                      title="Open terminal"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <Terminal className="w-3.5 h-3.5" />
-                      Exec
-                    </Link>
-                  )}
+                  <AllocationActionsDropdown allocation={alloc} onSuccess={refetch} />
                 </div>
               </div>
             </div>

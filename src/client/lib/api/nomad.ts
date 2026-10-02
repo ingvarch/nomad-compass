@@ -21,6 +21,8 @@ import type {
   NomadServiceRegistration,
   NomadDrainSpec,
   NomadNodeActionResponse,
+  NomadStopAllocationOptions,
+  NomadAllocationStopResponse,
 } from '../../types/nomad';
 import {
   NomadAclPolicy,
@@ -361,6 +363,72 @@ export class NomadClient {
    */
   async getAllocation(allocId: string): Promise<NomadAllocation> {
     return this.request<NomadAllocation>(`/v1/allocation/${allocId}`);
+  }
+
+  /**
+   * Restart one task of an allocation in place, or all its running tasks when no task is given
+   */
+  async restartAllocation(allocId: string, taskName?: string, namespace?: string): Promise<void> {
+    await this.request<void>(`/v1/client/allocation/${encodeURIComponent(allocId)}/restart`, {
+      method: 'POST',
+      params: namespace ? { namespace } : undefined,
+      body: JSON.stringify({ TaskName: taskName ?? '' }),
+    });
+  }
+
+  /**
+   * Stop an allocation gracefully or immediately; the scheduler then places a replacement
+   */
+  async stopAllocation(
+    allocId: string,
+    options?: NomadStopAllocationOptions,
+    namespace?: string
+  ): Promise<NomadAllocationStopResponse> {
+    const params: Record<string, string | boolean> = {};
+    if (options?.noShutdownDelay) params.no_shutdown_delay = true;
+    if (options?.reschedule) params.reschedule = true;
+    if (namespace) params.namespace = namespace;
+
+    return this.request<NomadAllocationStopResponse>(`/v1/allocation/${encodeURIComponent(allocId)}/stop`, {
+      method: 'POST',
+      params: Object.keys(params).length > 0 ? params : undefined,
+    });
+  }
+
+  /**
+   * Reschedule the failed allocations of a job now, even past their reschedule limit
+   */
+  async rescheduleFailedAllocations(
+    jobId: string,
+    namespace: string = DEFAULT_NAMESPACE
+  ): Promise<{ EvalID: string; EvalCreateIndex: number; JobModifyIndex: number }> {
+    return this.request(this.jobEndpoint(jobId, '/evaluate'), {
+      method: 'POST',
+      params: { namespace },
+      body: JSON.stringify({
+        JobID: jobId,
+        EvalOptions: { ForceReschedule: true },
+      }),
+    });
+  }
+
+  /**
+   * Send a POSIX signal to a task within an allocation
+   */
+  async signalTask(
+    allocId: string,
+    taskName: string,
+    signal: string,
+    namespace?: string
+  ): Promise<void> {
+    await this.request<void>(`/v1/client/allocation/${encodeURIComponent(allocId)}/signal`, {
+      method: 'POST',
+      params: namespace ? { namespace } : undefined,
+      body: JSON.stringify({
+        Task: taskName,
+        Signal: signal,
+      }),
+    });
   }
 
   /**
