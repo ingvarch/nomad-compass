@@ -100,6 +100,26 @@ export interface NomadPeriodicConfig {
     TimeZone?: string;
 }
 
+// Parameterized block of a batch or sysbatch job. Nomad sends null for an empty key list.
+export interface NomadParameterizedJobConfig {
+    Payload: 'optional' | 'required' | 'forbidden';
+    MetaRequired: string[] | null;
+    MetaOptional: string[] | null;
+}
+
+export interface NomadJobDispatchRequest {
+    Meta: Record<string, string>;
+    Payload?: string;           // Base64
+}
+
+export interface NomadJobDispatchResponse {
+    DispatchedJobID: string;
+    EvalID: string;
+    EvalCreateIndex: number;
+    JobCreateIndex: number;
+    Index: number;
+}
+
 export interface NomadJobSummary {
     JobID: string;
     Summary: Record<string, {
@@ -143,6 +163,9 @@ export interface NomadJob {
     Priority?: number;
     ParentID?: string;
     Periodic?: NomadPeriodicConfig | null;
+    ParameterizedJob?: NomadParameterizedJobConfig | null;
+    // Set on the child job that a dispatch creates
+    Dispatched?: boolean;
     JobModifyIndex?: number;
 }
 

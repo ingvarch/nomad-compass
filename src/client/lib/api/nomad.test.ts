@@ -50,6 +50,21 @@ describe('NomadClient periodic jobs', () => {
   });
 });
 
+describe('NomadClient parameterized jobs', () => {
+  test('dispatches a job with meta and payload', async () => {
+    const reply = { DispatchedJobID: 'export/dispatch-1790611797-8a1b2c3d', EvalID: 'e1', EvalCreateIndex: 7, JobCreateIndex: 6, Index: 7 };
+    const calls = mockFetch(() => ({ body: reply }));
+    const request = { Meta: { database: 'orders' }, Payload: 'aGVsbG8=' };
+
+    const result = await new NomadClient().dispatchJob('export', request, 'prod');
+
+    expect(calls).toEqual([
+      { method: 'POST', url: '/api/nomad/v1/job/export/dispatch?namespace=prod', body: request },
+    ]);
+    expect(result).toEqual(reply);
+  });
+});
+
 describe('NomadClient variables endpoints', () => {
   test('lists, reads, puts and deletes variables', async () => {
     const calls = mockFetch(() => ({ body: [] }));

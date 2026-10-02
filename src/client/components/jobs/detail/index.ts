@@ -19,3 +19,4 @@ export { PeriodicActions } from './PeriodicActions';
 export { LaunchesTab } from './LaunchesTab';
 export { DeploymentCard } from './DeploymentCard';
 export { ScaleTaskGroupModal } from './ScaleTaskGroupModal';
+export { DispatchJobModal } from './DispatchJobModal';

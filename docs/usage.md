@@ -104,6 +104,25 @@ starts with an active schedule. The form makes service and batch jobs, so a
 clone of a sysbatch or system job creates a service job; for a periodic
 sysbatch job Nomad rejects that clone.
 
+## Parameterized jobs
+
+A parameterized job runs only when someone dispatches it. Each dispatch is a
+child job with the ID `<job>/dispatch-<time>-<id>`.
+
+1. **Dispatch**: on the job page, **Dispatch** opens a form with one field per
+   meta key the job lists in `meta_required` and `meta_optional`. Nomad
+   rejects any other key, so the form has no free key field. An empty
+   optional field keeps the value the job has for the key, which the field
+   shows as its placeholder.
+2. **Payload**: type the payload or attach a file, up to 16 KiB. Nomad writes
+   it to the file set by `dispatch_payload` in the task. The form hides the
+   payload when the job has `payload = "forbidden"` and asks for it when the
+   job has `payload = "required"`.
+3. **Result**: after the dispatch the form shows the ID of the new job and
+   **Open Job** goes to its page. Dispatching needs the `dispatch-job`
+   capability. Nomad rejects a dispatch of a stopped job, so the button is
+   disabled until the job is started. A dispatched job has no Dispatch button.
+
 ## Viewing logs
 
 Job detail and allocation pages include a logs viewer:

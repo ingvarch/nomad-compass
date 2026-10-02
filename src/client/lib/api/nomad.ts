@@ -23,6 +23,8 @@ import type {
   NomadNodeActionResponse,
   NomadStopAllocationOptions,
   NomadAllocationStopResponse,
+  NomadJobDispatchRequest,
+  NomadJobDispatchResponse,
 } from '../../types/nomad';
 import {
   NomadAclPolicy,
@@ -355,6 +357,21 @@ export class NomadClient {
   async getPeriodicLaunches(jobId: string, namespace: string = DEFAULT_NAMESPACE): Promise<NomadJobListStub[]> {
     return this.request<NomadJobListStub[]>('/v1/jobs', {
       params: { namespace, prefix: periodicLaunchPrefix(jobId) },
+    });
+  }
+
+  /**
+   * Dispatch a parameterized job (Nomad rejects this while the job is stopped)
+   */
+  async dispatchJob(
+    jobId: string,
+    request: NomadJobDispatchRequest,
+    namespace: string = DEFAULT_NAMESPACE
+  ): Promise<NomadJobDispatchResponse> {
+    return this.request<NomadJobDispatchResponse>(this.jobEndpoint(jobId, '/dispatch'), {
+      method: 'POST',
+      params: { namespace },
+      body: JSON.stringify(request),
     });
   }
 
