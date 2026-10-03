@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { CheckCircle2, ChevronRight, Paperclip, X } from 'lucide-react';
 import { Modal, Button, ErrorAlert } from '../../ui';
+import { FieldError, OptionalMark } from '../../ui/forms/FieldHints';
 import { getErrorMessage } from '../../../lib/errors';
 import {
   dispatchMetaFields,
@@ -26,15 +27,6 @@ interface PayloadFile {
 }
 
 const textEncoder = new TextEncoder();
-
-function OptionalMark() {
-  return <span className="font-normal text-gray-400 dark:text-gray-500">(optional)</span>;
-}
-
-function FieldError({ message }: { message?: string }) {
-  if (!message) return null;
-  return <p className="mt-1 text-xs text-red-600 dark:text-red-400">{message}</p>;
-}
 
 /**
  * Form for the meta keys and the payload a parameterized job accepts; after the dispatch, a link to the new job.

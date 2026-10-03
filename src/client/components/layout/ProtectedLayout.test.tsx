@@ -65,4 +65,21 @@ describe('ProtectedLayout', () => {
     expect(screen.getByText('Exec Terminal Content')).toBeTruthy();
     expect(screen.queryByRole('navigation', { name: 'Mobile Navigation Bar' })).toBeNull();
   });
+
+  test('links the desktop navigation to storage next to the node pools', () => {
+    render(
+      <MemoryRouter initialEntries={['/storage']}>
+        <Routes>
+          <Route element={<ProtectedLayout />}>
+            <Route path="/storage" element={<div>Storage Content</div>} />
+          </Route>
+        </Routes>
+      </MemoryRouter>
+    );
+
+    const names = screen.getAllByRole('link').map((link) => link.textContent?.trim());
+    const nodePools = names.indexOf('Node Pools');
+    expect(names[nodePools + 1]).toBe('Storage');
+    expect(screen.getAllByRole('link', { name: 'Storage' })[0].getAttribute('href')).toBe('/storage');
+  });
 });

@@ -44,6 +44,7 @@ describe('MoreMenuSheet', () => {
     expect(screen.getByText('Namespaces')).toBeTruthy();
     expect(screen.getByText('Nodes')).toBeTruthy();
     expect(screen.getByText('Servers & Raft')).toBeTruthy();
+    expect(screen.getByRole('link', { name: 'Storage' }).getAttribute('href')).toBe('/storage');
     expect(screen.getByText('All Allocations')).toBeTruthy();
     expect(screen.getByText('Failed Allocations')).toBeTruthy();
     expect(screen.getByText('ACL (Policies & Tokens)')).toBeTruthy();

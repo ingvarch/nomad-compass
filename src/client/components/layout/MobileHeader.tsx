@@ -61,6 +61,15 @@ function getRouteMeta(pathname: string): RouteMeta {
   if (/^\/allocations\/[^/]+\/files$/.test(pathname)) {
     return { title: 'Files', backTo: '/allocations' };
   }
+  if (pathname === '/storage') {
+    return { title: 'Storage', backTo: '/dashboard' };
+  }
+  if (pathname.startsWith('/storage/volumes/')) {
+    return { title: 'Volume', backTo: '/storage' };
+  }
+  if (pathname.startsWith('/storage/plugins/')) {
+    return { title: 'CSI Plugin', backTo: '/storage?tab=plugins' };
+  }
   if (pathname === '/acl') {
     return { title: 'ACL', backTo: '/dashboard' };
   }

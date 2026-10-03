@@ -47,6 +47,23 @@ describe('MobileHeader', () => {
     expect(screen.getByText('Files')).toBeTruthy();
   });
 
+  test.each([
+    ['/storage', 'Storage'],
+    ['/storage/volumes/test-volume%5B0%5D?namespace=default', 'Volume'],
+    ['/storage/plugins/hostpath-plugin0', 'CSI Plugin'],
+  ])('renders back button and title on %s', (path, title) => {
+    render(
+      <MemoryRouter initialEntries={[path]}>
+        <ThemeProvider>
+          <MobileHeader />
+        </ThemeProvider>
+      </MemoryRouter>
+    );
+
+    expect(screen.getByRole('button', { name: /go back/i })).toBeTruthy();
+    expect(screen.getByText(title)).toBeTruthy();
+  });
+
   test('renders back button instead of logo on /allocations', () => {
     render(
       <MemoryRouter initialEntries={['/allocations']}>

@@ -290,3 +290,81 @@ describe('NomadClient allocation lifecycle endpoints', () => {
     });
   });
 });
+
+describe('NomadClient CSI volumes and plugins', () => {
+  test('lists the volumes of all namespaces and reads one by its encoded ID', async () => {
+    const calls = mockFetch(({ url }) => ({ body: url.includes('/volumes') ? [] : {} }));
+    const client = new NomadClient();
+
+    await client.getCSIVolumes();
+    await client.getCSIVolume('test-volume[0]', 'prod');
+
+    expect(calls.map((c) => c.url)).toEqual([
+      '/api/nomad/v1/volumes?type=csi&namespace=*',
+      '/api/nomad/v1/volume/csi/test-volume%5B0%5D?namespace=prod',
+    ]);
+  });
+
+  test('registers a volume', async () => {
+    const calls = mockFetch(() => ({ body: {} }));
+    const volume = {
+      ID: 'postgres-data', Name: 'postgres-data', Namespace: 'prod', PluginID: 'aws-ebs', ExternalID: 'vol-0abc',
+      RequestedCapabilities: [{ AccessMode: 'single-node-writer', AttachmentMode: 'file-system' }],
+    };
+
+    await new NomadClient().registerCSIVolume(volume);
+
+    expect(calls).toEqual([
+      { method: 'PUT', url: '/api/nomad/v1/volume/csi/postgres-data?namespace=prod', body: { Volumes: [volume] } },
+    ]);
+  });
+
+  test('deregisters a volume, by force when asked', async () => {
+    const calls = mockFetch(() => ({ body: {} }));
+    const client = new NomadClient();
+
+    await client.deregisterCSIVolume('postgres-data', 'prod');
+    await client.deregisterCSIVolume('postgres-data', 'prod', true);
+
+    expect(calls.map((c) => `${c.method} ${c.url}`)).toEqual([
+      'DELETE /api/nomad/v1/volume/csi/postgres-data?namespace=prod',
+      'DELETE /api/nomad/v1/volume/csi/postgres-data?namespace=prod&force=true',
+    ]);
+  });
+
+  // Nomad has no snapshot path per volume: the snapshot request names the volume
+  test('creates a snapshot of a volume', async () => {
+    const snapshot = {
+      ID: 'snap-1', ExternalSourceVolumeID: 'vol-0abc', SourceVolumeID: 'postgres-data', PluginID: 'aws-ebs',
+      Name: 'before-upgrade', SizeBytes: 1024, CreateTime: 1790611797, IsReady: true,
+    };
+    const calls = mockFetch(() => ({ body: { Snapshots: [snapshot] } }));
+
+    const created = await new NomadClient().createCSISnapshot(
+      { ID: 'postgres-data', Namespace: 'prod', PluginID: 'aws-ebs' },
+      'before-upgrade'
+    );
+
+    expect(created).toEqual(snapshot);
+    expect(calls).toEqual([
+      {
+        method: 'PUT',
+        url: '/api/nomad/v1/volumes/snapshot?namespace=prod',
+        body: { Snapshots: [{ SourceVolumeID: 'postgres-data', PluginID: 'aws-ebs', Name: 'before-upgrade' }] },
+      },
+    ]);
+  });
+
+  test('lists the plugins and reads one', async () => {
+    const calls = mockFetch(({ url }) => ({ body: url.includes('/plugins') ? [] : {} }));
+    const client = new NomadClient();
+
+    await client.getCSIPlugins();
+    await client.getCSIPlugin('hostpath-plugin0');
+
+    expect(calls.map((c) => c.url)).toEqual([
+      '/api/nomad/v1/plugins?type=csi',
+      '/api/nomad/v1/plugin/csi/hostpath-plugin0',
+    ]);
+  });
+});

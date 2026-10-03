@@ -34,6 +34,7 @@ const navItems: NavItem[] = [
   { path: '/jobs', label: 'Jobs' },
   { path: '/topology', label: 'Topology' },
   { path: '/node-pools', label: 'Node Pools' },
+  { path: '/storage', label: 'Storage' },
   { path: '/servers', label: 'Servers' },
   { path: '/namespaces', label: 'Namespaces' },
   { path: '/variables', label: 'Variables' },
