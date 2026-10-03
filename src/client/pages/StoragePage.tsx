@@ -41,7 +41,7 @@ export default function StoragePage() {
     { errorMessage: 'Failed to load CSI volumes' }
   );
   const plugins = useFetch<NomadCSIPluginListStub[]>(
-    () => withPermissionMessage('read-plugins', () => createNomadClient().getCSIPlugins()),
+    () => withPermissionMessage('list-plugins', () => createNomadClient().getCSIPlugins()),
     [],
     { errorMessage: 'Failed to load CSI plugins' }
   );

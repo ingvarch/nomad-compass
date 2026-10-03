@@ -78,9 +78,12 @@ const permissionMessages: Record<string, string> = {
   'reschedule-allocation': 'You do not have permission to reschedule allocations. It needs submit-job.',
   'list-volumes': 'You do not have permission to list CSI volumes. It needs csi-list-volume.',
   'read-volume': 'You do not have permission to read this CSI volume. It needs csi-read-volume.',
-  'register-volume': 'You do not have permission to register CSI volumes. It needs csi-write-volume.',
+  'register-volume':
+    'You do not have permission to register CSI volumes. It needs csi-write-volume and a plugin policy of read.',
   'deregister-volume': 'You do not have permission to deregister this CSI volume. It needs csi-write-volume.',
-  'snapshot-volume': 'You do not have permission to snapshot this CSI volume. It needs csi-write-volume.',
+  'snapshot-volume':
+    'You do not have permission to snapshot this CSI volume. It needs csi-write-volume and a plugin policy of read.',
+  'list-plugins': 'You do not have permission to list CSI plugins. It needs a plugin policy of list.',
   'read-plugins': 'You do not have permission to read CSI plugins. It needs a plugin policy of read.',
 };
 
