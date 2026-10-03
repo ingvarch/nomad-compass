@@ -126,6 +126,17 @@ describe('StoragePage plugins', () => {
     expect(calls.some((c) => c.url === '/api/nomad/v1/plugins?type=csi')).toBe(true);
   });
 
+  test('explains a permission error of the plugin list', async () => {
+    mockFetch(({ url }: FetchCall) => {
+      if (url.startsWith('/api/nomad/v1/plugins')) return { status: 403, body: { message: 'Permission denied' } };
+      if (url.startsWith('/api/nomad/v1/volumes')) return { body: [] };
+      return undefined;
+    });
+    renderPage('/storage?tab=plugins');
+
+    expect(await screen.findByText(getPermissionErrorMessage('list-plugins'))).toBeTruthy();
+  });
+
   test('switches between the tabs', async () => {
     nomad();
     renderPage();

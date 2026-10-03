@@ -45,6 +45,23 @@ describe('getErrorMessage', () => {
   });
 });
 
+// The ACL checks of Nomad's CSIVolume and CSIPlugin endpoints
+describe('CSI permission messages', () => {
+  test.each([
+    ['list-volumes', ['csi-list-volume']],
+    ['read-volume', ['csi-read-volume']],
+    ['register-volume', ['csi-write-volume', 'plugin policy of read']],
+    ['deregister-volume', ['csi-write-volume']],
+    ['snapshot-volume', ['csi-write-volume', 'plugin policy of read']],
+    ['list-plugins', ['plugin policy of list']],
+    ['read-plugins', ['plugin policy of read']],
+  ])('%s names what Nomad checks', (operation, needs) => {
+    for (const need of needs) {
+      expect(getPermissionErrorMessage(operation)).toContain(need);
+    }
+  });
+});
+
 describe('isJobModifyIndexConflict', () => {
   test('detects an EnforceIndex conflict', () => {
     const error = { statusCode: 500, message: 'Enforcing job modify index 11: job exists with conflicting job modify index: 15' };
