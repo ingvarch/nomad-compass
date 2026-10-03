@@ -11,7 +11,7 @@ const periodic: NomadPeriodicConfig = {
 };
 const lastLaunch: NomadJobListStub = {
   ID: 'backup/periodic-1790611797', ParentID: 'backup', Name: 'backup/periodic-1790611797', Namespace: 'default',
-  Type: 'batch', Status: 'dead', Stop: false, Periodic: false, SubmitTime: 1790611797886474000,
+  Type: 'batch', Status: 'dead', Stop: false, Periodic: false, ParameterizedJob: false, SubmitTime: 1790611797886474000,
 };
 
 function renderCard(props: Partial<ComponentProps<typeof ScheduleCard>> = {}) {

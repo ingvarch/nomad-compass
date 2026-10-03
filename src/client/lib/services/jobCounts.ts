@@ -1,7 +1,7 @@
 import type { NomadJobListStub } from '../../types/nomad';
-import { listedJobs } from './periodicService';
+import { listedJobs } from './jobKind';
 
-/** Skips periodic launches, to match the jobs list. */
+/** Skips periodic launches and dispatched jobs, to match the jobs list. */
 export function countJobsByStatus(jobs: NomadJobListStub[]) {
   let running = 0;
   let pending = 0;
@@ -24,7 +24,7 @@ export function countJobsByStatus(jobs: NomadJobListStub[]) {
   return { running, pending, dead };
 }
 
-/** Skips periodic launches, to match the jobs list. */
+/** Skips periodic launches and dispatched jobs, to match the jobs list. */
 export function countJobsByNamespace(jobs: NomadJobListStub[]): Map<string, { total: number; running: number }> {
   const counts = new Map<string, { total: number; running: number }>();
   listedJobs(jobs).forEach((job) => {

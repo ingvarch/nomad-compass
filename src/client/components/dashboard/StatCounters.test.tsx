@@ -14,6 +14,7 @@ const mockJobs: NomadJobListStub[] = [
     Status: 'running',
     Stop: false,
     Periodic: false,
+    ParameterizedJob: false,
     JobSummary: {
       JobID: 'job-1',
       Summary: {

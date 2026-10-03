@@ -8,7 +8,24 @@ import { LoadingSpinner, ErrorAlert, Badge, Select } from '../ui';
 import DataTable, { type Column } from '../ui/DataTable';
 import { StatusBadge } from './detail/StatusBadge';
 import { jobPath } from '../../lib/utils/jobPath';
-import { listedJobs } from '../../lib/services/periodicService';
+import { listedJobs } from '../../lib/services/jobKind';
+
+function KindBadges({ job, className }: { job: NomadJobListStub; className?: string }) {
+  return (
+    <>
+      {job.Periodic && (
+        <Badge variant="purple" className={className}>
+          periodic
+        </Badge>
+      )}
+      {job.ParameterizedJob && (
+        <Badge variant="purple" className={className}>
+          parameterized
+        </Badge>
+      )}
+    </>
+  );
+}
 
 export const jobColumns: Column<NomadJobListStub>[] = [
   {
@@ -48,11 +65,7 @@ export const jobColumns: Column<NomadJobListStub>[] = [
     render: (job) => (
       <span className="text-sm text-gray-900 dark:text-monokai-text">
         {job.Type}
-        {job.Periodic && (
-          <Badge variant="purple" className="ml-2">
-            periodic
-          </Badge>
-        )}
+        <KindBadges job={job} className="ml-2" />
       </span>
     ),
   },
@@ -174,9 +187,7 @@ const JobList: React.FC = () => {
               <span className="text-xs px-2 py-0.5 rounded bg-gray-100 dark:bg-monokai-surface text-gray-700 dark:text-monokai-muted capitalize font-medium">
                 {job.Type}
               </span>
-              {job.Periodic && (
-                <Badge variant="purple">periodic</Badge>
-              )}
+              <KindBadges job={job} />
             </div>
           </Link>
         )}

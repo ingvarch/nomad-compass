@@ -1,5 +1,5 @@
 import { describe, test, expect } from 'bun:test';
-import { jobKind } from './jobKind';
+import { jobKind, listedJobs } from './jobKind';
 import type { NomadParameterizedJobConfig, NomadPeriodicConfig } from '../../types/nomad';
 
 const periodic: NomadPeriodicConfig = { Enabled: true, Specs: ['@daily'], SpecType: 'cron', ProhibitOverlap: true };
@@ -22,5 +22,20 @@ describe('jobKind', () => {
   test('a dispatched job and a job without either block are regular', () => {
     expect(jobKind({ ParameterizedJob: parameterized, Dispatched: true })).toBe('regular');
     expect(jobKind({ Periodic: null, ParameterizedJob: null })).toBe('regular');
+  });
+});
+
+describe('listedJobs', () => {
+  test('drops periodic launches and dispatched jobs', () => {
+    const jobs = [
+      { ID: 'backup', ParentID: '' },
+      { ID: 'backup/periodic-1790611797', ParentID: 'backup' },
+      { ID: 'sync', ParentID: '' },
+      { ID: 'sync/dispatch-1730972650-247c6e97', ParentID: 'sync' },
+      // A periodic parameterized job: each dispatch is periodic and launches its own children
+      { ID: 'report/dispatch-1730972650-0c8e3f1a', ParentID: 'report' },
+      { ID: 'report/dispatch-1730972650-0c8e3f1a/periodic-1790611797', ParentID: 'report/dispatch-1730972650-0c8e3f1a' },
+    ];
+    expect(listedJobs(jobs).map((job) => job.ID)).toEqual(['backup', 'sync']);
   });
 });

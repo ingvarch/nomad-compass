@@ -143,6 +143,8 @@ export interface NomadJobListStub {
     Status: string;
     Stop: boolean;
     Periodic: boolean;
+    // Nomad's IsParameterized: false on a dispatched job
+    ParameterizedJob: boolean;
     JobSummary?: NomadJobSummary;
     SubmitTime: number;
 }

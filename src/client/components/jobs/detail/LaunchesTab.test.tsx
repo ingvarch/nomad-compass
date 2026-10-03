@@ -7,7 +7,7 @@ import type { NomadJobListStub } from '../../../types/nomad';
 
 const launch: NomadJobListStub = {
   ID: 'backup/periodic-1790611797', ParentID: 'backup', Name: 'backup/periodic-1790611797', Namespace: 'default',
-  Type: 'batch', Status: 'dead', Stop: false, Periodic: false, SubmitTime: 1790611797886474000,
+  Type: 'batch', Status: 'dead', Stop: false, Periodic: false, ParameterizedJob: false, SubmitTime: 1790611797886474000,
   JobSummary: { JobID: 'backup/periodic-1790611797', Summary: { backup: { Running: 0, Starting: 0, Failed: 0, Complete: 1, Lost: 0, Unknown: 0 } } },
 };
 

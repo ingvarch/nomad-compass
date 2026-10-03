@@ -2,7 +2,6 @@ import { describe, test, expect } from 'bun:test';
 import {
   cronsOf,
   isPeriodicLaunch,
-  listedJobs,
   sortLaunchesNewestFirst,
   launchAllocationCounts,
   setPeriodicEnabled,
@@ -44,21 +43,10 @@ describe('isPeriodicLaunch', () => {
   });
 });
 
-describe('listedJobs', () => {
-  test('drops periodic launches', () => {
-    const jobs = [
-      { ID: 'backup', ParentID: '' },
-      { ID: 'backup/periodic-1790611797', ParentID: 'backup' },
-      { ID: 'sync/dispatch-1730972650-247c6e97', ParentID: 'sync' },
-    ];
-    expect(listedJobs(jobs).map((job) => job.ID)).toEqual(['backup', 'sync/dispatch-1730972650-247c6e97']);
-  });
-});
-
 function launch(ID: string, SubmitTime: number, summary: NomadJobSummary['Summary'] = {}): NomadJobListStub {
   return {
     ID, ParentID: 'backup', Name: ID, Namespace: 'default', Type: 'batch', Status: 'dead', Stop: false,
-    Periodic: false, SubmitTime,
+    Periodic: false, ParameterizedJob: false, SubmitTime,
     JobSummary: { JobID: ID, Summary: summary },
   };
 }
