@@ -86,6 +86,7 @@ describe('AllocationsPage', () => {
 
     // Check menu options
     expect(screen.getAllByRole('menuitem').map((item) => item.textContent)).toEqual([
+      'Browse Files',
       'Restart Allocation...',
       'Send Signal...',
       'Stop Allocation',

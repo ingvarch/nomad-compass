@@ -79,6 +79,46 @@ describe('NomadClient parameterized jobs', () => {
   });
 });
 
+describe('NomadClient allocation filesystem', () => {
+  const file = { Name: 'app.json', IsDir: false, Size: 5, FileMode: '-rw-r--r--', ModTime: '2026-10-02T23:27:06Z', ContentType: '' };
+
+  test('lists a directory and stats a file', async () => {
+    const calls = mockFetch(({ url }) => ({ body: url.includes('/ls/') ? [file] : file }));
+    const client = new NomadClient();
+
+    expect(await client.listAllocFiles('alloc-1', '/server/local')).toEqual([file]);
+    expect(await client.statAllocFile('alloc-1', '/server/local/app.json')).toEqual(file);
+    expect(calls.map((c) => c.url)).toEqual([
+      '/api/nomad/v1/client/fs/ls/alloc-1?path=%2Fserver%2Flocal',
+      '/api/nomad/v1/client/fs/stat/alloc-1?path=%2Fserver%2Flocal%2Fapp.json',
+    ]);
+  });
+
+  test('reads the start of a file as bytes', async () => {
+    const calls = mockFetch(() => ({ body: 'héllo' }));
+
+    const bytes = await new NomadClient().readAllocFile('alloc-1', '/server/local/app.json', 1024);
+
+    expect(bytes).toEqual(new TextEncoder().encode('héllo'));
+    expect(calls[0].url).toBe('/api/nomad/v1/client/fs/readat/alloc-1?path=%2Fserver%2Flocal%2Fapp.json&offset=0&limit=1024');
+  });
+
+  test('reports an error of Nomad while reading', async () => {
+    mockFetch(() => ({ status: 404, body: { message: 'no such file or directory' } }));
+
+    await expect(new NomadClient().readAllocFile('alloc-1', '/gone', 1024)).rejects.toEqual({
+      statusCode: 404,
+      message: 'no such file or directory',
+    });
+  });
+
+  test('builds the download link of a file', () => {
+    expect(new NomadClient().allocFileDownloadUrl('alloc-1', '/server/local/app.json')).toBe(
+      '/api/nomad/v1/client/fs/cat/alloc-1?path=%2Fserver%2Flocal%2Fapp.json'
+    );
+  });
+});
+
 describe('NomadClient variables endpoints', () => {
   test('lists, reads, puts and deletes variables', async () => {
     const calls = mockFetch(() => ({ body: [] }));

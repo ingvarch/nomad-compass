@@ -34,6 +34,19 @@ describe('MobileHeader', () => {
     expect(screen.getByText('Job Details')).toBeTruthy();
   });
 
+  test('renders back button and title on the files of an allocation', () => {
+    render(
+      <MemoryRouter initialEntries={['/allocations/1c7908c7-799d/files?path=%2Fserver']}>
+        <ThemeProvider>
+          <MobileHeader />
+        </ThemeProvider>
+      </MemoryRouter>
+    );
+
+    expect(screen.getByRole('button', { name: /go back/i })).toBeTruthy();
+    expect(screen.getByText('Files')).toBeTruthy();
+  });
+
   test('renders back button instead of logo on /allocations', () => {
     render(
       <MemoryRouter initialEntries={['/allocations']}>

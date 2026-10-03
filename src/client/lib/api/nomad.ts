@@ -25,6 +25,7 @@ import type {
   NomadAllocationStopResponse,
   NomadJobDispatchRequest,
   NomadJobDispatchResponse,
+  NomadAllocFileInfo,
 } from '../../types/nomad';
 import {
   NomadAclPolicy,
@@ -56,6 +57,29 @@ import { PermissionError, isApiError } from '../errors';
 import { DEFAULT_NAMESPACE } from '../constants';
 import { periodicLaunchPrefix } from '../services/periodicService';
 import { dispatchedJobPrefix } from '../services/dispatchService';
+
+type RequestOptions = RequestInit & { params?: Record<string, string | boolean> };
+
+/**
+ * Runs a request; a failure that is not a PermissionError or ApiError becomes a network error
+ */
+async function withNetworkErrors<T>(run: () => Promise<T>): Promise<T> {
+  try {
+    return await run();
+  } catch (error) {
+    // Re-throw PermissionError and ApiError as-is
+    if (error instanceof PermissionError || (error as ApiError).statusCode) {
+      throw error;
+    }
+
+    // Handle network errors
+    const networkError: ApiError = {
+      statusCode: 0,
+      message: `Network error: ${(error as Error).message}`,
+    };
+    throw networkError;
+  }
+}
 
 /**
  * NomadClient - A client for interacting with Nomad API
@@ -90,26 +114,27 @@ export class NomadClient {
   }
 
   /**
-   * Generic request method for Nomad API
+   * Build URL with query parameters if provided
+   */
+  private url(endpoint: string, params?: Record<string, string | boolean>): string {
+    const url = `${this.baseUrl}${endpoint}`;
+    if (!params) return url;
+
+    const searchParams = new URLSearchParams();
+    Object.entries(params).forEach(([key, value]) => {
+      searchParams.append(key, String(value));
+    });
+    return `${url}?${searchParams.toString()}`;
+  }
+
+  /**
+   * Sends a request to the Nomad API and returns the successful response
    * Token is sent via httpOnly cookie, only CSRF token needs to be added
    */
-  private async request<T>(
-      endpoint: string,
-      options: RequestInit & { params?: Record<string, string | boolean> } = {}
-  ): Promise<T> {
+  private async send(endpoint: string, options: RequestOptions = {}): Promise<Response> {
     // Extract and remove params from options if they exist
     const { params, ...fetchOptions } = options;
-
-    // Build URL with query parameters if provided
-    let url = `${this.baseUrl}${endpoint}`;
-
-    if (params) {
-      const searchParams = new URLSearchParams();
-      Object.entries(params).forEach(([key, value]) => {
-        searchParams.append(key, String(value));
-      });
-      url = `${url}?${searchParams.toString()}`;
-    }
+    const url = this.url(endpoint, params);
 
     // Determine if this is a state-changing request that needs CSRF protection
     const method = (fetchOptions.method || 'GET').toUpperCase();
@@ -133,41 +158,50 @@ export class NomadClient {
       // Missing CSRF token will result in 403 from server
     }
 
-    try {
-      const response = await fetch(url, {
-        ...restFetchOptions,
-        headers,
-        credentials: 'include', // Include cookies in request
-      });
+    const response = await fetch(url, {
+      ...restFetchOptions,
+      headers,
+      credentials: 'include', // Include cookies in request
+    });
 
-      // Check if the request was successful
-      if (!response.ok) {
-        // Try to parse the error response
-        let errorData;
-        try {
-          errorData = await response.json();
-        } catch {
-          // If response is not JSON, create a generic error
-          errorData = {
-            error: 'Request failed',
-            message: `API request failed with status ${response.status}`,
-            status: response.status
-          };
-        }
-
-        // Handle 403 Forbidden specifically with a PermissionError
-        if (response.status === 403) {
-          throw new PermissionError(
-            errorData.message || 'Insufficient permissions to perform this action'
-          );
-        }
-
-        const error: ApiError = {
-          statusCode: response.status,
-          message: errorData.message || errorData.error || `API request failed with status ${response.status}`,
+    // Check if the request was successful
+    if (!response.ok) {
+      // Try to parse the error response
+      let errorData;
+      try {
+        errorData = await response.json();
+      } catch {
+        // If response is not JSON, create a generic error
+        errorData = {
+          error: 'Request failed',
+          message: `API request failed with status ${response.status}`,
+          status: response.status
         };
-        throw error;
       }
+
+      // Handle 403 Forbidden specifically with a PermissionError
+      if (response.status === 403) {
+        throw new PermissionError(
+          errorData.message || 'Insufficient permissions to perform this action'
+        );
+      }
+
+      const error: ApiError = {
+        statusCode: response.status,
+        message: errorData.message || errorData.error || `API request failed with status ${response.status}`,
+      };
+      throw error;
+    }
+
+    return response;
+  }
+
+  /**
+   * Generic request method for Nomad API
+   */
+  private async request<T>(endpoint: string, options: RequestOptions = {}): Promise<T> {
+    return withNetworkErrors(async () => {
+      const response = await this.send(endpoint, options);
 
       // Check content length - if empty, return undefined
       const contentLength = response.headers.get('content-length');
@@ -188,19 +222,17 @@ export class NomadClient {
         const text = await response.text();
         return { Data: text } as unknown as T;
       }
-    } catch (error) {
-      // Re-throw PermissionError and ApiError as-is
-      if (error instanceof PermissionError || (error as ApiError).statusCode) {
-        throw error;
-      }
+    });
+  }
 
-      // Handle network errors
-      const networkError: ApiError = {
-        statusCode: 0,
-        message: `Network error: ${(error as Error).message}`,
-      };
-      throw networkError;
-    }
+  /**
+   * Raw bytes of a response, for file contents that may not be text
+   */
+  private async requestBytes(endpoint: string, options: RequestOptions = {}): Promise<Uint8Array> {
+    return withNetworkErrors(async () => {
+      const response = await this.send(endpoint, options);
+      return new Uint8Array(await response.arrayBuffer());
+    });
   }
 
   /**
@@ -442,6 +474,38 @@ export class NomadClient {
         EvalOptions: { ForceReschedule: true },
       }),
     });
+  }
+
+  /**
+   * List a directory of an allocation; paths start at the allocation directory "/"
+   */
+  async listAllocFiles(allocId: string, path: string): Promise<NomadAllocFileInfo[]> {
+    return this.request<NomadAllocFileInfo[]>(`/v1/client/fs/ls/${encodeURIComponent(allocId)}`, {
+      params: { path },
+    });
+  }
+
+  async statAllocFile(allocId: string, path: string): Promise<NomadAllocFileInfo> {
+    return this.request<NomadAllocFileInfo>(`/v1/client/fs/stat/${encodeURIComponent(allocId)}`, {
+      params: { path },
+    });
+  }
+
+  /**
+   * The first `limit` bytes of a file. Nomad answers some failures, like a directory
+   * or a secret, with 200 and the error as content: stat the path first.
+   */
+  async readAllocFile(allocId: string, path: string, limit: number): Promise<Uint8Array> {
+    return this.requestBytes(`/v1/client/fs/readat/${encodeURIComponent(allocId)}`, {
+      params: { path, offset: '0', limit: String(limit) },
+    });
+  }
+
+  /**
+   * Link that downloads the whole file; the browser sends the token cookie with it
+   */
+  allocFileDownloadUrl(allocId: string, path: string): string {
+    return this.url(`/v1/client/fs/cat/${encodeURIComponent(allocId)}`, { path });
   }
 
   /**

@@ -147,3 +147,57 @@ body {
   animation: backdropFadeIn 0.25s ease-out both;
 }
 
+/* Syntax colors of the file viewer (highlight.js classes): GitHub light, Monokai dark */
+.code-view .hljs-attr,
+.code-view .hljs-attribute,
+.code-view .hljs-section,
+.code-view .hljs-name {
+  color: #0550ae;
+}
+.code-view .hljs-string {
+  color: #116329;
+}
+.code-view .hljs-number,
+.code-view .hljs-literal,
+.code-view .hljs-variable,
+.code-view .hljs-template-variable {
+  color: #953800;
+}
+.code-view .hljs-keyword,
+.code-view .hljs-built_in,
+.code-view .hljs-tag,
+.code-view .hljs-selector-tag {
+  color: #cf222e;
+}
+.code-view .hljs-comment,
+.code-view .hljs-meta {
+  color: #6e7781;
+  font-style: italic;
+}
+
+.dark .code-view .hljs-attr,
+.dark .code-view .hljs-attribute,
+.dark .code-view .hljs-section,
+.dark .code-view .hljs-name {
+  color: var(--color-monokai-blue);
+}
+.dark .code-view .hljs-string {
+  color: var(--color-monokai-yellow);
+}
+.dark .code-view .hljs-number,
+.dark .code-view .hljs-literal,
+.dark .code-view .hljs-variable,
+.dark .code-view .hljs-template-variable {
+  color: var(--color-monokai-purple);
+}
+.dark .code-view .hljs-keyword,
+.dark .code-view .hljs-built_in,
+.dark .code-view .hljs-tag,
+.dark .code-view .hljs-selector-tag {
+  color: var(--color-monokai-red);
+}
+.dark .code-view .hljs-comment,
+.dark .code-view .hljs-meta {
+  color: var(--color-monokai-muted);
+}
+

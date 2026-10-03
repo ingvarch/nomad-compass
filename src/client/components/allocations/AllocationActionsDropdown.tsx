@@ -1,9 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { Link } from 'react-router-dom';
-import { MoreVertical, Terminal, RotateCcw, RefreshCw, Radio, Square, type LucideIcon } from 'lucide-react';
+import { MoreVertical, Terminal, RotateCcw, RefreshCw, Radio, Square, FolderOpen, type LucideIcon } from 'lucide-react';
 import type { NomadAllocation } from '../../types/nomad';
 import { createNomadClient, type NomadClient } from '../../lib/api/nomad';
+import { filesPagePath } from '../../lib/services/allocFilesService';
 import { useToast } from '../../context/ToastContext';
 import { isPermissionError, getPermissionErrorMessage, getErrorMessage } from '../../lib/errors';
 import { ConfirmationDialog } from '../ui/ConfirmationDialog';
@@ -29,6 +30,10 @@ const ACTIONS: Record<AllocationAction, { label: string; icon: LucideIcon; failu
   },
 };
 
+const menuItemBase = 'flex items-center w-full px-3 py-2.5 sm:py-1.5 text-sm sm:text-xs text-left';
+const menuItemStyles = `${menuItemBase} text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700`;
+const menuItemDangerStyles = `${menuItemBase} text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20`;
+
 // Nomad restarts and signals only running tasks, stops only live allocations
 // and reschedules only failed ones
 function availableActions(allocation: NomadAllocation): AllocationAction[] {
@@ -43,6 +48,11 @@ function availableActions(allocation: NomadAllocation): AllocationAction[] {
     default:
       return [];
   }
+}
+
+// The directory exists once the allocation started and until garbage collection; a lost node takes it along
+function hasFiles(allocation: NomadAllocation): boolean {
+  return ['running', 'complete', 'failed'].includes(allocation.ClientStatus);
 }
 
 function getFirstTask(alloc: NomadAllocation): string | null {
@@ -74,6 +84,7 @@ export function AllocationActionsDropdown({
   const firstTask = getFirstTask(allocation);
   const isRunning = allocation.ClientStatus === 'running';
   const actions = availableActions(allocation);
+  const canBrowseFiles = hasFiles(allocation);
   const closeDialog = () => setOpenAction(null);
 
   // Toggle menu and calculate fixed position
@@ -209,7 +220,7 @@ export function AllocationActionsDropdown({
           </Link>
         )}
 
-        {actions.length > 0 && (
+        {(canBrowseFiles || actions.length > 0) && (
           <button
             ref={buttonRef}
             type="button"
@@ -238,6 +249,17 @@ export function AllocationActionsDropdown({
             className="z-50 w-60 sm:w-56 rounded-md shadow-lg bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 py-1"
             onClick={(e) => e.stopPropagation()}
           >
+            {canBrowseFiles && (
+              <Link
+                role="menuitem"
+                to={filesPagePath(allocation.ID, '/')}
+                onClick={() => setIsOpen(false)}
+                className={menuItemStyles}
+              >
+                <FolderOpen className="w-3.5 h-3.5 mr-2 text-gray-500" />
+                Browse Files
+              </Link>
+            )}
             {actions.map((action) => {
               const { label, icon: Icon, danger } = ACTIONS[action];
               return (
@@ -249,11 +271,7 @@ export function AllocationActionsDropdown({
                     setIsOpen(false);
                     setOpenAction(action);
                   }}
-                  className={`flex items-center w-full px-3 py-2.5 sm:py-1.5 text-sm sm:text-xs text-left ${
-                    danger
-                      ? 'text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20'
-                      : 'text-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-700'
-                  }`}
+                  className={danger ? menuItemDangerStyles : menuItemStyles}
                 >
                   <Icon className={`w-3.5 h-3.5 mr-2 ${danger ? 'text-red-500' : 'text-gray-500'}`} />
                   {label}

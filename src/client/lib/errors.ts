@@ -71,6 +71,7 @@ const permissionMessages: Record<string, string> = {
     'You do not have permission to launch periodic jobs. It needs submit-job, dispatch-job or force-periodic-job.',
   'pause-periodic-job': 'You do not have permission to pause or resume this schedule. It needs submit-job.',
   'dispatch-job': 'You do not have permission to dispatch this job. It needs dispatch-job.',
+  'browse-files': 'You do not have permission to browse the files of this allocation. It needs read-fs.',
   'restart-allocation': 'You do not have permission to restart allocations. It needs alloc-lifecycle.',
   'signal-allocation': 'You do not have permission to signal tasks. It needs alloc-lifecycle.',
   'stop-allocation': 'You do not have permission to stop allocations. It needs alloc-lifecycle.',

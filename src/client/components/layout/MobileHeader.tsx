@@ -58,6 +58,9 @@ function getRouteMeta(pathname: string): RouteMeta {
   if (pathname === '/allocations/failed') {
     return { title: 'Failed Allocs', backTo: '/allocations' };
   }
+  if (/^\/allocations\/[^/]+\/files$/.test(pathname)) {
+    return { title: 'Files', backTo: '/allocations' };
+  }
   if (pathname === '/acl') {
     return { title: 'ACL', backTo: '/dashboard' };
   }
