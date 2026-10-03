@@ -47,6 +47,8 @@ Formerly Nomad Compass.
   search, and form/JSON editors.
 - Manages Node Pools and scheduler algorithms (spread vs binpack) across cluster
   nodes.
+- Lists CSI volumes of all namespaces and their plugins, registers and
+  deregisters volumes, and takes volume snapshots.
 - Works on mobile as an installable Progressive Web App (PWA) with a bottom
   navigation bar, touch-friendly card views, floating actions, offline app shell
   caching, and virtual terminal keys.

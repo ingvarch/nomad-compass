@@ -245,6 +245,46 @@ scheduling pools for targeted workloads:
 - **Node integration**: the Nodes page (`/nodes`) displays the node pool badge
   for each node and allows direct navigation to Node Pools management.
 
+## Storage (CSI volumes)
+
+The Storage page (`/storage`) lists the CSI volumes of all namespaces and the
+CSI plugins that serve them.
+
+- **Volumes**: each volume with its namespace, plugin, access mode, the number
+  of allocations that read or write it, and its health. A volume is
+  *degraded* when some of its plugin controllers or nodes are unhealthy, and
+  *unschedulable* when Nomad cannot place new claims on it.
+- **Volume details**: capacity, provider, external ID, capabilities, mount
+  options, topology, parameters, and the allocations that use the
+  volume with their claim (read or write). Nomad hides the mount flags and
+  secrets, so the page shows them as `[REDACTED]`.
+- **Register Volume**: registers a volume that already exists at the storage
+  provider, like `nomad volume register`. The form takes the volume ID, name,
+  namespace, plugin, external ID, one or more capabilities (access and
+  attachment mode), file system, mount flags and parameters. There is no HCL
+  editor: Nomad's API takes JSON only.
+- **Deregister**: removes a volume from Nomad; the data at the provider stays.
+  Nomad refuses while an allocation uses the volume. *Force* drops the claims
+  of finished allocations right away, but Nomad still refuses while a running
+  allocation uses the volume.
+- **Snapshot**: takes a snapshot of a volume with the name you give and shows
+  its ID, size and readiness. The button appears only when the controller of
+  the plugin supports snapshots.
+- **Plugins**: each plugin with its provider, healthy and expected controllers
+  and nodes. The plugin page lists the controller features (create and delete
+  volumes, snapshots, expansion) and every running controller and node
+  instance with its node, health and allocation.
+
+Listing volumes needs the `csi-list-volume` capability and the details need
+`csi-read-volume`. Registering, deregistering and snapshots need
+`csi-write-volume`; registering and snapshots also need `plugin` read.
+Listing plugins needs `plugin` list, a plugin page needs `plugin` read.
+
+The page does not create or delete volumes at the provider, detach them from
+nodes, list snapshots or manage dynamic host volumes.
+
+![A CSI volume with its capabilities, mount options and claims](images/storage.png)
+
 ## Servers & Raft consensus
 
 The Servers page (`/servers`) monitors the Nomad control plane:
