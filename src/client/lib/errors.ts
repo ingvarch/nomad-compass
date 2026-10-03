@@ -76,6 +76,12 @@ const permissionMessages: Record<string, string> = {
   'signal-allocation': 'You do not have permission to signal tasks. It needs alloc-lifecycle.',
   'stop-allocation': 'You do not have permission to stop allocations. It needs alloc-lifecycle.',
   'reschedule-allocation': 'You do not have permission to reschedule allocations. It needs submit-job.',
+  'list-volumes': 'You do not have permission to list CSI volumes. It needs csi-list-volume.',
+  'read-volume': 'You do not have permission to read this CSI volume. It needs csi-read-volume.',
+  'register-volume': 'You do not have permission to register CSI volumes. It needs csi-write-volume.',
+  'deregister-volume': 'You do not have permission to deregister this CSI volume. It needs csi-write-volume.',
+  'snapshot-volume': 'You do not have permission to snapshot this CSI volume. It needs csi-write-volume.',
+  'read-plugins': 'You do not have permission to read CSI plugins. It needs a plugin policy of read.',
 };
 
 /**
@@ -83,6 +89,18 @@ const permissionMessages: Record<string, string> = {
  */
 export function getPermissionErrorMessage(operation: string): string {
   return permissionMessages[operation] || 'Insufficient permissions to perform this action';
+}
+
+/**
+ * Runs a request; a permission error comes back with the message of the operation
+ */
+export async function withPermissionMessage<T>(operation: string, run: () => Promise<T>): Promise<T> {
+  try {
+    return await run();
+  } catch (err) {
+    if (isPermissionError(err)) throw new PermissionError(getPermissionErrorMessage(operation));
+    throw err;
+  }
 }
 
 /**

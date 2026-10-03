@@ -53,6 +53,14 @@ import {
   NomadJobScaleRequest,
   NomadJobScaleResponse,
 } from '../../types/scale';
+import type {
+  NomadCSIPlugin,
+  NomadCSIPluginListStub,
+  NomadCSISnapshot,
+  NomadCSIVolume,
+  NomadCSIVolumeListStub,
+  NomadCSIVolumeRegistration,
+} from '../../types/csi';
 import { PermissionError, isApiError } from '../errors';
 import { DEFAULT_NAMESPACE } from '../constants';
 import { periodicLaunchPrefix } from '../services/periodicService';
@@ -1084,6 +1092,74 @@ export class NomadClient {
         body: JSON.stringify(body),
       }
     );
+  }
+
+  // ==================== CSI Volumes & Plugins ====================
+
+  /**
+   * Path of a CSI volume. Volume IDs can contain "[" and "]" (per-allocation volumes) or any other character.
+   */
+  private csiVolumeEndpoint(id: string): string {
+    return `/v1/volume/csi/${encodeURIComponent(id)}`;
+  }
+
+  /**
+   * List CSI volumes of all namespaces
+   */
+  async getCSIVolumes(): Promise<NomadCSIVolumeListStub[]> {
+    return this.request<NomadCSIVolumeListStub[]>('/v1/volumes', {
+      params: { type: 'csi', namespace: '*' },
+    });
+  }
+
+  async getCSIVolume(id: string, namespace: string): Promise<NomadCSIVolume> {
+    return this.request<NomadCSIVolume>(this.csiVolumeEndpoint(id), { params: { namespace } });
+  }
+
+  /**
+   * Register an existing volume of the storage provider with Nomad
+   */
+  async registerCSIVolume(volume: NomadCSIVolumeRegistration): Promise<void> {
+    await this.request<void>(this.csiVolumeEndpoint(volume.ID), {
+      method: 'PUT',
+      params: { namespace: volume.Namespace },
+      body: JSON.stringify({ Volumes: [volume] }),
+    });
+  }
+
+  /**
+   * Deregister a volume from Nomad; the storage provider keeps it. Force drops the claims of finished
+   * allocations; Nomad still refuses while a running allocation uses the volume.
+   */
+  async deregisterCSIVolume(id: string, namespace: string, force = false): Promise<void> {
+    const params: Record<string, string> = { namespace };
+    if (force) params.force = 'true';
+    await this.request<void>(this.csiVolumeEndpoint(id), { method: 'DELETE', params });
+  }
+
+  /**
+   * Ask the plugin of a volume to snapshot it; the snapshot request names the volume
+   */
+  async createCSISnapshot(
+    volume: Pick<NomadCSIVolume, 'ID' | 'Namespace' | 'PluginID'>,
+    name: string
+  ): Promise<NomadCSISnapshot> {
+    const response = await this.request<{ Snapshots: NomadCSISnapshot[] }>('/v1/volumes/snapshot', {
+      method: 'PUT',
+      params: { namespace: volume.Namespace },
+      body: JSON.stringify({
+        Snapshots: [{ SourceVolumeID: volume.ID, PluginID: volume.PluginID, Name: name }],
+      }),
+    });
+    return response.Snapshots[0];
+  }
+
+  async getCSIPlugins(): Promise<NomadCSIPluginListStub[]> {
+    return this.request<NomadCSIPluginListStub[]>('/v1/plugins', { params: { type: 'csi' } });
+  }
+
+  async getCSIPlugin(id: string): Promise<NomadCSIPlugin> {
+    return this.request<NomadCSIPlugin>(`/v1/plugin/csi/${encodeURIComponent(id)}`);
   }
 }
 

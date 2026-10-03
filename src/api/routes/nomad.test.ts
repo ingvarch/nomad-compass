@@ -66,4 +66,36 @@ describe('Nomad proxy', () => {
     await proxy('/api/nomad/v1/node/pool/prod-eng/nodes');
     expect(calls[1].url).toBe('http://nomad.test:4646/v1/node/pool/prod-eng/nodes');
   });
+
+  // Nomad allows any character in a volume ID: a decoded "%" would break the URL
+  test('forwards an encoded volume ID unchanged', async () => {
+    const calls = mockFetch();
+
+    await proxy('/api/nomad/v1/volume/csi/disk%2550?namespace=default');
+
+    expect(calls[0].url).toBe('http://nomad.test:4646/v1/volume/csi/disk%2550?namespace=default');
+  });
+
+  test('forwards CSI volume, snapshot and plugin endpoints', async () => {
+    const calls = mockFetch();
+
+    for (const path of [
+      '/v1/volumes?type=csi&namespace=*',
+      '/v1/volume/csi/postgres-data?namespace=default',
+      '/v1/volumes/snapshot?namespace=default',
+      '/v1/plugins?type=csi',
+      '/v1/plugin/csi/hostpath-plugin0',
+    ]) {
+      const res = await proxy(`/api/nomad${path}`);
+      expect(res.status).toBe(200);
+    }
+
+    expect(calls.map((c) => c.url)).toEqual([
+      'http://nomad.test:4646/v1/volumes?type=csi&namespace=*',
+      'http://nomad.test:4646/v1/volume/csi/postgres-data?namespace=default',
+      'http://nomad.test:4646/v1/volumes/snapshot?namespace=default',
+      'http://nomad.test:4646/v1/plugins?type=csi',
+      'http://nomad.test:4646/v1/plugin/csi/hostpath-plugin0',
+    ]);
+  });
 });

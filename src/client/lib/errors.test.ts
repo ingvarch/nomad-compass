@@ -1,5 +1,33 @@
 import { describe, test, expect } from 'bun:test';
-import { getErrorMessage, isJobModifyIndexConflict, PermissionError } from './errors';
+import {
+  getErrorMessage,
+  getPermissionErrorMessage,
+  isJobModifyIndexConflict,
+  PermissionError,
+  withPermissionMessage,
+} from './errors';
+
+describe('withPermissionMessage', () => {
+  test('replaces a permission error with the message of the operation', async () => {
+    const run = withPermissionMessage('browse-files', async () => {
+      throw new PermissionError('Permission denied');
+    });
+
+    await expect(run).rejects.toThrow(getPermissionErrorMessage('browse-files'));
+    await expect(run).rejects.toBeInstanceOf(PermissionError);
+  });
+
+  test('passes the result and other errors through', async () => {
+    expect(await withPermissionMessage('browse-files', async () => 42)).toBe(42);
+
+    const apiError = { statusCode: 500, message: 'No cluster leader' };
+    await expect(
+      withPermissionMessage('browse-files', async () => {
+        throw apiError;
+      })
+    ).rejects.toBe(apiError);
+  });
+});
 
 describe('getErrorMessage', () => {
   test('returns the message of a Nomad API error', () => {

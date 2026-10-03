@@ -5,7 +5,7 @@ import { badRequestResponse, errorResponse } from '../utils/responses'
 import { nomadErrorMessage } from '../utils/nomadError'
 
 // Valid Nomad API paths regex - only allow legitimate Nomad API endpoints
-const VALID_NOMAD_PATHS = /^\/v1\/(agent|allocations|allocation|client|eval|evaluation|jobs|job|nodes|node|nodepool|nodepools|regions|status|operator|acl|sentinel|validate|deployment|deployments|search|namespaces|namespace|quota|quotas|system|variables|variable|vars|var|vault|consul|services|service)\/?.*/
+const VALID_NOMAD_PATHS = /^\/v1\/(agent|allocations|allocation|client|eval|evaluation|jobs|job|nodes|node|nodepool|nodepools|regions|status|operator|acl|sentinel|validate|deployment|deployments|search|namespaces|namespace|quota|quotas|system|variables|variable|vars|var|vault|consul|services|service|volumes|volume|plugins|plugin)\/?.*/
 
 export const nomadRoutes = new Hono<{ Bindings: Env }>()
 

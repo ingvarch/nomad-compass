@@ -21,6 +21,9 @@ const NodeDetailPage = lazy(() => import('./pages/NodeDetailPage'));
 const ServersPage = lazy(() => import('./pages/ServersPage'));
 const AllocationsPage = lazy(() => import('./pages/AllocationsPage'));
 const AllocationFilesPage = lazy(() => import('./pages/AllocationFilesPage'));
+const StoragePage = lazy(() => import('./pages/StoragePage'));
+const CSIVolumePage = lazy(() => import('./pages/CSIVolumePage'));
+const CSIPluginPage = lazy(() => import('./pages/CSIPluginPage'));
 const NamespacesPage = lazy(() => import('./pages/NamespacesPage'));
 const VariablesPage = lazy(() => import('./pages/VariablesPage'));
 const NodePoolsPage = lazy(() => import('./pages/NodePoolsPage'));
@@ -84,6 +87,18 @@ const router = createBrowserRouter([
       {
         path: '/allocations/:allocId/files',
         element: withSuspense(AllocationFilesPage),
+      },
+      {
+        path: '/storage',
+        element: withSuspense(StoragePage),
+      },
+      {
+        path: '/storage/volumes/:volumeId',
+        element: withSuspense(CSIVolumePage),
+      },
+      {
+        path: '/storage/plugins/:pluginId',
+        element: withSuspense(CSIPluginPage),
       },
       {
         path: '/nodes',
