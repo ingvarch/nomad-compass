@@ -20,6 +20,7 @@ const NodesPage = lazy(() => import('./pages/NodesPage'));
 const NodeDetailPage = lazy(() => import('./pages/NodeDetailPage'));
 const ServersPage = lazy(() => import('./pages/ServersPage'));
 const AllocationsPage = lazy(() => import('./pages/AllocationsPage'));
+const AllocationFilesPage = lazy(() => import('./pages/AllocationFilesPage'));
 const NamespacesPage = lazy(() => import('./pages/NamespacesPage'));
 const VariablesPage = lazy(() => import('./pages/VariablesPage'));
 const NodePoolsPage = lazy(() => import('./pages/NodePoolsPage'));
@@ -79,6 +80,10 @@ const router = createBrowserRouter([
       {
         path: '/allocations',
         element: withSuspense(AllocationsPage),
+      },
+      {
+        path: '/allocations/:allocId/files',
+        element: withSuspense(AllocationFilesPage),
       },
       {
         path: '/nodes',

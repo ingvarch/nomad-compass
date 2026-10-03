@@ -531,6 +531,16 @@ export interface NomadAllocation {
     ModifyIndex: number;
 }
 
+// File or directory in an allocation directory (fs ls and stat)
+export interface NomadAllocFileInfo {
+    Name: string;
+    IsDir: boolean;
+    Size: number;
+    FileMode: string;           // Like "-rw-r--r--"; "p" for a pipe, "L" for a symlink
+    ModTime: string;            // RFC 3339
+    ContentType: string;        // Filled by stat only
+}
+
 export interface NomadStopAllocationOptions {
     noShutdownDelay?: boolean;
     // Batch allocations are replaced only when asked; `nomad alloc stop` asks for them

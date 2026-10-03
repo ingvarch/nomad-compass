@@ -85,7 +85,7 @@ function posts(calls: FetchCall[]) {
 }
 
 describe('AllocationActionsDropdown', () => {
-  it('offers exec, restart, signal and stop for a running allocation', () => {
+  it('offers exec, files, restart, signal and stop for a running allocation', () => {
     mockFetch();
     renderActions(runningAllocation);
 
@@ -95,9 +95,10 @@ describe('AllocationActionsDropdown', () => {
 
     openMenu();
 
-    expect(menuItems()).toEqual(['Restart Allocation...', 'Send Signal...', 'Stop Allocation']);
+    expect(menuItems()).toEqual(['Browse Files', 'Restart Allocation...', 'Send Signal...', 'Stop Allocation']);
   });
 
+  // Nomad creates the allocation directory once the allocation starts
   it('offers only stop for a pending allocation', () => {
     mockFetch();
     renderActions({ ...runningAllocation, ClientStatus: 'pending' });
@@ -108,19 +109,41 @@ describe('AllocationActionsDropdown', () => {
     expect(menuItems()).toEqual(['Stop Allocation']);
   });
 
-  it('offers only rescheduling for a failed allocation', () => {
+  it('offers files and rescheduling for a failed allocation', () => {
     mockFetch();
     renderActions(failedAllocation);
 
     expect(screen.queryByRole('link', { name: /exec/i })).toBeNull();
     openMenu();
 
-    expect(menuItems()).toEqual(['Reschedule Failed Allocations']);
+    expect(menuItems()).toEqual(['Browse Files', 'Reschedule Failed Allocations']);
   });
 
-  it.each(['complete', 'lost'] as const)('offers nothing for a %s allocation', (status) => {
+  // Nomad keeps the directory of a finished allocation until garbage collection
+  it('offers only files for a complete allocation', () => {
     mockFetch();
-    renderActions({ ...failedAllocation, ClientStatus: status });
+    renderActions({ ...failedAllocation, ClientStatus: 'complete' });
+
+    expect(screen.queryByRole('link', { name: /exec/i })).toBeNull();
+    openMenu();
+
+    expect(menuItems()).toEqual(['Browse Files']);
+  });
+
+  it('links Browse Files to the files of the allocation', () => {
+    mockFetch();
+    renderActions(runningAllocation);
+    openMenu();
+
+    expect(screen.getByRole('menuitem', { name: 'Browse Files' }).getAttribute('href')).toBe(
+      '/allocations/alloc-11112222-3333/files'
+    );
+  });
+
+  // The node of a lost allocation is gone with its files
+  it('offers nothing for a lost allocation', () => {
+    mockFetch();
+    renderActions({ ...failedAllocation, ClientStatus: 'lost' });
 
     expect(screen.queryByRole('button', { name: /allocation actions/i })).toBeNull();
     expect(screen.queryByRole('link', { name: /exec/i })).toBeNull();

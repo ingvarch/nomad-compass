@@ -174,6 +174,8 @@ container:
     place, on the same node.
   - *Send Signal* (running): sends a POSIX signal such as `SIGHUP` or `SIGUSR1`
     to one task.
+  - *Browse Files* (running, complete, failed): opens the files of the
+    allocation, see below.
   - *Stop Allocation* (running, pending): stops the allocation after a
     confirmation, with an optional "No shutdown delay". Nomad then schedules a
     replacement, which may land on another node. This is how an allocation is
@@ -185,6 +187,19 @@ container:
     deployment failed.
   Restart, signal and stop need the `alloc-lifecycle` capability; rescheduling
   needs `submit-job`.
+- **Files**: the allocation directory, also after the allocation finished or
+  failed, until Nomad collects it as garbage. It holds the shared `alloc/`
+  directory with the task logs in `alloc/logs/`, and one directory per task
+  with `local/`, `tmp/` and the rendered templates. The breadcrumbs lead back
+  up. A file opens with its size, mode and modification time, and **Download**
+  saves the whole file. JSON, YAML, INI and TOML, nginx, shell, properties and
+  XML files are highlighted. The page shows the first 512 KiB of a larger file
+  and offers a binary file only as a download. Nomad never lets anyone read
+  the `secrets/` directory of a task, and the page does not open log pipes or
+  other files that are not regular files. Browsing needs the `read-fs`
+  capability.
+
+  ![A rendered nginx template in the files of an allocation](images/files.png)
 
 ## Cluster topology
 

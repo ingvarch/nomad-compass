@@ -35,6 +35,8 @@ Formerly Nomad Compass.
 - Streams task logs with stdout/stderr filtering.
 - Opens a terminal in a running task. The ACL token stays in an `httpOnly`
   cookie and never appears in a URL.
+- Browses the files of an allocation, also a finished or failed one, with
+  syntax highlighting and downloads.
 - Lists allocations, failed allocations, nodes, servers and the cluster
   topology.
 - Restarts, signals and stops single allocations, and reschedules the failed
