@@ -1,5 +1,6 @@
 import type { NomadJob } from '../../types/nomad';
-import { isParameterized } from './dispatchService';
+import { isDispatchedJob, isParameterized } from './dispatchService';
+import { isPeriodicLaunch } from './periodicService';
 
 export type JobKind = 'regular' | 'periodic' | 'parameterized';
 
@@ -9,4 +10,11 @@ export type ParentJobKind = Exclude<JobKind, 'regular'>;
 export function jobKind(job: Pick<NomadJob, 'Periodic' | 'ParameterizedJob' | 'Dispatched'>): JobKind {
   if (job.Periodic) return 'periodic';
   return isParameterized(job) ? 'parameterized' : 'regular';
+}
+
+/**
+ * Jobs the lists show: launches and dispatched jobs are listed on their parent's page.
+ */
+export function listedJobs<T extends { ID: string; ParentID?: string }>(jobs: T[]): T[] {
+  return jobs.filter((job) => !isPeriodicLaunch(job) && !isDispatchedJob(job));
 }

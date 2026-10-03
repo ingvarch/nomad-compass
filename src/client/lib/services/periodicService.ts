@@ -27,13 +27,6 @@ export function isPeriodicLaunch(job: { ID: string; ParentID?: string }): boolea
   return !!job.ParentID && job.ID.startsWith(periodicLaunchPrefix(job.ParentID));
 }
 
-/**
- * Jobs the lists show: launches are listed on their parent's page.
- */
-export function listedJobs<T extends { ID: string; ParentID?: string }>(jobs: T[]): T[] {
-  return jobs.filter((job) => !isPeriodicLaunch(job));
-}
-
 export function sortLaunchesNewestFirst(launches: NomadJobListStub[]): NomadJobListStub[] {
   return [...launches].sort((a, b) => b.SubmitTime - a.SubmitTime);
 }

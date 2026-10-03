@@ -29,6 +29,7 @@ The dashboard provides a bird's-eye view of your Nomad cluster:
 
 1. **View jobs**: the jobs page lists all jobs across all namespaces or within a
    selected namespace, with status badges, task counts, and job types.
+   Periodic launches and dispatched jobs are listed on the page of their job.
 2. **Job details**: click on a job to view its overview, task groups,
    allocations, versions, evaluations, and logs.
 3. **Create jobs**: use the "Create Job" button to open the job form —
@@ -130,9 +131,11 @@ child job with the ID `<job>/dispatch-<time>-<id>`.
 4. **Dispatches**: a parameterized job has no allocations of its own, so its
    page has the Overview, Dispatches, Versions and Evaluations tabs. The
    Dispatches tab lists the dispatched jobs newest first, with their status
-   and allocation counts, and shows a new one right after a dispatch. Nomad
-   removes finished dispatched jobs during garbage collection
-   (`job_gc_threshold`, 4 hours by default).
+   and allocation counts, and shows a new one right after a dispatch. The
+   jobs list hides dispatched jobs and marks parameterized jobs with a
+   `parameterized` badge. The job counts on the Dashboard and the Namespaces
+   page skip dispatched jobs. Nomad removes finished dispatched jobs during
+   garbage collection (`job_gc_threshold`, 4 hours by default).
 
 ## Viewing logs
 
